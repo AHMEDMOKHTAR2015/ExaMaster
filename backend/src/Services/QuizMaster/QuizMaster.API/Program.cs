@@ -23,10 +23,19 @@ builder.Services
 var app = builder.Build();
 
 #region InitData
-//insight - migrating at startup is a development convenience; run migrations from your CI/CD pipeline in production
-app.Migrate<QuizMasterDbContext>();
-
-await FirstRunSeed.EnsurePlatformAdministratorAsync(app.Services, app.Configuration, app.Logger);   // an empty database: the platform administrator only
+//insight - migrating at startup is a development convenience; run migrations from your CI/CD pipeline in production.
+// A database still unreachable after the connection retries must not crash startup: on App Service a crashed start
+// stays a 500.30 until someone restarts the app, while a running app serves again as soon as the database answers.
+try
+{
+    app.Migrate<QuizMasterDbContext>();
+    await FirstRunSeed.EnsurePlatformAdministratorAsync(app.Services, app.Configuration, app.Logger);   // an empty database: the platform administrator only
+}
+catch (Exception ex)
+{
+    app.Logger.LogCritical(ex, "Startup database initialization failed (migrations / first-run seed). The app is starting " +
+        "without it; restart once the database is reachable to apply any pending migrations.");
+}
 
 var seedOptions = app.Configuration.GetSection(nameof(SeedOptions)).Get<SeedOptions>() ?? new();
 if (app.Environment.IsDevelopment() && seedOptions.DemoSchool)
