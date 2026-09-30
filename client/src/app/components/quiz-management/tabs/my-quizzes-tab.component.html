@@ -1,0 +1,411 @@
+<div class="card">
+  <div class="card__head">
+    <h2 class="card__title">{{ 'quizManagement.myQuizzes.title' | translate }}</h2>
+    <button class="btn btn--sm btn--primary" (click)="openQuizBuilder()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      {{ 'quizManagement.myQuizzes.newQuiz' | translate }}
+    </button>
+  </div>
+  <div class="card__body">
+    <div class="quiz-grid">
+      @for (quiz of state.myCustomQuizzes(); track quiz.id) {
+        <div class="assigned-quiz-card">
+          <header class="assigned-quiz-card__header">
+            <h3 class="assigned-quiz-card__title">
+              {{ quiz.name }}
+              @if (isCustomQuizOverdue(quiz)) { <span class="badge badge--warning">{{ 'quizManagement.assignments.pastDue' | translate }}</span> }
+            </h3>
+          </header>
+          <div class="assigned-quiz-card__top">
+            <div class="assigned-quiz-card__body">
+              <div class="badge-row" style="margin-top: 0.625rem;">
+                <span class="subject-tag">{{ state.getSubjectName(quiz.subjectId) }}</span>
+                <span class="semester-tag semester-tag--{{ quiz.semester }}">{{ state.getSemesterLabel(quiz.semester) }}</span>
+                <span class="quiz-meta-tag quiz-meta-tag--neutral">{{ 'quizManagement.myQuizzes.questionCount' | translate : { count: customQuizQuestionCount(quiz) } }}</span>
+              </div>
+            </div>
+            <div class="quiz-management__row-actions">
+              <button class="btn btn--sm btn--secondary" (click)="openQuizBuilder(quiz)">{{ 'common.edit' | translate }}</button>
+              <button class="btn btn--sm btn--danger" (click)="deleteCustomQuiz(quiz)">{{ 'common.delete' | translate }}</button>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty" style="grid-column: 1 / -1;">
+          <div class="empty__title">{{ 'quizManagement.myQuizzes.noQuizzes' | translate }}</div>
+          <p>{{ 'quizManagement.myQuizzes.noQuizzesDesc' | translate }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ======================= CUSTOM QUIZ BUILDER POPUP ======================= -->
+@if (showQuizBuilder()) {
+  <div class="popup-overlay" (click)="closeQuizBuilder()">
+    <div class="popup builder-popup popup--xl" role="dialog" aria-modal="true" aria-labelledby="builder-title" (click)="$event.stopPropagation()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'quizManagement.builder.eyebrow' | translate }}</div>
+          <h2 id="builder-title" class="popup__title">{{ editingQuizId() ? ('quizManagement.builder.editTitle' | translate) : ('quizManagement.builder.newTitle' | translate) }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeQuizBuilder()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        @if (builderError()) {
+          <div class="alert alert--danger">
+            <span>{{ builderError() }}</span>
+            <button class="btn btn--ghost btn--sm btn--icon" (click)="builderError.set('')" [attr.aria-label]="'common.dismiss' | translate">×</button>
+          </div>
+        }
+        <!--
+          Two columns on a wide screen: the quiz's own fields on the inline-start
+          side, its runtime configuration on the inline-end side. Source order drives
+          placement, so this mirrors correctly under `dir="rtl"` without a second rule.
+        -->
+        <div class="builder-top">
+          <div class="form-section">
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.builder.name' | translate }}</label>
+              <input class="input input--full" [placeholder]="'quizManagement.builder.namePlaceholder' | translate"
+                     [ngModel]="builderName()" (ngModelChange)="builderName.set($event)" [disabled]="isSavingQuiz()" />
+            </div>
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.builder.description' | translate }}</label>
+              <!-- `rows` alone governs the height. The inline `height: 195px`
+                   this replaces overrode it and gave a short optional field
+                   more vertical space than the whole configuration panel. -->
+              <textarea class="input input--full" rows="3"
+                        [ngModel]="builderDescription()" (ngModelChange)="builderDescription.set($event)" [disabled]="isSavingQuiz()"></textarea>
+            </div>
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.builder.stage' | translate }}</label>
+              <select class="select" [ngModel]="builderStageId()" (ngModelChange)="onBuilderStageChange($event)" [disabled]="isSavingQuiz()">
+                <option value="">{{ 'quizManagement.builder.selectStage' | translate }}</option>
+                @for (stage of state.myStages(); track stage.id) {
+                  <option [value]="stage.id">{{ stage.name }}</option>
+                }
+              </select>
+            </div>
+            <!--
+              Narrows the question bank below. Questions are classified by
+              `gradeId`, so this filters on the field they actually carry — and
+              it is not saved on the quiz.
+            -->
+            <div class="field">
+              <label class="field__label" for="qb-grade">{{ 'common.grade' | translate }}</label>
+              <select id="qb-grade" class="select" [ngModel]="builderGradeId()" (ngModelChange)="builderGradeId.set($event)" [disabled]="isSavingQuiz()">
+                <option value="">{{ 'common.allGrades' | translate }}</option>
+                @for (grade of builderGradeOptions(); track grade.id) {
+                  <option [value]="grade.id">{{ grade.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.builder.subject' | translate }}</label>
+              <select class="select" [ngModel]="builderSubjectId()" (ngModelChange)="builderSubjectId.set($event)" [disabled]="isSavingQuiz()">
+                <option value="">{{ 'quizManagement.builder.selectSubject' | translate }}</option>
+                @for (subject of state.mySubjects(); track subject.id) {
+                  <option [value]="subject.id">{{ subject.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.form.semester' | translate }}</label>
+              <select class="select" [ngModel]="builderSemester()" (ngModelChange)="builderSemester.set($event)" [disabled]="isSavingQuiz()">
+                <option value="">{{ 'semester.unspecified' | translate }}</option>
+                @for (sem of state.semesterOptions; track sem.value) {
+                  <option [value]="sem.value">{{ sem.label | translate }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.builder.duration' | translate }}</label>
+              <input class="input input--full" type="number" [ngModel]="builderDurationMinutes()" disabled />
+              <span class="field__hint">{{ 'quizBuilder.durationComputedHint' | translate }}</span>
+            </div>
+          </div>
+
+          <!-- Quiz Configuration Section (mirrors quizzes-admin's config-grid so custom quizzes get the same options as bank quizzes) -->
+          <div class="form-section">
+            <h4>{{ 'quizBuilder.config' | translate }}</h4>
+            <div class="config-grid">
+              <div class="config-item number-config">
+                <label>{{ 'quizBuilder.pageSize' | translate }}</label>
+                <input class="quizzes-admin__form-input" type="number" min="1"
+                       [ngModel]="builderPageSize()" (ngModelChange)="builderPageSize.set(+$event)" [disabled]="isSavingQuiz()" />
+              </div>
+              <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.allowBackHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderAllowBack()" (ngModelChange)="builderAllowBack.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.allowBack' | translate }}</span>
+                </label>
+              </div>
+              <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.allowReviewHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderAllowReview()" (ngModelChange)="builderAllowReview.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.allowReview' | translate }}</span>
+                </label>
+              </div>
+              <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.autoMoveHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderAutoMove()" (ngModelChange)="builderAutoMove.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.autoMove' | translate }}</span>
+                </label>
+              </div>
+              <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.requiredAllHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderRequiredAll()" (ngModelChange)="builderRequiredAll.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.requiredAll' | translate }}</span>
+                </label>
+              </div>
+              <!-- Flagged as strict because it is the only setting here that can
+                   leave a student locked out of their own quiz until a teacher
+                   intervenes — from this teacher's own Participation tab. -->
+              <div class="config-item toggle-config toggle-config--strict" data-direction="top" [attr.data-tooltip]="'quizBuilder.oneTimeJoinHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderOneTimeJoin()" (ngModelChange)="builderOneTimeJoin.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.oneTimeJoin' | translate }}</span>
+                </label>
+              </div>
+              <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.richTextHint' | translate">
+                <label class="toggle-label">
+                  <input type="checkbox" [ngModel]="builderRichText()" (ngModelChange)="builderRichText.set($event)" [disabled]="isSavingQuiz()" />
+                  <span class="toggle-text">{{ 'quizBuilder.richText' | translate }}</span>
+                </label>
+              </div>
+              <!-- Both govern what the runner draws around the question, so
+                   they pair the same way the two shuffles do. -->
+              <div class="config-pair">
+                <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.showClockHint' | translate">
+                  <label class="toggle-label">
+                    <input type="checkbox" [ngModel]="builderShowClock()" (ngModelChange)="builderShowClock.set($event)" [disabled]="isSavingQuiz()" />
+                    <span class="toggle-text">{{ 'quizBuilder.showClock' | translate }}</span>
+                  </label>
+                </div>
+                <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.showPagerHint' | translate">
+                  <label class="toggle-label">
+                    <input type="checkbox" [ngModel]="builderShowPager()" (ngModelChange)="builderShowPager.set($event)" [disabled]="isSavingQuiz()" />
+                    <span class="toggle-text">{{ 'quizBuilder.showPager' | translate }}</span>
+                  </label>
+                </div>
+              </div>
+              <!--
+                The two shuffles are one decision read together — question
+                order beside option order — so they share a row instead of
+                sitting apart in the single-column flow. `.config-pair` spans
+                the grid and splits it in two; it collapses back to one column
+                on a phone.
+              -->
+              <div class="config-pair">
+                <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.shuffleQuestionsHint' | translate">
+                  <label class="toggle-label">
+                    <input type="checkbox" [ngModel]="builderShuffleQuestions()" (ngModelChange)="builderShuffleQuestions.set($event)" [disabled]="isSavingQuiz()" />
+                    <span class="toggle-text">{{ 'quizBuilder.shuffleQuestions' | translate }}</span>
+                  </label>
+                </div>
+                <div class="config-item toggle-config" data-direction="top" [attr.data-tooltip]="'quizBuilder.shuffleOptionsHint' | translate">
+                  <label class="toggle-label">
+                    <input type="checkbox" [ngModel]="builderShuffleOptions()" (ngModelChange)="builderShuffleOptions.set($event)" [disabled]="isSavingQuiz()" />
+                    <span class="toggle-text">{{ 'quizBuilder.shuffleOptions' | translate }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (!builderStageId() || !builderSubjectId() || !builderSemester()) {
+          <div class="qb-gate empty">
+            <div class="empty__title">{{ 'quizManagement.builder.selectSubjectSemesterFirst' | translate }}</div>
+          </div>
+        } @else {
+        <div class="qb-questions">
+          <div class="qb-questions__head">
+            <h3 class="qb-questions__title">{{ 'quizManagement.builder.questions' | translate }} ({{ builderQuestions().length }})</h3>
+            <div class="quiz-management__row-actions">
+              <button class="btn btn--sm btn--ghost" (click)="toggleQuizPicker()" [disabled]="isSavingQuiz()">
+                {{ showQuizPicker() ? ('quizManagement.builder.hideQuizzes' | translate) : ('quizManagement.builder.addFromQuiz' | translate) }}
+              </button>
+              <button class="btn btn--sm btn--ghost" (click)="toggleBankPicker()" [disabled]="isSavingQuiz()">
+                {{ showBankPicker() ? ('quizManagement.builder.hideBank' | translate) : ('quizManagement.builder.addFromBank' | translate) }}
+              </button>
+              <button class="btn btn--sm" (click)="addBuilderQuestion()" [disabled]="isSavingQuiz()">{{ 'quizManagement.builder.addQuestion' | translate }}</button>
+            </div>
+          </div>
+
+          @if (showQuizPicker()) {
+            <div class="qb-bank-picker">
+              @if (quizPickerSourceQuiz(); as sourceQuiz) {
+                <div class="quiz-management__row-actions">
+                  <button class="btn btn--sm btn--ghost" (click)="backToQuizPickerList()">← {{ 'quizManagement.builder.quizPickerBack' | translate }}</button>
+                  <button class="btn btn--sm" (click)="appendAllQuestionsFromQuiz(sourceQuiz)" [disabled]="isSavingQuiz() || sourceQuiz.questions.length === 0">
+                    {{ 'quizManagement.builder.addAllQuestionsBtn' | translate }}
+                  </button>
+                </div>
+                <div class="qb-bank-list">
+                  @for (q of sourceQuiz.questions; track q.id) {
+                    <div class="qb-bank-item">
+                      <span class="qb-bank-item__text">{{ q.name }}</span>
+                      <button class="btn btn--sm" (click)="appendQuestionFromQuiz(q)" [disabled]="isSavingQuiz()">{{ 'quizManagement.builder.addQuestionBtn' | translate }}</button>
+                    </div>
+                  } @empty {
+                    <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.noQuestions' | translate }}</div></div>
+                  }
+                </div>
+              } @else {
+                <input class="input input--full" type="search" [placeholder]="'quizManagement.builder.quizPickerSearchPlaceholder' | translate"
+                       [ngModel]="quizPickerSearch()" (ngModelChange)="quizPickerSearch.set($event)" />
+                <div class="qb-bank-list">
+                  @for (quiz of quizPickerCandidates(); track quiz.id) {
+                    <div class="qb-bank-item">
+                      <span class="qb-bank-item__text">{{ quiz.name }} · {{ 'quizManagement.myQuizzes.questionCount' | translate : { count: quiz.questions.length } }}</span>
+                      <button class="btn btn--sm" (click)="selectQuizPickerSource(quiz.id)">{{ 'quizManagement.builder.quizPickerView' | translate }}</button>
+                    </div>
+                  } @empty {
+                    <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.quizPickerEmpty' | translate }}</div></div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (showBankPicker()) {
+            <div class="qb-bank-picker">
+              <input class="input input--full" type="search" [placeholder]="'quizManagement.builder.bankSearchPlaceholder' | translate"
+                     [ngModel]="bankPickerSearch()" (ngModelChange)="bankPickerSearch.set($event)" />
+              @if (isLoadingBankQuestions()) {
+                <div class="empty">{{ 'quizManagement.builder.bankLoading' | translate }}</div>
+              } @else {
+                <!-- How many the bank returned *after* the stage/grade/subject/
+                     semester/search filters, i.e. the size of the list below —
+                     the number that tells a teacher whether their filters are
+                     too narrow. -->
+                <p class="muted qb-bank-count">
+                  {{ 'quizManagement.builder.bankCount' | translate : { count: filteredBankQuestions().length } }}
+                </p>
+                <div class="qb-bank-list">
+                  @for (bq of filteredBankQuestions(); track bq.id) {
+                    @let isAdded = addedBankQuestionIds().has(bq.id);
+                    <div class="qb-bank-item" [class.qb-bank-item--added]="isAdded">
+                      <span class="qb-bank-item__text">{{ bq.name }}</span>
+                      <button class="btn btn--sm" [class.btn--ghost]="isAdded"
+                              (click)="toggleQuestionFromBank(bq)" [disabled]="isSavingQuiz()"
+                              [attr.aria-pressed]="isAdded">
+                        {{ (isAdded ? 'quizManagement.builder.removeQuestionBtn' : 'quizManagement.builder.addQuestionBtn') | translate }}
+                      </button>
+                    </div>
+                  } @empty {
+                    <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.bankEmpty' | translate }}</div></div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @for (q of builderQuestions(); track q.id; let qi = $index) {
+            <div class="qb-question">
+              <div class="qb-question__head">
+                <span class="qb-question__index">{{ qi + 1 }}</span>
+                <select class="input qb-type-select" [ngModel]="q.questionTypeId" (ngModelChange)="setBuilderQuestionType(q.id, $event)" [disabled]="isSavingQuiz()">
+                  <option [ngValue]="QUESTION_TYPE.CHOOSE">{{ 'quizManagement.builder.typeChoose' | translate }}</option>
+                  <option [ngValue]="QUESTION_TYPE.COMPLETE">{{ 'quizManagement.builder.typeComplete' | translate }}</option>
+                  <option [ngValue]="QUESTION_TYPE.RIGHT_WRONG">{{ 'quizManagement.builder.typeRightWrong' | translate }}</option>
+                  <option [ngValue]="QUESTION_TYPE.EXPLAIN">{{ 'quizManagement.builder.typeExplain' | translate }}</option>
+                </select>
+                @if (q.questionTypeId === QUESTION_TYPE.CHOOSE) {
+                  <input class="input input--full" [placeholder]="'quizManagement.builder.questionPlaceholder' | translate"
+                         [ngModel]="q.name" (ngModelChange)="updateBuilderQuestionText(q.id, $event)" [disabled]="isSavingQuiz()" />
+                } @else if (q.questionTypeId === QUESTION_TYPE.RIGHT_WRONG) {
+                  <input class="input input--full" [placeholder]="'quizManagement.builder.statementPlaceholder' | translate"
+                         [ngModel]="q.name" (ngModelChange)="updateBuilderQuestionText(q.id, $event)" [disabled]="isSavingQuiz()" />
+                }
+                <input class="input" type="number" min="1" style="width: 4.375rem;"
+                       [ngModel]="q.duration" (ngModelChange)="updateBuilderQuestionDuration(q.id, +$event)"
+                       [disabled]="isSavingQuiz()" [title]="'questionsBank.form.duration' | translate" />
+                <button class="btn btn--sm btn--ghost btn--icon" (click)="removeBuilderQuestion(q.id)" [disabled]="isSavingQuiz()" [attr.aria-label]="'common.delete' | translate">×</button>
+              </div>
+              @switch (q.questionTypeId) {
+                @case (QUESTION_TYPE.COMPLETE) {
+                  <div class="qb-complete">
+                    <textarea class="input input--full" rows="3" [placeholder]="'quizManagement.builder.completePlaceholder' | translate"
+                              [ngModel]="q.rawText" (ngModelChange)="updateBuilderQuestionRawText(q.id, $event)" [disabled]="isSavingQuiz()"></textarea>
+                    <p class="qb-hint">{{ 'quizManagement.builder.completeHint' | translate }}</p>
+                  </div>
+                }
+                @case (QUESTION_TYPE.RIGHT_WRONG) {
+                  <div class="qb-options">
+                    <div class="qb-option-row">
+                      <label class="radio-inline">
+                        <input type="radio" [name]="'verdict-' + q.id" [checked]="q.isRight === true"
+                               (change)="setBuilderIsRight(q.id, true)" [disabled]="isSavingQuiz()" />
+                        <span>{{ 'questionTypes.right' | translate }}</span>
+                      </label>
+                      <label class="radio-inline">
+                        <input type="radio" [name]="'verdict-' + q.id" [checked]="q.isRight === false"
+                               (change)="setBuilderIsRight(q.id, false)" [disabled]="isSavingQuiz()" />
+                        <span>{{ 'questionTypes.wrong' | translate }}</span>
+                      </label>
+                    </div>
+                    <p class="qb-hint">{{ 'quizManagement.builder.rightWrongHint' | translate }}</p>
+                  </div>
+                }
+                @case (QUESTION_TYPE.EXPLAIN) {
+                  <div class="qb-explain">
+                    <span class="qb-explain__label">{{ 'quizManagement.builder.explainSubject' | translate }}</span>
+                    <rich-text-editor
+                      [value]="q.subjectHtml"
+                      [disabled]="isSavingQuiz()"
+                      [placeholder]="'quizManagement.builder.explainSubjectPlaceholder' | translate"
+                      (valueChange)="updateBuilderSubjectHtml(q.id, $event)"></rich-text-editor>
+
+                    <span class="qb-explain__label">{{ 'quizManagement.builder.explainAnswer' | translate }}</span>
+                    <rich-text-editor
+                      [value]="q.referenceAnswer"
+                      [disabled]="isSavingQuiz()"
+                      [placeholder]="'quizManagement.builder.explainAnswerPlaceholder' | translate"
+                      (valueChange)="updateBuilderReferenceAnswer(q.id, $event)"></rich-text-editor>
+
+                    <div class="qb-explain__weight">
+                      <label class="qb-explain__label" [attr.for]="'weight-' + q.id">{{ 'quizManagement.builder.explainWeight' | translate }}</label>
+                      <input class="input" type="number"
+                             [id]="'weight-' + q.id"
+                             [min]="MIN_EXPLAIN_WEIGHT_PERCENT" [max]="MAX_EXPLAIN_WEIGHT_PERCENT" step="1"
+                             [ngModel]="q.weightPercent" (ngModelChange)="updateBuilderWeightPercent(q.id, $event)"
+                             [disabled]="isSavingQuiz()" />
+                    </div>
+                    <p class="qb-hint">{{ 'quizManagement.builder.explainWeightHint' | translate }}</p>
+                  </div>
+                }
+                @default {
+                  <div class="qb-options">
+                    @for (opt of q.options; track opt.id) {
+                      <div class="qb-option-row">
+                        <input type="radio" [name]="'correct-' + q.id" [checked]="q.correctOptionId === opt.id" (change)="setBuilderCorrectOption(q.id, opt.id)" [disabled]="isSavingQuiz()" />
+                        <input class="input input--full" [placeholder]="'quizManagement.builder.optionPlaceholder' | translate"
+                               [ngModel]="opt.name" (ngModelChange)="updateBuilderOptionText(q.id, opt.id, $event)" [disabled]="isSavingQuiz()" />
+                        <button class="btn btn--sm btn--ghost btn--icon" (click)="removeBuilderOption(q.id, opt.id)" [disabled]="isSavingQuiz() || q.options.length <= 2" [attr.aria-label]="'common.delete' | translate">×</button>
+                      </div>
+                    }
+                  </div>
+                  <button class="btn btn--sm btn--ghost" (click)="addBuilderOption(q.id)" [disabled]="isSavingQuiz() || q.options.length >= 6">{{ 'quizManagement.builder.addOption' | translate }}</button>
+                }
+              }
+            </div>
+          } @empty {
+            <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.noQuestions' | translate }}</div></div>
+          }
+        </div>
+        }
+      </div>
+      <footer class="popup__foot">
+        <button class="btn" (click)="closeQuizBuilder()" [disabled]="isSavingQuiz()">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn--primary" (click)="saveQuizBuilder()" [appLoadingButton]="isSavingQuiz()">
+          @if (isSavingQuiz()) { {{ 'quizManagement.form.saving' | translate }} } @else { {{ 'common.save' | translate }} }
+        </button>
+      </footer>
+    </div>
+  </div>
+}

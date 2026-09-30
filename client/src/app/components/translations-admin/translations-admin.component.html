@@ -1,0 +1,181 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'translationsAdmin.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'translationsAdmin.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <!-- Which language is being EDITED. Deliberately independent of the
+         language the app is displayed in — editing Arabic from an English UI
+         is the normal case, so this must never call switchTo(). -->
+    @for (lang of languages; track lang) {
+      <button type="button" class="btn btn--sm"
+              [class.btn--primary]="editLang() === lang"
+              [attr.aria-pressed]="editLang() === lang"
+              (click)="switchEditLang(lang)"
+              [disabled]="isSaving()">{{ lang.toUpperCase() }}</button>
+    }
+    <button type="button" class="btn btn--ghost btn--sm" (click)="resetAll()"
+            [disabled]="isSaving() || customisedCount() === 0">
+      {{ 'translationsAdmin.resetAll' | translate }}
+    </button>
+    <button type="button" class="btn btn--primary" (click)="save()"
+            [disabled]="!canSave() || isSaving()">
+      {{ isSaving()
+        ? ('translationsAdmin.saving' | translate)
+        : ('translationsAdmin.save' | translate : { count: unsavedCount() }) }}
+    </button>
+  </div>
+</div>
+
+@if (hasError()) {
+  <div class="empty"><div class="empty__title">{{ error() }}</div></div>
+}
+
+<div class="keys-kpis">
+  <div class="kpi">
+    <div class="kpi__label">{{ 'translationsAdmin.kpi.total' | translate }}</div>
+    <div class="kpi__value">{{ allRows().length }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'translationsAdmin.kpi.customised' | translate }}</div>
+    <div class="kpi__value kpi__value--good">{{ customisedCount() }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'translationsAdmin.kpi.unsaved' | translate }}</div>
+    <div class="kpi__value">{{ unsavedCount() }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'translationsAdmin.kpi.invalid' | translate }}</div>
+    <div class="kpi__value" [class.kpi__value--bad]="invalidCount() > 0">{{ invalidCount() }}</div>
+  </div>
+</div>
+
+<div class="card keys-card">
+  <div class="keys-tabs">
+    <button type="button" class="keys-tabs__tab" [class.is-active]="filter() === 'all'"
+            (click)="setFilter('all')">
+      {{ 'translationsAdmin.filters.all' | translate }}
+      <span class="keys-tabs__count">{{ allRows().length }}</span>
+    </button>
+    <button type="button" class="keys-tabs__tab" [class.is-active]="filter() === 'customised'"
+            (click)="setFilter('customised')">
+      {{ 'translationsAdmin.filters.customised' | translate }}
+      <span class="keys-tabs__count">{{ customisedCount() }}</span>
+    </button>
+    <button type="button" class="keys-tabs__tab" [class.is-active]="filter() === 'unsaved'"
+            (click)="setFilter('unsaved')">
+      {{ 'translationsAdmin.filters.unsaved' | translate }}
+      <span class="keys-tabs__count">{{ unsavedCount() }}</span>
+    </button>
+    <button type="button" class="keys-tabs__tab" [class.is-active]="filter() === 'invalid'"
+            (click)="setFilter('invalid')">
+      {{ 'translationsAdmin.filters.invalid' | translate }}
+      <span class="keys-tabs__count">{{ invalidCount() }}</span>
+    </button>
+  </div>
+
+  <div class="keys-toolbar">
+    <div class="input-wrap keys-toolbar__search">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search input--full"
+        type="text"
+        [placeholder]="'translationsAdmin.searchPlaceholder' | translate"
+        [attr.aria-label]="'translationsAdmin.searchPlaceholder' | translate"
+        [ngModel]="search()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </div>
+    <select class="form-input form-input--sm keys-toolbar__select"
+            [attr.aria-label]="'translationsAdmin.namespace' | translate"
+            [ngModel]="namespace()"
+            (ngModelChange)="onNamespace($event)">
+      <option value="">{{ 'translationsAdmin.allNamespaces' | translate }}</option>
+      @for (ns of namespaces(); track ns) {
+        <option [value]="ns">{{ ns }}</option>
+      }
+    </select>
+    <div class="keys-toolbar__spacer"></div>
+    <span class="muted">{{ pageLabel() }}</span>
+  </div>
+
+  @if (loading()) {
+    <div class="empty"><span>{{ 'common.loading' | translate }}</span></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+    <table class="tbl tbl--keys">
+      <thead>
+        <tr>
+          <th>{{ 'translationsAdmin.table.key' | translate }}</th>
+          <th>{{ 'translationsAdmin.table.shipped' | translate }}</th>
+          <th>{{ 'translationsAdmin.table.custom' | translate }}</th>
+          <th class="col-actions">{{ 'common.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of pagedRows(); track trackKey($index, row)) {
+          <tr>
+            <td><code class="key-code">{{ row.key }}</code></td>
+            <td class="muted">{{ row.base }}</td>
+            <td>
+              <!-- dir/lang follow the language being edited, not the page.
+                   Arabic typed into an LTR input renders with its punctuation
+                   and brackets in the wrong order. -->
+              <input class="form-input form-input--sm"
+                     [attr.dir]="editLang() === 'ar' ? 'rtl' : 'ltr'"
+                     [attr.lang]="editLang()"
+                     [placeholder]="row.base"
+                     [attr.aria-label]="row.key"
+                     [ngModel]="row.value"
+                     (ngModelChange)="edit(row, $event)" />
+              @if (row.issue) {
+                <div class="field__error">{{ issueText(row.issue) }}</div>
+              }
+            </td>
+            <td class="col-actions">
+              <div class="row-actions">
+                @if (row.dirty) {
+                  <span class="badge badge--warning">{{ 'translationsAdmin.status.unsaved' | translate }}</span>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="revert(row)">
+                    {{ 'translationsAdmin.undo' | translate }}
+                  </button>
+                } @else if (row.saved) {
+                  <span class="badge badge--info">{{ 'translationsAdmin.status.customised' | translate }}</span>
+                }
+                @if (row.saved || row.dirty) {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="reset(row)">
+                    {{ 'translationsAdmin.reset' | translate }}
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">
+              <div class="empty">
+                <div class="empty__title">{{ 'translationsAdmin.noMatches' | translate }}</div>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    <div class="keys-footer">
+      <span class="muted">{{ pageLabel() }}</span>
+      <div class="keys-footer__nav">
+        <button type="button" class="btn btn--sm" [disabled]="page() === 0" (click)="prevPage()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <button type="button" class="btn btn--sm" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,29 @@
+<div class="rte" [class.rte--disabled]="disabled()">
+  <div class="rte__toolbar" role="toolbar" [attr.aria-label]="'richText.toolbar' | translate">
+    @for (action of actions; track action.command) {
+      <button
+        type="button"
+        class="rte__tool"
+        [class.rte__tool--wide]="action.command === 'insertOrderedList'"
+        [attr.aria-label]="action.labelKey | translate"
+        [title]="action.labelKey | translate"
+        [disabled]="disabled()"
+        (mousedown)="run(action.command, $event)"
+      >{{ action.icon }}</button>
+    }
+  </div>
+
+  <div
+    #surface
+    class="rte__surface"
+    dir="auto"
+    role="textbox"
+    aria-multiline="true"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.contenteditable]="disabled() ? null : 'true'"
+    [attr.data-placeholder]="placeholder()"
+    [class.rte__surface--empty]="isEmpty"
+    (input)="onInput()"
+    (blur)="onBlur()"
+  ></div>
+</div>

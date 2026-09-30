@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls src/app/services)",
+      "Bash(ls src/app/guards)",
+      "Bash(npx ng *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/assets/i18n/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/assets/i18n/ar.json','utf8'\\)\\); console.log\\('ar.json OK'\\)\")",
+      "Bash(sleep 15 && tail -50 /tmp/ng-serve.log)",
+      "Read(//tmp/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm ls *)",
+      "Bash(npm root *)",
+      "Bash(node -e ' *)"
+    ]
+  },
+  "skillOverrides": {
+    "angular-new-app": "off"
+  },
+  "outputStyle": "Explanatory"
+}

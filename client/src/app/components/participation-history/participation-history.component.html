@@ -1,0 +1,59 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'dashboard.userAdmin.allChildrenHistory' | translate }}</h1>
+    <p class="page__subtitle">{{ 'dashboard.userAdmin.recentActivity2' | translate }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card__body">
+    <div class="stack stack--sm">
+      <!-- Without this the @empty branch below rendered "No participation
+           records yet" for the whole of the initial load, so the first thing a
+           parent with history saw was a claim that they had none. -->
+      @if (loading() && pagedParticipations().length === 0) {
+        <div class="skeleton skeleton-homework-item"></div>
+        <div class="skeleton skeleton-homework-item"></div>
+        <div class="skeleton skeleton-homework-item"></div>
+      } @else {
+        @for (record of pagedParticipations(); track record.id) {
+          @let childName = getChildName(record.childId);
+          @let kind = recordKindLabel(record);
+          <div class="participation-card">
+            <div class="participation-card__avatar avatar avatar--brand">{{ childName.charAt(0) }}</div>
+            <div class="participation-card__body">
+              <div class="participation-card__header">
+                <span class="participation-card__name">{{ childName }}</span>
+                <span class="badge" [ngClass]="kind === 'quiz' ? 'badge--brand' : 'badge--info'">{{ 'common.' + kind | translate }}</span>
+                @if (needsReviewStatus(kind)) {
+                  <span class="badge" [ngClass]="reviewStatusBadgeClass(record)">{{ 'notifications.reviewStatus.' + reviewStatusKey(record) | translate }}</span>
+                }
+              </div>
+              <div class="participation-card__title">{{ recordTitle(record) }}</div>
+              <div class="participation-card__meta">
+                <span>{{ record.correctCount }}/{{ record.correctCount + record.wrongCount }} correct</span>
+                <span class="participation-card__dot"></span>
+                <span>{{ record.endedAt | date:'short' }}</span>
+              </div>
+            </div>
+            <div class="participation-card__score" [ngClass]="'participation-card__score--' + scoreTier(record)">
+              {{ scorePercent(record) }}%
+            </div>
+          </div>
+        } @empty {
+          <div class="empty"><div class="empty__title">{{ 'dashboard.userAdmin.noParticipations' | translate }}</div></div>
+        }
+      }
+    </div>
+    @if (allParticipationsPage() > 0 || hasMoreParticipations()) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="allParticipationsPage() === 0 || loading()" (click)="prevPage()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <button class="pagination__btn" [disabled]="!hasMoreParticipations() || loading()" (click)="nextPage()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</div>

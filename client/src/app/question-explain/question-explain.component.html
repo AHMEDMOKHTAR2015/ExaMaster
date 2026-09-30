@@ -1,0 +1,18 @@
+<div class="question question--explain" dir="auto">
+  @if (question().subjectHtml) {
+    <div class="question__subject" [innerHTML]="question().subjectHtml"></div>
+  } @else {
+    <!-- Defensive fallback: an Explain question should always have a subject; if
+         somehow missing (bad/legacy data), show the plain name rather than an
+         empty prompt. -->
+    <p class="question__subject">{{ question().name }}</p>
+  }
+
+  <rich-text-editor
+    class="question__response"
+    [value]="question().responseText ?? ''"
+    [ariaLabel]="question().name"
+    (valueChange)="onResponseChange(question(), $event)"
+    (editingFinished)="onEditingFinished(question())"
+  ></rich-text-editor>
+</div>

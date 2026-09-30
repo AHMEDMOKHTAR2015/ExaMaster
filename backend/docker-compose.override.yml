@@ -1,0 +1,40 @@
+# LOCAL DEVELOPMENT ONLY. Passwords here are local defaults, overridable from the shell or a git-ignored .env file.
+services:
+  quizmaster-api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Database=Server=sqlserver,1433;Database=QuizMaster;User Id=sa;Password=${MSSQL_SA_PASSWORD:-LocalDev_Passw0rd!};TrustServerCertificate=True
+    ports:
+      - "4401:8080"
+
+  api-gateway:
+    environment:
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ReverseProxy__Clusters__quizmaster-cluster__Destinations__quizmaster__Address=http://quizmaster-api:8080
+    ports:
+      - "4400:8080"
+
+  sqlserver:
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-LocalDev_Passw0rd!}
+    ports:
+      - "1433:1433"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  mongo:
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-LocalDev_Passw0rd!}
+    ports:
+      - "27017:27017"
+
+  redis:
+    ports:
+      - "6379:6379"
+      - "8001:8001"

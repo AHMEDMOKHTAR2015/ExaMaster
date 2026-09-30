@@ -1,0 +1,1574 @@
+<section class="admin-section">
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn" [class.active]="activeTab() === 'quizzes'"
+      (click)="setActiveTab('quizzes')">{{ 'quizzesAdmin.tabs.quizzes' | translate }}</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'questions'"
+      (click)="setActiveTab('questions')">{{ 'quizzesAdmin.tabs.questions' | translate }}</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'homework'"
+      (click)="setActiveTab('homework')">{{ 'quizzesAdmin.tabs.homework' | translate }}</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'teacherQuizzes'"
+      (click)="setActiveTab('teacherQuizzes')">{{ 'quizzesAdmin.tabs.teacherQuizzes' | translate }}</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'allAssignments'"
+      (click)="setActiveTab('allAssignments')">{{ 'quizzesAdmin.tabs.allAssignments' | translate }}</button>
+  </div>
+
+  <!-- Quizzes Tab -->
+  @if (activeTab() === 'quizzes') {
+  <!-- Show Create New Quiz button and list when not in create/edit mode -->
+  @if (!showSplitScreen() && !editingQuiz()) {
+  <div class="section-header">
+    <h3>{{ 'quizzesAdmin.quizzes.title' | translate }}</h3>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" width="18" height="18">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        [placeholder]="'quizzesAdmin.quizzes.searchPlaceholder' | translate"
+        [ngModel]="quizSearchQuery()"
+        (ngModelChange)="onQuizSearchChange($event)"
+      />
+      @if (quizSearchQuery()) {
+        <button class="clear-search-btn" (click)="onQuizSearchChange('')">×</button>
+      }
+    </div>
+    <button class="btn btn--primary" (click)="startCreateQuiz()">{{ 'quizzesAdmin.quizzes.create' | translate }}</button>
+  </div>
+
+  @if (quizList.isLoading()) {
+    <div class="loading-state">
+      <span>{{ 'quizzesAdmin.quizzes.loading' | translate }}</span>
+    </div>
+  } @else {
+    <div class="results-info">
+      {{ 'quizzesAdmin.homework.showingRange' | translate : {
+           from: quizList.rangeStart(), to: quizList.rangeEnd(), total: quizList.total() } }}
+      @if (quizSearchQuery()) {
+        <span class="search-term">{{ 'quizzesAdmin.quizzes.filteredBy' | translate : { query: quizSearchQuery() } }}</span>
+      }
+    </div>
+
+    <div class="list">
+      @for (quiz of visibleQuizRows(); track quiz.id) {
+      <div class="list-item quiz-list-item">
+        <app-quiz-illustration class="quiz-illustration" />
+        <span class="item-id">{{ quiz.id }}</span>
+        <div class="quiz-info">
+          <span class="item-name">{{ quiz.name }}</span>
+          <div class="quizzes-admin__quiz-meta">
+            @if (quiz.subjectId) {
+              <span class="subject-tag" [style.--subject-color]="getSubjectColor(quiz.subjectId) || 'var(--ink-3)'">
+                {{ getSubjectName(quiz.subjectId) }}
+              </span>
+            }
+            @if (quiz.stageId) {
+              <span class="quiz-meta-tag stage-tag">{{ getStageName(quiz.stageId) }}</span>
+            }
+            @if (quiz.classId) {
+              <span class="quiz-meta-tag class-tag">{{ getClassName(quiz.classId) }}</span>
+            }
+            @if (quiz.semester) {
+              <span class="semester-tag semester-tag--{{ quiz.semester }}">{{ getSemesterLabel(quiz.semester) }}</span>
+            }
+          </div>
+        </div>
+        <span class="quizzes-admin__muted item-desc">{{ quiz.description }}</span>
+        <div class="actions">
+          <button class="btn btn--lg btn--ghost" type="button" (click)="setQuizForm(quiz)">{{ 'quizzesAdmin.quizzes.edit' | translate }}</button>
+          <button class="danger-btn" type="button" (click)="removeQuiz(quiz.id)">{{ 'quizzesAdmin.quizzes.delete' | translate }}</button>
+        </div>
+      </div>
+      } @empty {
+        <div class="quizzes-admin__empty-state">
+          @if (quizSearchQuery()) {
+            <p>{{ 'quizzesAdmin.quizzes.noQuizzesSearch' | translate : { query: quizSearchQuery() } }}</p>
+          } @else {
+            <p>{{ 'quizzesAdmin.quizzes.noQuizzes' | translate }}</p>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Quiz Pagination -->
+    @if (quizList.totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="!quizList.hasPrevious()" (click)="quizList.previous()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of quizList.pageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="quizList.currentPage() === page" (click)="quizList.goTo(+page)">
+                {{ page }}
+              </button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="!quizList.hasNext()" (click)="quizList.next()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+  }
+
+  <!-- Split Screen Mode for Creating/Editing Quiz -->
+  @if (showSplitScreen() || editingQuiz()) {
+  <h3>{{ editingQuiz() ? ('quizBuilder.editTitle' | translate) : ('quizBuilder.createTitle' | translate) }}</h3>
+  <div class="split-screen-container" [class.no-right-panel]="!hasQuestionScope()">
+    <!-- Left Panel: Quiz Form -->
+    <div class="left-panel">
+      <div class="quiz-form">
+
+        <!-- Basic Information Section -->
+        <div class="form-section">
+          <h4>{{ 'quizBuilder.basicInfo' | translate }}</h4>
+          <div class="basic-info-grid">
+            <!-- Quiz cover image -->
+            <div class="image-upload-area">
+              <div class="image-preview-container">
+                @if (imagePreview()) {
+                <img [src]="imagePreview()" alt="Quiz image preview" class="image-preview" />
+                <button type="button" class="remove-image-btn" (click)="removeImage()">×</button>
+                } @else {
+                <img src="assets/quiz-images/QuizImages/QuizImage1.svg" alt="Default quiz image" class="image-preview" />
+                }
+              </div>
+
+              <!-- Pick a cover from the project's assets/quiz-images folder -->
+              <button type="button" class="image-pick-btn" (click)="toggleImageGallery()">
+                {{ showImageGallery() ? ('quizBuilder.closeGallery' | translate) : ('quizBuilder.chooseGallery' | translate) }}
+              </button>
+
+              @if (showImageGallery()) {
+                <div class="image-gallery">
+                  @for (img of assetImages(); track img) {
+                    <button
+                      type="button"
+                      class="image-gallery__item"
+                      [class.is-selected]="isImageSelected(img)"
+                      (click)="selectAssetImage(img)"
+                      [title]="img"
+                    >
+                      <img [src]="img" [alt]="img" loading="lazy" />
+                    </button>
+                  } @empty {
+                    <p class="image-gallery__empty">{{ 'quizBuilder.galleryEmpty' | translate }}</p>
+                  }
+                </div>
+              }
+
+              <!-- …or paste a direct image URL / path instead -->
+              <input
+                class="quizzes-admin__form-input image-url-input"
+                type="text"
+                [placeholder]="'quizBuilder.imageUrlPlaceholder' | translate"
+                [ngModel]="configImagePath()"
+                (ngModelChange)="onImageUrlChange($event)"
+              />
+            </div>
+
+            <!-- Form Fields -->
+            <div class="basic-info-fields">
+              <div class="quizzes-admin__form-row">
+                <div class="form-group">
+                  <label>{{ 'quizBuilder.quizId' | translate }}</label>
+                  <input class="quizzes-admin__form-input" type="number" [ngModel]="quizFormId()" disabled />
+                </div>
+                <div class="form-group flex-2">
+                  <label>{{ 'quizBuilder.name' | translate }}</label>
+                  <input class="quizzes-admin__form-input" [placeholder]="'quizBuilder.namePlaceholder' | translate" [ngModel]="quizFormName()"
+                    (ngModelChange)="quizFormName.set($event)" />
+                </div>
+              </div>
+              <div class="quizzes-admin__form-row">
+                <div class="form-group">
+                  <label>{{ 'quizBuilder.stage' | translate }}</label>
+                  <select class="quizzes-admin__form-input" [ngModel]="quizFormStageId()" (ngModelChange)="quizFormStageId.set($event)">
+                    <option value="">{{ 'common.selectStage' | translate }}</option>
+                    @for (stage of stages(); track stage.id) {
+                    <option [value]="stage.id">{{ stage.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>{{ 'quizBuilder.group' | translate }}</label>
+                  <select class="quizzes-admin__form-input" [ngModel]="quizFormClassId()" (ngModelChange)="quizFormClassId.set($event)"
+                    [disabled]="!quizFormStageId()">
+                    <option value="">{{ 'common.selectGroup' | translate }}</option>
+                    @for (cls of filteredClasses(); track cls.id) {
+                    <option [value]="cls.id">{{ cls.name }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="quizzes-admin__form-row">
+                <div class="form-group">
+                  <label>{{ 'quizBuilder.subject' | translate }}</label>
+                  <select class="quizzes-admin__form-input" [ngModel]="quizFormSubjectId()" (ngModelChange)="quizFormSubjectId.set($event)">
+                    <option value="">{{ 'semester.select' | translate }}</option>
+                    @for (subject of subjects(); track subject.id) {
+                      <option [value]="subject.id">{{ subject.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>{{ 'quizBuilder.semester' | translate }}</label>
+                  <select class="quizzes-admin__form-input" [ngModel]="quizFormSemester()" (ngModelChange)="quizFormSemester.set($event)">
+                    <option value="">{{ 'semester.select' | translate }}</option>
+                    @for (opt of semesterOptions; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label | translate }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!--
+                Required, unlike every other field in this row. A bank quiz has
+                no assignment behind it, so this is the only thing that says whose
+                Validation queue its submissions land in — leave it empty and any
+                answer needing a human mark sits pending with nobody able to
+                reach it.
+              -->
+              <div class="quizzes-admin__form-row">
+                <div class="form-group">
+                  <label for="quiz-reviewer">{{ 'quizBuilder.reviewer' | translate }}</label>
+                  <select id="quiz-reviewer" class="quizzes-admin__form-input"
+                          [ngModel]="quizFormReviewerId()" (ngModelChange)="quizFormReviewerId.set($event)">
+                    <option value="">{{ 'quizBuilder.reviewerSelect' | translate }}</option>
+                    @for (reviewer of reviewerOptions(); track reviewer.id) {
+                      <option [value]="reviewer.id">{{ reviewer.name }}</option>
+                    }
+                  </select>
+                  @if (reviewerOptions().length === 0) {
+                    <span class="config-hint">{{ 'quizBuilder.reviewerNoneHint' | translate }}</span>
+                  } @else {
+                    <span class="config-hint">{{ 'quizBuilder.reviewerHint' | translate }}</span>
+                  }
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label>{{ 'quizBuilder.description' | translate }}</label>
+                <textarea class="quizzes-admin__form-input description-textarea" [placeholder]="'quizBuilder.descriptionPlaceholder' | translate"
+                  [ngModel]="quizFormDescription()" (ngModelChange)="quizFormDescription.set($event)"></textarea>
+              </div>
+            </div>
+          </div>
+          <!-- Hidden field for assigned questions -->
+          <input type="hidden" [ngModel]="quizFormQuestions()" />
+        </div>
+
+
+
+        <!-- Quiz Configuration Section -->
+        <div class="form-section">
+          <h4>{{ 'quizBuilder.config' | translate }}</h4>
+          <div class="config-grid">
+            <div class="config-item number-config">
+              <label>{{ 'quizBuilder.duration' | translate }}</label>
+              <input class="quizzes-admin__form-input" type="number" [ngModel]="configDuration()" disabled />
+              <span class="config-hint">{{ 'quizBuilder.durationComputedHint' | translate }}</span>
+            </div>
+            <div class="config-item number-config">
+              <label>{{ 'quizBuilder.pageSize' | translate }}</label>
+              <input class="quizzes-admin__form-input" type="number" [ngModel]="configPageSize()"
+                (ngModelChange)="configPageSize.set($event)" min="1" />
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configAllowBack()" (ngModelChange)="configAllowBack.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.allowBack' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.allowBackHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configAllowReview()"
+                  (ngModelChange)="configAllowReview.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.allowReview' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.allowReviewHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configAutoMove()" (ngModelChange)="configAutoMove.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.autoMove' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.autoMoveHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configRequiredAll()"
+                  (ngModelChange)="configRequiredAll.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.requiredAll' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.requiredAllHint' | translate }}</span>
+            </div>
+            <!-- Flagged as strict because it is the only setting here that can
+                 leave a student locked out of their own quiz until a teacher
+                 intervenes. -->
+            <div class="config-item toggle-config toggle-config--strict">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configOneTimeJoin()"
+                  (ngModelChange)="configOneTimeJoin.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.oneTimeJoin' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.oneTimeJoinHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configRichText()" (ngModelChange)="configRichText.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.richText' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.richTextHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configShowClock()" (ngModelChange)="configShowClock.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.showClock' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.showClockHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configShowPager()" (ngModelChange)="configShowPager.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.showPager' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.showPagerHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configShuffleQuestions()"
+                  (ngModelChange)="configShuffleQuestions.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.shuffleQuestions' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.shuffleQuestionsHint' | translate }}</span>
+            </div>
+            <div class="config-item toggle-config">
+              <label class="toggle-label">
+                <input type="checkbox" [ngModel]="configShuffleOptions()"
+                  (ngModelChange)="configShuffleOptions.set($event)" />
+                <span class="toggle-text">{{ 'quizBuilder.shuffleOptions' | translate }}</span>
+              </label>
+              <span class="config-hint">{{ 'quizBuilder.shuffleOptionsHint' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          @if (!canSaveQuiz()) {
+            <span class="config-hint">{{ 'quizBuilder.saveBlocked' | translate }}</span>
+          }
+          <button class="btn btn--primary" (click)="saveQuiz()" [disabled]="!canSaveQuiz()">
+            {{ editingQuiz() ? ('quizBuilder.updateQuiz' | translate) : ('quizBuilder.createQuiz' | translate) }}
+          </button>
+          <button class="btn btn--lg btn--ghost" (click)="cancelCreateQuiz()">{{ 'common.cancel' | translate }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Questions to Assign.
+         Hidden until the quiz is scoped to a Stage + Subject + Semester; it
+         then lists only the questions matching that exact combination. -->
+    @if (hasQuestionScope()) {
+    <div class="right-panel available-questions-panel">
+      <h4>{{ 'quizBuilder.availableQuestions' | translate }}</h4>
+      <p class="hint">{{ 'quizBuilder.availableQuestionsHint' | translate }}</p>
+      <div class="assigned-count">
+        <strong>{{ effectiveAssignedCount() }}</strong> {{ 'quizBuilder.assignedCount' | translate }}
+      </div>
+      <div class="questions-assign-list">
+        @for (question of availableQuestions(); track question.id) {
+        <div class="assign-item" [class.assigned]="isQuestionAssigned(question.id)">
+          <span class="item-id">{{ question.id }}</span>
+          <div class="item-info">
+            <span class="item-name">{{ question.name }}</span>
+            @let assignBadge = questionSummary(question);
+            <span class="item-opts">{{ assignBadge.key | translate : assignBadge.params }}</span>
+          </div>
+          @if (isQuestionAssigned(question.id)) {
+          <button class="danger-btn small" type="button" (click)="unassignQuestion(question.id)">{{ 'quizBuilder.remove' | translate }}</button>
+          } @else {
+          <button class="btn btn--primary small" type="button" (click)="assignQuestion(question.id)">{{ 'quizBuilder.assign' | translate }}</button>
+          }
+        </div>
+        } @empty {
+          <p class="available-questions-empty">{{ 'quizBuilder.noneMatch' | translate }}</p>
+        }
+      </div>
+    </div>
+    }
+  </div>
+  }
+  }
+
+  <!-- Questions Tab -->
+  @if (activeTab() === 'questions') {
+  <div class="section-header">
+    <h3>{{ 'questionsBank.title' | translate }}</h3>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" width="18" height="18">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        [placeholder]="'questionsBank.table.searchPlaceholder' | translate"
+        [ngModel]="questionSearchQuery()"
+        (ngModelChange)="onQuestionSearchChange($event)"
+      />
+      @if (questionSearchQuery()) {
+        <button class="clear-search-btn" (click)="onQuestionSearchChange('')">×</button>
+      }
+    </div>
+    @if (selectedQuestionIds().length > 0) {
+      <button class="btn btn--lg btn--ghost edit-selected-btn" (click)="openBulkEdit()">
+        {{ 'questionsBank.editSelected' | translate : { count: selectedQuestionIds().length } }}
+      </button>
+      <button class="danger-btn delete-selected-btn" (click)="deleteSelectedQuestions()">
+        {{ 'questionsBank.deleteSelected' | translate : { count: selectedQuestionIds().length } }}
+      </button>
+    }
+    <input type="file" accept="application/json,.json" #bulkUploadInput hidden (change)="onBulkUploadFileSelected($event)" />
+    <!--
+      The template, reachable BEFORE choosing a file. The same download also sits
+      inside the upload modal, but that modal only opens once a file has been
+      picked — so the one moment an admin needs to know the format was the one
+      moment they could not get it.
+    -->
+    <button class="btn btn--lg btn--ghost" type="button"
+            (click)="downloadBulkUploadSample()"
+            [title]="'questionsBank.bulkUpload.downloadTemplateHint' | translate">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+        <path d="M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'questionsBank.bulkUpload.downloadTemplate' | translate }}
+    </button>
+    <button class="btn btn--lg btn--ghost" type="button" (click)="bulkUploadInput.click()">{{ 'questionsBank.bulkUpload.button' | translate }}</button>
+    <button class="btn btn--primary" (click)="newQuestion()">{{ 'questionsBank.newQuestion' | translate }}</button>
+  </div>
+
+  <!-- Question Form Modal -->
+  @if (showQuestionForm()) {
+  <div class="quizzes-admin__modal-overlay" (click)="cancelQuestionForm()">
+    <div class="modal-content question-form" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h4>{{ questionFormIsNew() ? ('questionsBank.form.newTitle' | translate) : ('questionsBank.form.editTitle' | translate) }}</h4>
+        <button class="modal-close-btn" (click)="cancelQuestionForm()">×</button>
+      </div>
+      <div class="modal-body">
+        <!--
+          Everything that describes the question rather than *being* it: where it
+          is filed, how long it runs, and which type it is. Grouped into one card
+          at the top because these fields are identical for every type, so they
+          are the stable half of this form — the section below is the half that
+          swaps out entirely when the type changes, and keeping the two visually
+          separate is what makes that swap read as "the content changed" rather
+          than "the form moved".
+
+          The type selector lives here, at the bottom of the card, so it sits
+          directly above the content it governs.
+        -->
+        <section class="question-meta-card">
+          <div class="question-meta-card__head">
+            <h5 class="question-meta-card__title">{{ 'questionsBank.form.classification' | translate }}</h5>
+            <p class="hint">{{ 'questionsBank.form.classificationHint' | translate }}</p>
+          </div>
+
+          <div class="question-meta-card__grid">
+            <div class="form-group">
+              <label for="qf-id">{{ 'questionsBank.form.id' | translate }}</label>
+              <!-- read-only: the server assigns ids (a new question has none until it is saved) -->
+              <input id="qf-id" class="quizzes-admin__form-input" type="number" [ngModel]="questionFormId()" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="qf-subject">{{ 'quizBuilder.subject' | translate }}</label>
+              <select id="qf-subject" class="quizzes-admin__form-input" [ngModel]="questionFormSubjectId()" (ngModelChange)="questionFormSubjectId.set($event)">
+                <option value="">{{ 'semester.select' | translate }}</option>
+                @for (subject of subjects(); track subject.id) {
+                  <option [value]="subject.id">{{ subject.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="qf-stage">{{ 'quizBuilder.stage' | translate }}</label>
+              <select id="qf-stage" class="quizzes-admin__form-input" [ngModel]="questionFormStageId()" (ngModelChange)="onQuestionFormStageChange($event)">
+                <option value="">{{ 'common.selectStage' | translate }}</option>
+                @for (stage of stages(); track stage.id) {
+                  <option [value]="stage.id">{{ stage.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="qf-grade">{{ 'common.grade' | translate }}</label>
+              <select id="qf-grade" class="quizzes-admin__form-input" [ngModel]="questionFormGradeId()" (ngModelChange)="questionFormGradeId.set($event)"
+                [disabled]="!questionFormStageId()">
+                <option value="">{{ 'common.selectGrade' | translate }}</option>
+                @for (grade of gradesForQuestionFormStage(); track grade.id) {
+                  <option [value]="grade.id">{{ grade.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="qf-semester">{{ 'quizBuilder.semester' | translate }}</label>
+              <select id="qf-semester" class="quizzes-admin__form-input" [ngModel]="questionFormSemester()" (ngModelChange)="questionFormSemester.set($event)">
+                <option value="">{{ 'semester.select' | translate }}</option>
+                @for (opt of semesterOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label | translate }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="qf-duration">{{ 'questionsBank.form.duration' | translate }}</label>
+              <input id="qf-duration" class="quizzes-admin__form-input" type="number" min="1" [ngModel]="questionFormDuration()"
+                (ngModelChange)="questionFormDuration.set(+$event)" />
+              <p class="hint">{{ 'questionsBank.form.durationHint' | translate }}</p>
+            </div>
+
+            <div class="form-group question-meta-card__type">
+              <label for="qf-type">{{ 'questionsBank.form.type' | translate }}</label>
+              <select id="qf-type" class="quizzes-admin__form-input" [ngModel]="questionFormTypeId()" (ngModelChange)="setQuestionFormType($event)">
+                <option [ngValue]="QUESTION_TYPE.CHOOSE">{{ 'questionsBank.form.typeChoose' | translate }}</option>
+                <option [ngValue]="QUESTION_TYPE.COMPLETE">{{ 'questionsBank.form.typeComplete' | translate }}</option>
+                <option [ngValue]="QUESTION_TYPE.RIGHT_WRONG">{{ 'questionsBank.form.typeRightWrong' | translate }}</option>
+                <option [ngValue]="QUESTION_TYPE.EXPLAIN">{{ 'questionsBank.form.typeExplain' | translate }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!--
+          The type-specific half. Headed by the chosen type's own name so the
+          swap is legible: the fields below change wholesale when the selector
+          above moves, and without a label the modal would appear to have
+          rearranged itself for no visible reason.
+        -->
+        <section class="question-body-section">
+          <h5 class="question-body-section__title">{{ questionFormTypeLabel() | translate }}</h5>
+
+        @switch (questionFormTypeId()) {
+          @case (QUESTION_TYPE.COMPLETE) {
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.completeText' | translate }}</label>
+              <textarea class="quizzes-admin__form-input" rows="4" [placeholder]="'questionsBank.form.completePlaceholder' | translate" [ngModel]="questionFormCompleteText()"
+                (ngModelChange)="questionFormCompleteText.set($event); questionFormCompleteError.set('')"></textarea>
+              <p class="hint">{{ 'questionsBank.form.completeHint' | translate }}</p>
+              @if (questionFormCompleteError()) {
+                <p class="hint hint--error">{{ questionFormCompleteError() }}</p>
+              }
+            </div>
+          }
+          @case (QUESTION_TYPE.RIGHT_WRONG) {
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.statement' | translate }}</label>
+              <textarea class="quizzes-admin__form-input" rows="3" [placeholder]="'questionsBank.form.statementPlaceholder' | translate" [ngModel]="questionFormName()"
+                (ngModelChange)="questionFormName.set($event); questionFormTypeError.set('')"></textarea>
+            </div>
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.verdict' | translate }}</label>
+              <div class="option-row">
+                <label class="radio-inline">
+                  <input type="radio" name="rightWrongVerdict" [checked]="questionFormIsRight() === true"
+                    (change)="questionFormIsRight.set(true); questionFormTypeError.set('')" />
+                  <span>{{ 'questionTypes.right' | translate }}</span>
+                </label>
+                <label class="radio-inline">
+                  <input type="radio" name="rightWrongVerdict" [checked]="questionFormIsRight() === false"
+                    (change)="questionFormIsRight.set(false); questionFormTypeError.set('')" />
+                  <span>{{ 'questionTypes.wrong' | translate }}</span>
+                </label>
+              </div>
+              <p class="hint">{{ 'questionsBank.form.verdictHint' | translate }}</p>
+            </div>
+          }
+          @case (QUESTION_TYPE.EXPLAIN) {
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.explainSubject' | translate }}</label>
+              <rich-text-editor
+                [value]="questionFormExplainSubject()"
+                [placeholder]="'questionsBank.form.explainSubjectPlaceholder' | translate"
+                (valueChange)="questionFormExplainSubject.set($event); questionFormTypeError.set('')"></rich-text-editor>
+            </div>
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.explainAnswer' | translate }}</label>
+              <rich-text-editor
+                [value]="questionFormExplainAnswer()"
+                [placeholder]="'questionsBank.form.explainAnswerPlaceholder' | translate"
+                (valueChange)="questionFormExplainAnswer.set($event); questionFormTypeError.set('')"></rich-text-editor>
+              <p class="hint">{{ 'questionsBank.form.explainAnswerHint' | translate }}</p>
+            </div>
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.explainWeight' | translate }}</label>
+              <input class="quizzes-admin__form-input" type="number"
+                [min]="MIN_EXPLAIN_WEIGHT_PERCENT" [max]="MAX_EXPLAIN_WEIGHT_PERCENT" step="1"
+                [ngModel]="questionFormExplainWeight()"
+                (ngModelChange)="questionFormExplainWeight.set($event); questionFormTypeError.set('')" />
+              <p class="hint">{{ 'questionsBank.form.explainWeightHint' | translate }}</p>
+            </div>
+          }
+          @default {
+            <div class="form-group">
+              <label>{{ 'questionsBank.form.text' | translate }}</label>
+              <textarea class="quizzes-admin__form-input" rows="2" [placeholder]="'questionsBank.form.textPlaceholder' | translate" [ngModel]="questionFormName()"
+                (ngModelChange)="questionFormName.set($event)"></textarea>
+            </div>
+          }
+        }
+
+        @if (questionFormTypeError()) {
+          <p class="hint hint--error">{{ questionFormTypeError() }}</p>
+        }
+
+        @if (questionFormTypeId() === QUESTION_TYPE.CHOOSE) {
+        <div class="options-section">
+          <div class="options-header">
+            <label>{{ 'questionsBank.form.options' | translate }}</label>
+            <button class="btn btn--lg btn--ghost small" (click)="addOption()">{{ 'questionsBank.form.addOption' | translate }}</button>
+          </div>
+          @for (option of questionFormOptions(); track option.id) {
+          <div class="option-row">
+            <input type="radio" name="correctOption" [value]="option.id"
+              [checked]="questionFormCorrectOptionId() === option.id"
+              (change)="questionFormCorrectOptionId.set(option.id)" />
+            <span class="option-id">{{ option.id }}</span>
+            <input class="quizzes-admin__form-input option-input" [ngModel]="option.name"
+              (ngModelChange)="updateOptionName(option.id, $event)" [placeholder]="'questionsBank.form.optionPlaceholder' | translate" />
+            <button class="danger-btn small" (click)="removeOption(option.id)">×</button>
+          </div>
+          }
+          <p class="hint">{{ 'questionsBank.form.hint' | translate }}</p>
+        </div>
+        }
+        </section>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--primary" (click)="saveQuestion()">{{ 'questionsBank.form.save' | translate }}</button>
+        <button class="btn btn--lg btn--ghost" (click)="cancelQuestionForm()">{{ 'common.cancel' | translate }}</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Bulk Edit Modal: set Stage / Subject / Semester across the selection -->
+  @if (showBulkEditForm()) {
+  <div class="quizzes-admin__modal-overlay" (click)="cancelBulkEdit()">
+    <div class="modal-content question-form" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h4>{{ 'questionsBank.bulkEdit.title' | translate : { count: selectedQuestionIds().length } }}</h4>
+        <button class="modal-close-btn" (click)="cancelBulkEdit()">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint">{{ 'questionsBank.bulkEdit.hint' | translate }}</p>
+
+        <div class="form-group">
+          <label>{{ 'quizBuilder.stage' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="bulkEditStageId()" (ngModelChange)="bulkEditStageId.set($event)">
+            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+            @for (stage of stages(); track stage.id) {
+              <option [value]="stage.id">{{ stage.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'quizBuilder.subject' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="bulkEditSubjectId()" (ngModelChange)="bulkEditSubjectId.set($event)">
+            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+            @for (subject of subjects(); track subject.id) {
+              <option [value]="subject.id">{{ subject.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'quizBuilder.semester' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="bulkEditSemester()" (ngModelChange)="bulkEditSemester.set($event)">
+            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+            @for (opt of semesterOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label | translate }}</option>
+            }
+          </select>
+        </div>
+
+        @if (bulkEditHasChanges()) {
+          <div class="bulk-edit-summary">
+            <strong>{{ 'questionsBank.bulkEdit.willSet' | translate }}</strong> {{ bulkEditSummary() }}
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--primary" (click)="applyBulkEdit()" [disabled]="!bulkEditHasChanges() || isBulkUpdating()">
+          @if (isBulkUpdating()) {
+            {{ 'questionsBank.bulkEdit.applying' | translate }}
+          } @else {
+            {{ 'questionsBank.bulkEdit.apply' | translate : { count: selectedQuestionIds().length } }}
+          }
+        </button>
+        <button class="btn btn--lg btn--ghost" (click)="cancelBulkEdit()" [disabled]="isBulkUpdating()">{{ 'common.cancel' | translate }}</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Bulk Upload Modal: classify + import every question parsed from the uploaded JSON file -->
+  @if (showBulkUploadForm()) {
+  <div class="quizzes-admin__modal-overlay" (click)="cancelBulkUpload()">
+    <div class="modal-content question-form" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h4>{{ 'questionsBank.bulkUpload.title' | translate }}</h4>
+        <button class="modal-close-btn" (click)="cancelBulkUpload()">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint">{{ 'questionsBank.bulkUpload.fileLabel' | translate : { name: bulkUploadFileName() } }}</p>
+
+        @if (bulkUploadErrors().length > 0) {
+          <div class="upload-errors">
+            <strong>{{ 'questionsBank.bulkUpload.errorsTitle' | translate : { count: bulkUploadErrors().length } }}</strong>
+            <ul>
+              @for (err of bulkUploadErrors(); track err) {
+                <li>{{ err }}</li>
+              }
+            </ul>
+            <p>{{ 'questionsBank.bulkUpload.fixAndReupload' | translate }}</p>
+          </div>
+        } @else {
+          <div class="bulk-edit-summary">
+            {{ 'questionsBank.bulkUpload.parsedCount' | translate : { count: bulkUploadParsedQuestions().length } }}
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.subject' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadSubjectId()" (ngModelChange)="bulkUploadSubjectId.set($event)">
+              <option value="">{{ 'common.selectSubject' | translate }}</option>
+              @for (subject of subjects(); track subject.id) {
+                <option [value]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.stage' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadStageId()" (ngModelChange)="onBulkUploadStageChange($event)">
+              <option value="">{{ 'common.selectStage' | translate }}</option>
+              @for (stage of stages(); track stage.id) {
+                <option [value]="stage.id">{{ stage.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'common.grade' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadGradeId()" (ngModelChange)="bulkUploadGradeId.set($event)" [disabled]="!bulkUploadStageId()">
+              <option value="">{{ 'common.selectGrade' | translate }}</option>
+              @for (grade of gradesForUploadStage(); track grade.id) {
+                <option [value]="grade.id">{{ grade.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.semester' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadSemester()" (ngModelChange)="bulkUploadSemester.set($event)">
+              <option value="">{{ 'semester.select' | translate }}</option>
+              @for (opt of semesterOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label | translate }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <button class="btn btn--lg btn--ghost small" type="button" (click)="downloadBulkUploadSample()">{{ 'questionsBank.bulkUpload.downloadTemplate' | translate }}</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--primary" (click)="confirmBulkUpload()" [disabled]="!bulkUploadCanConfirm() || isBulkUploading()">
+          @if (isBulkUploading()) {
+            {{ 'questionsBank.bulkUpload.importing' | translate }}
+          } @else {
+            {{ 'questionsBank.bulkUpload.confirm' | translate : { count: bulkUploadParsedQuestions().length } }}
+          }
+        </button>
+        <button class="btn btn--lg btn--ghost" (click)="cancelBulkUpload()" [disabled]="isBulkUploading()">{{ 'common.cancel' | translate }}</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Server-side filters: each one is a `where` clause, so narrowing the bank
+       fetches fewer rows rather than hiding rows already fetched. -->
+  <div class="bank-filters">
+    <div class="bank-filters__field">
+      <label for="bank-filter-subject">{{ 'questionsBank.table.subject' | translate }}</label>
+      <select id="bank-filter-subject" class="quizzes-admin__form-input"
+              [ngModel]="questionFilterSubjectId()"
+              (ngModelChange)="onQuestionFilterChange('subject', $event)">
+        <option value="">{{ 'questionsBank.table.allSubjects' | translate }}</option>
+        @for (subject of subjects(); track subject.id) {
+          <option [value]="subject.id">{{ subject.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="bank-filters__field">
+      <label for="bank-filter-stage">{{ 'questionsBank.table.stage' | translate }}</label>
+      <select id="bank-filter-stage" class="quizzes-admin__form-input"
+              [ngModel]="questionFilterStageId()"
+              (ngModelChange)="onQuestionFilterChange('stage', $event)">
+        <option value="">{{ 'questionsBank.table.allStages' | translate }}</option>
+        @for (stage of stages(); track stage.id) {
+          <option [value]="stage.id">{{ stage.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="bank-filters__field">
+      <label for="bank-filter-grade">{{ 'questionsBank.table.grade' | translate }}</label>
+      <select id="bank-filter-grade" class="quizzes-admin__form-input"
+              [ngModel]="questionFilterGradeId()"
+              (ngModelChange)="onQuestionFilterChange('grade', $event)">
+        <option value="">{{ 'questionsBank.table.allGrades' | translate }}</option>
+        @for (grade of questionFilterGrades(); track grade.id) {
+          <option [value]="grade.id">{{ grade.name }}</option>
+        }
+      </select>
+    </div>
+
+    @if (isQuestionViewNarrowed()) {
+      <button type="button" class="btn btn--lg btn--ghost small" (click)="clearQuestionFilters()">
+        {{ isQuestionIdLookup() ? ('questionsBank.table.backToAll' | translate) : ('questionsBank.table.clearFilters' | translate) }}
+      </button>
+    }
+  </div>
+
+  @if (isLoadingQuestions()) {
+    <div class="loading-state">
+      <span>{{ 'questionsBank.loading' | translate }}</span>
+    </div>
+  } @else {
+    <div class="results-info">
+      @if (isQuestionIdLookup()) {
+        {{ 'questionsBank.table.showingOne' | translate }}
+      } @else {
+        {{ 'questionsBank.table.showingPage' | translate : { count: visibleQuestionRows().length, total: totalQuestionsCount(), page: currentQuestionPage(), pages: totalQuestionPages() } }}
+      }
+      @if (questionSearchQuery()) {
+        <span class="search-term">{{ 'questionsBank.table.filteredPage' | translate : { query: questionSearchQuery() } }}</span>
+        @if (searchLooksLikeId()) {
+          <button type="button" class="link-btn" (click)="jumpToQuestionId()">
+            {{ 'questionsBank.table.jumpToId' | translate : { id: questionSearchQuery() } }}
+          </button>
+        }
+      }
+      @if (selectedQuestionIds().length > 0) {
+        <span class="bulk-select-count">{{ 'questionsBank.selected' | translate : { count: selectedQuestionIds().length } }}</span>
+        <button type="button" class="link-btn" (click)="clearQuestionSelection()">
+          {{ 'questionsBank.table.clearSelection' | translate }}
+        </button>
+      }
+    </div>
+
+    <div class="table-wrap">
+      <table class="tbl tbl--questions">
+        <thead>
+          <tr>
+            <th class="tbl__check">
+              <input type="checkbox"
+                [checked]="isPageFullySelected()"
+                [indeterminate]="isPagePartiallySelected()"
+                [attr.aria-label]="'questionsBank.table.selectPage' | translate"
+                (change)="togglePageSelection()" />
+            </th>
+            <th class="tbl__id">{{ 'questionsBank.table.id' | translate }}</th>
+            <th>{{ 'questionsBank.table.question' | translate }}</th>
+            <th>{{ 'questionsBank.table.subject' | translate }}</th>
+            <th>{{ 'questionsBank.table.stage' | translate }}</th>
+            <th>{{ 'questionsBank.table.grade' | translate }}</th>
+            <th class="tbl__actions">{{ 'questionsBank.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of visibleQuestionRows(); track row.question.id) {
+            <tr [class.is-selected]="isQuestionSelected(row.question.id)">
+              <td class="tbl__check">
+                <input type="checkbox"
+                  [checked]="isQuestionSelected(row.question.id)"
+                  [attr.aria-label]="'questionsBank.table.selectRow' | translate : { id: row.question.id }"
+                  (change)="toggleQuestionSelection(row.question.id)" />
+              </td>
+              <td class="tbl__id"><span class="item-id">{{ row.question.id }}</span></td>
+              <td class="tbl__question-cell">
+                <div class="tbl__question">{{ row.question.name }}</div>
+                <div class="tbl__meta">
+                  @let badge = questionSummary(row.question);
+                  <span class="quizzes-admin__muted">{{ badge.key | translate : badge.params }}</span>
+                  @if (row.semesterLabel) {
+                    <span class="semester-tag semester-tag--{{ row.question.semester }}">{{ row.semesterLabel }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                @if (row.subjectName) {
+                  <span class="cell-tag">
+                    <span class="cell-dot" [style.background]="row.subjectColor || 'var(--ink-4)'"></span>
+                    {{ row.subjectName }}
+                  </span>
+                } @else {
+                  <span class="cell-unassigned">{{ 'questionsBank.table.unassignedSubject' | translate }}</span>
+                }
+              </td>
+              <td>
+                @if (row.stageName) {
+                  {{ row.stageName }}
+                } @else {
+                  <span class="cell-unassigned">{{ 'questionsBank.table.unassignedStage' | translate }}</span>
+                }
+              </td>
+              <td>
+                @if (row.gradeName) {
+                  {{ row.gradeName }}
+                } @else {
+                  <span class="cell-unassigned">{{ 'questionsBank.table.unassignedGrade' | translate }}</span>
+                }
+              </td>
+              <td class="tbl__actions">
+                <div class="actions">
+                  <button class="btn btn--sm btn--ghost" type="button" (click)="editQuestion(row.question)">{{ 'common.edit' | translate }}</button>
+                  <button class="btn btn--sm btn--danger" type="button" (click)="removeQuestion(row.question.id)">{{ 'common.delete' | translate }}</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="quizzes-admin__empty-state">
+                  @if (questionSearchQuery()) {
+                    <p>{{ 'questionsBank.table.noMatchesOnPage' | translate : { query: questionSearchQuery() } }}</p>
+                  } @else if (hasQuestionFilters()) {
+                    <p>{{ 'questionsBank.table.noMatchesForFilters' | translate }}</p>
+                  } @else {
+                    <p>{{ 'questionsBank.noQuestions' | translate }}</p>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalQuestionPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="currentQuestionPage() === 1" (click)="previousQuestionPage()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of questionPageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="currentQuestionPage() === page" (click)="goToQuestionPage(page)">
+                {{ page }}
+              </button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="currentQuestionPage() === totalQuestionPages()" (click)="nextQuestionPage()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+  }
+
+  <!-- Homework Tab -->
+  @if (activeTab() === 'homework') {
+  <div class="section-header">
+    <h3>{{ 'quizzesAdmin.homework.title' | translate }}</h3>
+  </div>
+
+  <!-- Homework Creation Wizard -->
+  <div class="homework-form homework-wizard" [class.is-editing]="editingHomeworkId()">
+    <div class="homework-form__head">
+      <div>
+        <h4>{{ editingHomeworkId() ? ('homeworkWizard.editTitle' | translate) : ('homeworkWizard.createTitle' | translate) }}</h4>
+        @if (editingHomeworkId()) {
+          <p class="homework-form__sub">{{ 'homeworkWizard.editingLabel' | translate }} <strong>{{ editingHomeworkSnapshot()?.title }}</strong></p>
+        }
+      </div>
+      @if (editingHomeworkId()) {
+        <span class="badge badge--info">{{ 'homeworkWizard.editMode' | translate }}</span>
+      }
+    </div>
+
+    <!-- Stepper -->
+    <ol class="wizard-steps">
+      @for (s of homeworkWizardSteps; track s.n) {
+        <li class="wizard-step"
+            [class.is-active]="homeworkWizardStep() === s.n"
+            [class.is-done]="homeworkWizardStep() > s.n"
+            [class.is-clickable]="homeworkWizardStep() > s.n"
+            (click)="goToHomeworkStep(s.n)">
+          <span class="wizard-step__num">
+            @if (homeworkWizardStep() > s.n) { ✓ } @else { {{ s.n }} }
+          </span>
+          <span class="wizard-step__label">{{ s.label }}</span>
+        </li>
+      }
+    </ol>
+
+    <!-- Step 1: Details -->
+    @if (homeworkWizardStep() === 1) {
+      <div class="quizzes-admin__form-grid">
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.title' | translate }}</label>
+          <input class="quizzes-admin__form-input" [placeholder]="'homeworkWizard.titlePlaceholder' | translate" [ngModel]="homeworkTitle()"
+            (ngModelChange)="homeworkTitle.set($event)" />
+        </div>
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.quiz' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="homeworkQuizId()" (ngModelChange)="homeworkQuizId.set($event)">
+            <option [ngValue]="null">{{ 'homeworkWizard.selectQuiz' | translate }}</option>
+            @for (quiz of allQuizzes(); track quiz.id) {
+            <option [ngValue]="quiz.id">{{ quiz.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.stage' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="homeworkStageId()" (ngModelChange)="homeworkStageId.set($event)">
+            <option value="">{{ 'common.selectStage' | translate }}</option>
+            @for (stage of stages(); track stage.id) {
+            <option [value]="stage.id">{{ stage.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.group' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="homeworkClassId()" (ngModelChange)="homeworkClassId.set($event)"
+            [disabled]="!homeworkStageId()">
+            <option value="">{{ 'homeworkWizard.selectGroup' | translate }}</option>
+            @for (cls of filteredHomeworkClasses(); track cls.id) {
+            <option [value]="cls.id">{{ cls.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.dueDate' | translate }}</label>
+          <input class="quizzes-admin__form-input" type="date" [ngModel]="homeworkDueAt()" (ngModelChange)="homeworkDueAt.set($event)" />
+        </div>
+        <div class="form-group">
+          <label>{{ 'homeworkWizard.semester' | translate }}</label>
+          <select class="quizzes-admin__form-input" [ngModel]="homeworkFormSemester()" (ngModelChange)="homeworkFormSemester.set($event)">
+            <option value="">{{ 'semester.select' | translate }}</option>
+            @for (opt of semesterOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label | translate }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Question sources -->
+    @if (homeworkWizardStep() === 2) {
+      <p class="wizard-hint">{{ 'homeworkWizard.sourcesHint' | translate }}</p>
+      <div class="wizard-sources">
+        <label class="source-card" [class.is-on]="homeworkSourceQuiz()">
+          <input type="checkbox" [ngModel]="homeworkSourceQuiz()" (ngModelChange)="homeworkSourceQuiz.set($event)" />
+          <span class="source-card__body">
+            <strong>{{ 'homeworkWizard.quizQuestions' | translate }}</strong>
+            <span class="source-card__desc">{{ 'homeworkWizard.quizQuestionsDesc' | translate : { quiz: getQuizName(homeworkQuizId() ?? 0) } }}</span>
+          </span>
+        </label>
+        <label class="source-card" [class.is-on]="homeworkSourceBank()">
+          <input type="checkbox" [ngModel]="homeworkSourceBank()" (ngModelChange)="homeworkSourceBank.set($event)" />
+          <span class="source-card__body">
+            <strong>{{ 'homeworkWizard.questionBank' | translate }}</strong>
+            <span class="source-card__desc">{{ 'homeworkWizard.questionBankDesc' | translate }}</span>
+          </span>
+        </label>
+      </div>
+    }
+
+    <!-- Step 3: Select questions -->
+    @if (homeworkWizardStep() === 3) {
+      <div class="wizard-select">
+        <div class="wizard-select__summary">
+          {{ 'homeworkWizard.selectedCount' | translate : { count: homeworkSelectedCount() } }}
+        </div>
+
+        @if (homeworkSourceQuiz()) {
+          <div class="qpool">
+            <div class="qpool__head">
+              <h5>{{ 'homeworkWizard.fromQuiz' | translate : { quiz: getQuizName(homeworkQuizId() ?? 0) } }}</h5>
+              @if (quizSourceQuestions().length > 0) {
+                <button class="btn btn--lg btn--ghost small" type="button" (click)="toggleAllQuizQuestions()">
+                  {{ quizSourceAllSelected() ? ('homeworkWizard.clearAll' | translate) : ('homeworkWizard.selectAll' | translate) }}
+                </button>
+              }
+            </div>
+            <div class="qpool__list">
+              @for (q of quizSourceQuestions(); track q.id) {
+                <label class="qpick" [class.is-checked]="isHomeworkQuestionSelected(q.id)">
+                  <input type="checkbox" [checked]="isHomeworkQuestionSelected(q.id)"
+                    (change)="toggleHomeworkQuestion(q.id)" />
+                  <span class="qpick__id">{{ q.id }}</span>
+                  <span class="qpick__name">{{ q.name }}</span>
+                  @if (q.subjectId) {
+                    <span class="subject-tag" [style.--subject-color]="getSubjectColor(q.subjectId) || 'var(--ink-3)'">{{ getSubjectName(q.subjectId) }}</span>
+                  }
+                  @if (q.semester) {
+                    <span class="semester-tag semester-tag--{{ q.semester }}">{{ getSemesterLabel(q.semester) }}</span>
+                  }
+                </label>
+              } @empty {
+                <p class="quizzes-admin__muted">{{ 'homeworkWizard.noQuizQuestions' | translate }}</p>
+              }
+            </div>
+          </div>
+        }
+
+        @if (homeworkSourceBank()) {
+          <div class="qpool">
+            <div class="qpool__head">
+              <h5>{{ 'homeworkWizard.fromBank' | translate }}</h5>
+              <div class="qpool__filters">
+                <select class="quizzes-admin__form-input" [ngModel]="homeworkBankSubjectFilter()"
+                  (ngModelChange)="homeworkBankSubjectFilter.set($event)">
+                  <option value="">{{ 'homeworkWizard.allSubjects' | translate }}</option>
+                  @for (subject of subjects(); track subject.id) {
+                    <option [value]="subject.id">{{ subject.name }}</option>
+                  }
+                </select>
+                <select class="quizzes-admin__form-input" [ngModel]="homeworkBankStageFilter()"
+                  (ngModelChange)="homeworkBankStageFilter.set($event)">
+                  <option value="">{{ 'homeworkWizard.allStages' | translate }}</option>
+                  @for (stage of stages(); track stage.id) {
+                    <option [value]="stage.id">{{ stage.name }}</option>
+                  }
+                </select>
+                <select class="quizzes-admin__form-input" [ngModel]="homeworkBankSemesterFilter()"
+                  (ngModelChange)="homeworkBankSemesterFilter.set($event)">
+                  <option value="">{{ 'homeworkWizard.allSemesters' | translate }}</option>
+                  @for (opt of semesterOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label | translate }}</option>
+                  }
+                </select>
+                <input class="quizzes-admin__form-input" [placeholder]="'homeworkWizard.searchBank' | translate" [ngModel]="homeworkBankSearch()"
+                  (ngModelChange)="homeworkBankSearch.set($event)" />
+              </div>
+            </div>
+            <div class="qpool__list">
+              @for (q of bankFilteredQuestions(); track q.id) {
+                <label class="qpick" [class.is-checked]="isHomeworkQuestionSelected(q.id)">
+                  <input type="checkbox" [checked]="isHomeworkQuestionSelected(q.id)"
+                    (change)="toggleHomeworkQuestion(q.id)" />
+                  <span class="qpick__id">{{ q.id }}</span>
+                  <span class="qpick__name">{{ q.name }}</span>
+                  @if (q.subjectId) {
+                    <span class="subject-tag" [style.--subject-color]="getSubjectColor(q.subjectId) || 'var(--ink-3)'">{{ getSubjectName(q.subjectId) }}</span>
+                  }
+                  @if (q.semester) {
+                    <span class="semester-tag semester-tag--{{ q.semester }}">{{ getSemesterLabel(q.semester) }}</span>
+                  }
+                </label>
+              } @empty {
+                <p class="quizzes-admin__muted">{{ 'homeworkWizard.noBankMatch' | translate }}</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Step 4: Review & confirm -->
+    @if (homeworkWizardStep() === 4) {
+      <div class="wizard-review">
+        <dl class="review-grid">
+          <div><dt>{{ 'homeworkWizard.review.title' | translate }}</dt><dd>{{ homeworkTitle() }}</dd></div>
+          <div><dt>{{ 'homeworkWizard.review.quiz' | translate }}</dt><dd>{{ getQuizName(homeworkQuizId() ?? 0) }}</dd></div>
+          <div><dt>{{ 'homeworkWizard.review.stage' | translate }}</dt><dd>{{ getStageName(homeworkStageId()) }}</dd></div>
+          <div><dt>{{ 'homeworkWizard.review.group' | translate }}</dt><dd>{{ getClassName(homeworkClassId()) }}</dd></div>
+          <div><dt>{{ 'homeworkWizard.review.dueDate' | translate }}</dt><dd>{{ homeworkDueAt() || '—' }}</dd></div>
+          <div><dt>{{ 'homeworkWizard.review.semester' | translate }}</dt><dd>{{ homeworkFormSemester() ? getSemesterLabel(homeworkFormSemester()) : '—' }}</dd></div>
+        </dl>
+
+        <div class="review-questions">
+          <h5>{{ 'homeworkWizard.review.questionsCount' | translate : { count: homeworkSelectedCount() } }}</h5>
+          <ol class="review-questions__list">
+            @for (q of selectedQuestionsDetailed(); track q.id) {
+              <li>
+                <span class="qpick__name">{{ q.name }}</span>
+                @if (q.semester) {
+                  <span class="semester-tag semester-tag--{{ q.semester }}">{{ getSemesterLabel(q.semester) }}</span>
+                }
+              </li>
+            } @empty {
+              <li class="quizzes-admin__muted">{{ 'homeworkWizard.review.noneSelected' | translate }}</li>
+            }
+          </ol>
+        </div>
+      </div>
+    }
+
+    <!-- Wizard navigation -->
+    <div class="form-actions wizard-actions">
+      <div class="wizard-actions__nav">
+        @if (homeworkWizardStep() > 1) {
+          <button class="btn btn--lg btn--ghost" type="button" (click)="prevHomeworkStep()">{{ 'homeworkWizard.back' | translate }}</button>
+        }
+        @if (homeworkWizardStep() < homeworkWizardSteps.length) {
+          <button class="btn btn--primary" type="button" (click)="nextHomeworkStep()">{{ 'homeworkWizard.next' | translate }}</button>
+        } @else {
+          <button class="btn btn--primary" type="button" (click)="submitHomework()">
+            {{ editingHomeworkId() ? ('homeworkWizard.saveChanges' | translate) : ('homeworkWizard.createHomework' | translate) }}
+          </button>
+        }
+      </div>
+      <button class="btn btn--lg btn--ghost" type="button" (click)="clearHomeworkForm()">
+        {{ editingHomeworkId() ? ('homeworkWizard.cancel' | translate) : ('homeworkWizard.clear' | translate) }}
+      </button>
+    </div>
+  </div>
+
+
+  }
+
+  <!-- Teacher-Created Quizzes Tab (read-only overview of the `teacherQuizzes` node) -->
+  @if (activeTab() === 'teacherQuizzes') {
+  <div class="section-header">
+    <h3>{{ 'quizzesAdmin.teacherQuizzes.title' | translate }}</h3>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" width="18" height="18">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        [placeholder]="'quizzesAdmin.quizzes.searchPlaceholder' | translate"
+        [ngModel]="teacherQuizSearchQuery()"
+        (ngModelChange)="onTeacherQuizSearchChange($event)"
+      />
+      @if (teacherQuizSearchQuery()) {
+        <button class="clear-search-btn" (click)="onTeacherQuizSearchChange('')">×</button>
+      }
+    </div>
+  </div>
+
+  @if (isLoadingTeacherQuizzes()) {
+    <div class="loading-state">
+      <span>{{ 'quizzesAdmin.teacherQuizzes.loading' | translate }}</span>
+    </div>
+  } @else {
+    <div class="results-info">
+      {{ 'quizzesAdmin.homework.showingRange' | translate : {
+           from: teacherQuizList.rangeStart(), to: teacherQuizList.rangeEnd(), total: teacherQuizList.total() } }}
+    </div>
+
+    <div class="list">
+      @for (quiz of filteredTeacherQuizzes(); track quiz.id) {
+      <div class="list-item quiz-list-item">
+        <app-quiz-illustration class="quiz-illustration" />
+        <div class="quiz-info">
+          <span class="item-name">{{ quiz.name }}</span>
+          <div class="quizzes-admin__quiz-meta">
+            @if (quiz.subjectId) {
+              <span class="subject-tag" [style.--subject-color]="getSubjectColor(quiz.subjectId) || 'var(--ink-3)'">
+                {{ getSubjectName(quiz.subjectId) }}
+              </span>
+            }
+            @if (quiz.stageId) {
+              <span class="quiz-meta-tag stage-tag">{{ getStageName(quiz.stageId) }}</span>
+            }
+            @if (quiz.semester) {
+              <span class="semester-tag semester-tag--{{ quiz.semester }}">{{ getSemesterLabel(quiz.semester) }}</span>
+            }
+            <span class="quiz-meta-tag">{{ 'quizzesAdmin.teacherQuizzes.createdBy' | translate : { name: getTeacherQuizCreatorName(quiz.createdBy) } }}</span>
+          </div>
+        </div>
+        <span class="quizzes-admin__muted item-desc">{{ quiz.description }}</span>
+        <div class="actions">
+          <button class="danger-btn" type="button" (click)="removeTeacherQuiz(quiz)">{{ 'quizzesAdmin.quizzes.delete' | translate }}</button>
+        </div>
+      </div>
+      } @empty {
+        <div class="quizzes-admin__empty-state">
+          @if (teacherQuizSearchQuery()) {
+            <p>{{ 'quizzesAdmin.quizzes.noQuizzesSearch' | translate : { query: teacherQuizSearchQuery() } }}</p>
+          } @else {
+            <p>{{ 'quizzesAdmin.teacherQuizzes.empty' | translate }}</p>
+          }
+        </div>
+      }
+    </div>
+  }
+
+    @if (teacherQuizList.totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="!teacherQuizList.hasPrevious()" (click)="teacherQuizList.previous()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of teacherQuizList.pageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="teacherQuizList.currentPage() === page"
+                      (click)="teacherQuizList.goTo(+page)">{{ page }}</button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="!teacherQuizList.hasNext()" (click)="teacherQuizList.next()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+
+  <!--
+    All Assignments — the read-only register of everything that has been
+    assigned, of either kind.
+
+    Split from the Homework Assignments tab, which now holds only the creation
+    wizard. The two were stacked on one screen, so a tab whose heading said
+    "Homework" listed quiz assignments underneath it. Here the list stands on
+    its own and the heading matches what is in it.
+
+    Deliberately without an Edit action: this is a register, and the wizard that
+    would receive an edit lives on another tab now.
+  -->
+  @if (activeTab() === 'allAssignments') {
+  <div class="section-header">
+    <h3>{{ 'quizzesAdmin.allAssignments.title' | translate }}</h3>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" width="18" height="18">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        [placeholder]="'quizzesAdmin.homework.searchPlaceholder' | translate"
+        [ngModel]="homeworkSearchQuery()"
+        (ngModelChange)="onHomeworkSearchChange($event)"
+      />
+      @if (homeworkSearchQuery()) {
+        <button class="clear-search-btn" (click)="onHomeworkSearchChange('')">×</button>
+      }
+    </div>
+  </div>
+
+  @if (homeworkList.isLoading()) {
+    <div class="loading-state">
+      <span>{{ 'quizzesAdmin.homework.title' | translate }}…</span>
+    </div>
+  } @else {
+    <div class="results-info">
+      {{ 'quizzesAdmin.homework.showingRange' | translate : {
+           from: homeworkList.rangeStart(), to: homeworkList.rangeEnd(), total: homeworkList.total() } }}
+      @if (homeworkSearchQuery()) {
+        <span class="search-term">{{ 'quizzesAdmin.quizzes.filteredBy' | translate : { query: homeworkSearchQuery() } }}</span>
+      }
+    </div>
+
+    <!--
+      Both kinds of assignment live in `homeworkAssignments` and are written by
+      the same wizard; `kind` is what decides whether a student meets it under
+      their Quizzes tab or their Homework tab. The list ignored it, so this
+      screen showed quiz assignments under a "Homework" heading. A filter rather
+      than a second tab, because there is only one record type here.
+    -->
+    <div class="segmented assignment-kind-filter" role="group"
+         [attr.aria-label]="'quizzesAdmin.homework.filterLabel' | translate">
+      <button type="button" [class.is-active]="homeworkKindFilter() === 'all'"
+              (click)="setHomeworkKindFilter('all')">
+        {{ 'quizzesAdmin.homework.kindAll' | translate }}
+        <span class="tabs__count">{{ homeworkTotalCount() }}</span>
+      </button>
+      <button type="button" [class.is-active]="homeworkKindFilter() === 'quiz'"
+              (click)="setHomeworkKindFilter('quiz')">
+        {{ 'quizzesAdmin.homework.kindQuiz' | translate }}
+        <span class="tabs__count">{{ homeworkQuizCount() }}</span>
+      </button>
+      <button type="button" [class.is-active]="homeworkKindFilter() === 'homework'"
+              (click)="setHomeworkKindFilter('homework')">
+        {{ 'quizzesAdmin.homework.kindHomework' | translate }}
+        <span class="tabs__count">{{ homeworkOnlyCount() }}</span>
+      </button>
+    </div>
+
+    <!-- Homework Table -->
+    <div class="homework-table">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>{{ 'quizzesAdmin.homework.table.title' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.quiz' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.kind' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.stage' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.group' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.semester' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.due' | translate }}</th>
+            <th>{{ 'quizzesAdmin.homework.table.status' | translate }}</th>
+            <th class="col-actions">{{ 'quizzesAdmin.homework.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (hw of visibleHomeworkRows(); track hw.id) {
+            <tr [class.is-selected]="editingHomeworkId() === hw.id">
+              <td>
+                <div class="cell-stack__main">{{ hw.title }}</div>
+              </td>
+              <td>{{ assignmentQuizName(hw) }}</td>
+              <td>
+                <span class="badge kind-badge" [class.badge--brand]="(hw.kind ?? 'homework') === 'quiz'"
+                                               [class.badge--muted]="(hw.kind ?? 'homework') !== 'quiz'">
+                  {{ ((hw.kind ?? 'homework') === 'quiz'
+                        ? 'quizzesAdmin.homework.kindQuiz'
+                        : 'quizzesAdmin.homework.kindHomework') | translate }}
+                </span>
+              </td>
+              <td>{{ getStageName(hw.stageId) }}</td>
+              <td>{{ getClassName(hw.classId) }}</td>
+              <td>
+                @if (hw.semester) {
+                  <span class="semester-tag semester-tag--{{ hw.semester }}">{{ getSemesterLabel(hw.semester) }}</span>
+                } @else {
+                  <span class="quizzes-admin__muted">—</span>
+                }
+              </td>
+              <td>{{ hw.dueAt | date:'mediumDate' }}</td>
+              <td>
+                <span class="badge" [class.badge--success]="hw.active" [class.badge--danger]="!hw.active">
+                  {{ hw.active ? ('quizzesAdmin.homework.active' | translate) : ('quizzesAdmin.homework.inactive' | translate) }}
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="quizzes-admin__row-actions">
+                  <button class="btn btn--lg btn--ghost small" type="button" (click)="viewHomeworkCompletion(hw)">{{ 'quizzesAdmin.homework.completion' | translate }}</button>
+                  <button
+                    class="small"
+                    [class.btn btn--lg btn--ghost]="!hw.active"
+                    [class.danger-btn]="hw.active"
+                    type="button"
+                    (click)="toggleHomeworkActive(hw)">
+                    {{ hw.active ? ('quizzesAdmin.homework.deactivate' | translate) : ('quizzesAdmin.homework.activate' | translate) }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9">
+                <div class="quizzes-admin__empty-state">
+                  @if (homeworkSearchQuery()) {
+                    <p>{{ 'quizzesAdmin.homework.noneMatching' | translate : { query: homeworkSearchQuery() } }}</p>
+                  } @else if (homeworkKindFilter() !== 'all') {
+                    <!-- Distinct from "none at all": the filter is the reason
+                         this is empty, and without saying so the screen looks
+                         like the assignments were lost. -->
+                    <p>{{ 'quizzesAdmin.homework.noneOfKind' | translate }}</p>
+                  } @else {
+                    <p>{{ 'quizzesAdmin.homework.noneAtAll' | translate }}</p>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Homework Pagination -->
+    @if (homeworkList.totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="!homeworkList.hasPrevious()" (click)="homeworkList.previous()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of homeworkList.pageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="homeworkList.currentPage() === page"
+                      (click)="homeworkList.goTo(+page)">{{ page }}</button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="!homeworkList.hasNext()" (click)="homeworkList.next()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+
+  <!--
+    The completion panel opens from the Completion button in the table above, so
+    it has to live in the same tab as that button. It sat inside the Homework
+    Assignments tab until the table moved out from under it, at which point the
+    button set `selectedHomeworkId` and nothing rendered.
+  -->
+  <!-- Homework Completion Section -->
+  @if (selectedHomeworkId()) {
+    <div class="completion-section">
+      <div class="section-header">
+        <h4>{{ completionTitleKey() | translate : { title: selectedHomeworkTitle() } }}</h4>
+        <button class="btn btn--lg btn--ghost small" (click)="closeHomeworkCompletion()">{{ 'homeworkCompletion.close' | translate }}</button>
+      </div>
+      @if (homeworkParticipations().length === 0) {
+        <div class="quizzes-admin__empty-state">
+          <p>{{ 'homeworkCompletion.noRecords' | translate }}</p>
+        </div>
+      } @else {
+        <div class="completion-table">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>{{ 'homeworkCompletion.table.child' | translate }}</th>
+                <th>{{ 'homeworkCompletion.table.status' | translate }}</th>
+                <th>{{ 'homeworkCompletion.table.score' | translate }}</th>
+                <th>{{ 'homeworkCompletion.table.correct' | translate }}</th>
+                <th>{{ 'homeworkCompletion.table.wrong' | translate }}</th>
+                <th>{{ 'homeworkCompletion.table.completed' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of homeworkParticipations(); track record.id) {
+                <tr>
+                  <td><strong>{{ homeworkChildNames()[record.childId] || record.childId }}</strong></td>
+                  <td>
+                    <span class="badge" [class.badge--success]="record.status === 'completed'" [class.badge--warning]="record.status !== 'completed'">
+                      {{ record.status }}
+                    </span>
+                  </td>
+                  <td>{{ record.score }}</td>
+                  <td>{{ record.correctCount }}</td>
+                  <td>{{ record.wrongCount }}</td>
+                  <td>{{ record.endedAt | date:'short' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (homeworkParticipationCursor()) {
+          <div class="completion-section__more">
+            <button class="btn btn--lg btn--ghost" (click)="loadHomeworkParticipations()">{{ 'homeworkCompletion.loadMore' | translate }}</button>
+          </div>
+        }
+      }
+    </div>
+  }
+  }
+</section>

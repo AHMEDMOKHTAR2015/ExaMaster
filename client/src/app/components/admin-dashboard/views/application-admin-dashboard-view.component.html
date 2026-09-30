@@ -1,0 +1,502 @@
+<!-- KPI tiles -->
+@if (isLoadingStats()) {
+  <app-kpi-skeleton [count]="8" [columns]="4"></app-kpi-skeleton>
+} @else {
+<div class="kpis kpis--four">
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.users' | translate }}</span>
+      <div class="stat__icon stat__icon--brand">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalUsers }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.children' | translate }}</span>
+      <div class="stat__icon stat__icon--mint">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <circle cx="12" cy="8" r="5" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalChildren }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.parents' | translate }}</span>
+      <div class="stat__icon stat__icon--sky">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalParents }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.teachers' | translate }}</span>
+      <div class="stat__icon stat__icon--sky">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M22 10L12 5 2 10l10 5 10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalTeachers }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.participations' | translate }}</span>
+      <div class="stat__icon stat__icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalParticipations }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.homeworks' | translate }}</span>
+      <div class="stat__icon stat__icon--brand">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().activeHomework }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.subscriptions' | translate }}</span>
+      <div class="stat__icon stat__icon--mint">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().registrationKeys }}</div>
+  </div>
+
+  <button type="button" class="stat stat--clickable" (click)="openQuizCountsPopup()">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.appAdmin.stats.quizzes' | translate }}</span>
+      <div class="stat__icon stat__icon--brand">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ stats().totalQuizzes }}</div>
+  </button>
+</div>
+}
+
+@if (showQuizCountsPopup()) {
+  <div class="popup-overlay">
+    <div class="popup popup--xl" role="dialog" aria-modal="true" aria-labelledby="quiz-counts-title" appClickOutside (appClickOutside)="closeQuizCountsPopup()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'dashboard.appAdmin.quizCounts.subtitle' | translate }}</div>
+          <h2 id="quiz-counts-title" class="popup__title">{{ 'dashboard.appAdmin.quizCounts.title' | translate }}</h2>
+          <p class="popup__sub">{{ 'dashboard.appAdmin.quizCounts.description' | translate }}</p>
+        </div>
+        <button type="button" class="popup__close" (click)="closeQuizCountsPopup()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        @if (isLoadingQuizBreakdown()) {
+          <div class="empty">{{ 'common.loading' | translate }}</div>
+        } @else if (quizBreakdown().length === 0) {
+          <div class="empty"><div class="empty__title">{{ 'dashboard.appAdmin.quizCounts.empty' | translate }}</div></div>
+        } @else {
+          @if (quizCountsSummary(); as summary) {
+            <section class="qc-summary">
+              <div class="qc-summary__item">
+                <span class="qc-summary__value">{{ summary.quizzes }}</span>
+                <span class="qc-summary__label">{{ 'dashboard.appAdmin.quizCounts.quizzesLabel' | translate }}</span>
+                <span class="qc-summary__hint">{{ 'dashboard.appAdmin.quizCounts.summary.quizzesHint' | translate }}</span>
+              </div>
+              <div class="qc-summary__item">
+                <span class="qc-summary__value">{{ summary.assignments }}</span>
+                <span class="qc-summary__label">{{ 'dashboard.appAdmin.quizCounts.assignmentsLabel' | translate }}</span>
+                <span class="qc-summary__hint">{{ 'dashboard.appAdmin.quizCounts.summary.assignmentsHint' | translate }}</span>
+              </div>
+              <div class="qc-summary__item">
+                <span class="qc-summary__value">{{ summary.groupsWithContent }}<span class="qc-summary__of">/{{ summary.groups }}</span></span>
+                <span class="qc-summary__label">{{ 'dashboard.appAdmin.quizCounts.summary.coverage' | translate }}</span>
+                <span class="qc-summary__hint">{{ 'dashboard.appAdmin.quizCounts.summary.coverageHint' | translate }}</span>
+              </div>
+              <div class="qc-summary__item">
+                <span class="qc-summary__value">{{ summary.stages }}<span class="qc-summary__of">/{{ summary.grades }}</span></span>
+                <span class="qc-summary__label">{{ 'dashboard.appAdmin.quizCounts.summary.structure' | translate }}</span>
+                <span class="qc-summary__hint">{{ 'dashboard.appAdmin.quizCounts.summary.structureHint' | translate }}</span>
+              </div>
+            </section>
+          }
+
+          <div class="qc-columns">
+            <span class="qc-columns__label">{{ 'dashboard.appAdmin.quizCounts.columns.hierarchy' | translate }}</span>
+            <span class="qc-columns__metric">{{ 'dashboard.appAdmin.quizCounts.quizzesLabel' | translate }}</span>
+            <span class="qc-columns__metric">{{ 'dashboard.appAdmin.quizCounts.assignmentsLabel' | translate }}</span>
+          </div>
+
+          <div class="qc-tree">
+            @for (stage of quizBreakdownRows(); track stage.id) {
+              <section class="qc-stage">
+                <div class="qc-node qc-node--stage">
+                  <div class="qc-node__main">
+                    <div class="qc-node__title">
+                      <span class="qc-node__tag">{{ 'dashboard.appAdmin.quizCounts.level.stage' | translate }}</span>
+                      <span class="qc-node__name">{{ stage.name || ('dashboard.appAdmin.quizCounts.unassignedStage' | translate) }}</span>
+                    </div>
+                    <p class="qc-node__facts">
+                      <span>{{ 'dashboard.appAdmin.quizCounts.facts.grades' | translate : { count: stage.gradeCount } }}</span>
+                      <span>{{ 'dashboard.appAdmin.quizCounts.facts.groups' | translate : { count: stage.groupCount } }}</span>
+                      <span>{{ 'dashboard.appAdmin.quizCounts.facts.withQuizzes' | translate : { count: stage.groupsWithContent } }}</span>
+                    </p>
+                  </div>
+                  <span class="qc-node__metrics">
+                    <span class="qc-metric qc-metric--quizzes" [class.qc-metric--zero]="stage.count === 0" [title]="'dashboard.appAdmin.quizCounts.quizzesLabel' | translate">{{ stage.count }}</span>
+                    <span class="qc-metric qc-metric--assignments" [class.qc-metric--zero]="stage.assignmentCount === 0" [title]="'dashboard.appAdmin.quizCounts.assignmentsLabel' | translate">{{ stage.assignmentCount }}</span>
+                  </span>
+                </div>
+
+                @if (stage.grades.length > 0) {
+                  <div class="qc-children">
+                    @for (grade of stage.grades; track grade.id) {
+                      <div class="qc-grade">
+                        <div class="qc-node qc-node--grade">
+                          <div class="qc-node__main">
+                            <div class="qc-node__title">
+                              <span class="qc-node__tag">{{ 'dashboard.appAdmin.quizCounts.level.grade' | translate }}</span>
+                              <span class="qc-node__name">{{ grade.name || ('dashboard.appAdmin.quizCounts.unassignedGrade' | translate) }}</span>
+                            </div>
+                            <p class="qc-node__facts">
+                              @if (grade.groupCount > 0) {
+                                <span>{{ 'dashboard.appAdmin.quizCounts.facts.groups' | translate : { count: grade.groupCount } }}</span>
+                                <span>{{ 'dashboard.appAdmin.quizCounts.facts.withQuizzes' | translate : { count: grade.groupsWithContent } }}</span>
+                              } @else {
+                                <span>{{ 'dashboard.appAdmin.quizCounts.facts.noGroups' | translate }}</span>
+                              }
+                            </p>
+                          </div>
+                          <span class="qc-node__metrics">
+                            <span class="qc-metric qc-metric--quizzes" [class.qc-metric--zero]="grade.count === 0" [title]="'dashboard.appAdmin.quizCounts.quizzesLabel' | translate">{{ grade.count }}</span>
+                            <span class="qc-metric qc-metric--assignments" [class.qc-metric--zero]="grade.assignmentCount === 0" [title]="'dashboard.appAdmin.quizCounts.assignmentsLabel' | translate">{{ grade.assignmentCount }}</span>
+                          </span>
+                        </div>
+
+                        @if (grade.groups.length > 0) {
+                          <div class="qc-children">
+                            @for (group of grade.groups; track group.id) {
+                              <div class="qc-node qc-node--group" [class.qc-node--empty]="group.count === 0 && group.assignmentCount === 0">
+                                <div class="qc-node__main">
+                                  <div class="qc-node__title">
+                                    <span class="qc-node__tag">{{ 'dashboard.appAdmin.quizCounts.level.group' | translate }}</span>
+                                    <span class="qc-node__name">{{ group.name || ('dashboard.appAdmin.quizCounts.unassignedGroup' | translate) }}</span>
+                                  </div>
+                                  @if (group.count === 0 && group.assignmentCount === 0) {
+                                    <p class="qc-node__facts"><span>{{ 'dashboard.appAdmin.quizCounts.facts.emptyGroup' | translate }}</span></p>
+                                  }
+                                </div>
+                                <span class="qc-node__metrics">
+                                  <span class="qc-metric qc-metric--quizzes" [class.qc-metric--zero]="group.count === 0" [title]="'dashboard.appAdmin.quizCounts.quizzesLabel' | translate">{{ group.count }}</span>
+                                  <span class="qc-metric qc-metric--assignments" [class.qc-metric--zero]="group.assignmentCount === 0" [title]="'dashboard.appAdmin.quizCounts.assignmentsLabel' | translate">{{ group.assignmentCount }}</span>
+                                </span>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </div>
+        }
+      </div>
+      <footer class="popup__foot">
+        <button class="btn btn--primary" (click)="closeQuizCountsPopup()">{{ 'common.close' | translate }}</button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (answersRecord(); as record) {
+  <app-participation-answers-popup
+    [record]="record"
+    [kind]="recordKindLabel(record)"
+    [studentName]="selectedUser()?.displayName ?? null"
+    (closed)="closeAnswers()" />
+}
+
+
+<!-- Quick actions -->
+<div class="card">
+  <div class="card__head">
+    <h2 class="card__title">{{ 'dashboard.appAdmin.quickActions' | translate }}</h2>
+  </div>
+  <div class="card__body">
+    <div class="action-grid">
+      @for (action of quickActions; track action.route) {
+        <button class="action-card" (click)="navigateTo(action.route)">
+          <div class="action-card__icon">
+            <!-- Same glyph the sidebar uses for this destination (see the
+                 matching routerLink in app.component.html) — one pictograph per
+                 route rather than a second, independently-drifting icon set. -->
+            @switch (action.icon) {
+              @case ('quizzes') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M21 12c.552 0 1-.448 1-1V5c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M7 21h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              @case ('users') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              @case ('stagesGroups') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              @case ('keys') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              @case ('teachers') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M20 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              @case ('subjects') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+            }
+          </div>
+          <span>{{ action.label | translate }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="card">
+  <div class="card__body" style="padding-bottom: 0;">
+    <div class="tabs">
+      <button [class.is-active]="activeTab() === 'overview'" (click)="setActiveTab('overview')">{{ 'dashboard.appAdmin.tabs.overview' | translate }}</button>
+      <button [class.is-active]="activeTab() === 'users'" (click)="setActiveTab('users')">{{ 'dashboard.appAdmin.tabs.users' | translate }}</button>
+      <button [class.is-active]="activeTab() === 'content'" (click)="setActiveTab('content')">{{ 'dashboard.appAdmin.tabs.content' | translate }}</button>
+      <button [class.is-active]="activeTab() === 'analytics'" (click)="setActiveTab('analytics')">{{ 'dashboard.appAdmin.tabs.analytics' | translate }}</button>
+    </div>
+  </div>
+
+  <div class="card__body">
+    @switch (activeTab()) {
+      @case ('overview') {
+        <div class="row--between" style="margin-bottom: 1rem;">
+          <h3 class="card__title">{{ 'dashboard.appAdmin.overview.title' | translate }}</h3>
+          <button class="btn btn--sm" (click)="refreshStats()" [appLoadingButton]="isLoading()">
+            @if (isLoading()) { {{ 'common.refreshing' | translate }} } @else { {{ 'common.refresh' | translate }} }
+          </button>
+        </div>
+        <div class="overview-grid">
+          <div class="overview-card">
+            <h4 class="overview-card__title">{{ 'dashboard.appAdmin.overview.recentHomework' | translate }}</h4>
+            <div class="stack stack--sm">
+              @for (hw of homework().slice(0, 5); track hw.id) {
+                <div class="overview-row">
+                  <span>{{ hw.title }}</span>
+                  <span class="badge" [class.badge--success]="hw.active" [class.badge--danger]="!hw.active">
+                    {{ hw.active ? ('common.active' | translate) : ('common.inactive' | translate) }}
+                  </span>
+                </div>
+              } @empty {
+                <div class="empty"><div class="empty__title">{{ 'dashboard.appAdmin.overview.noHomework' | translate }}</div></div>
+              }
+            </div>
+          </div>
+          <div class="overview-card">
+            <h4 class="overview-card__title">{{ 'dashboard.appAdmin.overview.stagesGroups' | translate }}</h4>
+            <div class="stack stack--sm">
+              @for (stage of stages().slice(0, 3); track stage.id) {
+                <div class="overview-row">
+                  <span>{{ stage.name }}</span>
+                  <span class="muted">{{ getClassCountForStage(stage.id) }} {{ 'dashboard.appAdmin.overview.groups' | translate }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @case ('users') {
+        <div class="detail-grid" [class.is-single]="!selectedUser()">
+          <div>
+            <div class="row--between" style="margin-bottom: 1rem;">
+              <h3 class="card__title">{{ 'dashboard.appAdmin.recentParticipations.title' | translate }}</h3>
+            </div>
+            <div class="stack stack--sm">
+              @for (user of users(); track user.uid) {
+                <button class="list-row" [class.is-selected]="selectedUser()?.uid === user.uid" (click)="selectUser(user)">
+                  <div class="avatar avatar--sm">{{ user.displayName?.charAt(0) || '?' }}</div>
+                  <div class="list-row__main">
+                    <div class="cell-stack__main">{{ user.displayName }}</div>
+                    <div class="cell-stack__sub">{{ user.email }}</div>
+                  </div>
+                  <span class="badge" [ngClass]="getUserRoleBadgeClass(user)">{{ getUserRoleBadge(user) }}</span>
+                  <span class="muted">{{ user.participationCount || 0 }} {{ 'dashboard.appAdmin.recentParticipations.participations' | translate }}</span>
+                </button>
+              } @empty {
+                <div class="empty"><div class="empty__title">{{ 'dashboard.appAdmin.recentParticipations.empty' | translate }}</div></div>
+              }
+            </div>
+            @if (users().length > 0) {
+              <button class="btn btn--ghost" style="margin-top: 0.75rem;" (click)="navigateTo('/participations-history')">{{ 'dashboard.appAdmin.recentParticipations.showMore' | translate }}</button>
+            }
+          </div>
+
+          @if (selectedUser()) {
+            <div class="detail-grid__detail">
+              <div class="user-detail__head">
+                <div class="user-detail__identity">
+                  <div class="avatar avatar--lg avatar--square avatar--soft-brand">{{ getInitials(selectedUser()!.displayName) }}</div>
+                  <div>
+                    <h3 class="card__title">{{ selectedUser()!.displayName }}</h3>
+                    <p class="user-detail__subtitle">{{ getProfileSubtitle(selectedUser()!) }}</p>
+                  </div>
+                </div>
+                <button class="btn btn--sm" (click)="clearSelectedUser()">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ 'common.close' | translate }}
+                </button>
+              </div>
+              <div class="divider-h"></div>
+              <div class="kv kv--roomy">
+                <span class="kv__key">{{ 'common.email' | translate }}</span><span class="kv__val">{{ selectedUser()!.email }}</span>
+                <span class="kv__key">{{ 'dashboard.appAdmin.recentParticipations.accountType' | translate }}</span><span class="kv__val"><span class="badge badge--brand">{{ getUserRoleBadge(selectedUser()!) }}</span></span>
+                <span class="kv__key">{{ 'dashboard.appAdmin.recentParticipations.stage' | translate }}</span><span class="kv__val"><span class="badge badge--success">{{ getStageName(selectedUser()!.stageId) || ('common.na' | translate) }}</span></span>
+                <span class="kv__key">{{ 'dashboard.appAdmin.recentParticipations.group' | translate }}</span><span class="kv__val"><span class="badge badge--warning">{{ getClassName(selectedUser()!.classId) || ('common.na' | translate) }}</span></span>
+                <span class="kv__key">{{ 'dashboard.appAdmin.recentParticipations.participations' | translate }}</span><span class="kv__val kv__val--strong">{{ selectedUser()!.participationCount || 0 }}</span>
+              </div>
+              @if (selectedUser()!.accountType === 'child') {
+              <div class="divider-h"></div>
+              <h4 class="overview-card__title">{{ 'dashboard.appAdmin.recentParticipations.participationHistory' | translate }}</h4>
+              <div class="stack stack--sm">
+                @for (p of userParticipations(); track p.id) {
+                  <div class="list-row">
+                    <div class="list-row__main">
+                      <!-- Not `p.type` — see `recordKindLabel`'s doc for why that field
+                           alone mislabels a Quiz-kind assignment as "Homework". -->
+                      <div class="cell-stack__main">{{ 'common.' + recordKindLabel(p) | translate }}: {{ p.quizName || ('Quiz #' + p.quizId) }}</div>
+                      @if (p.homeworkTitle) {
+                        <div class="cell-stack__sub">{{ p.homeworkTitle }}</div>
+                      }
+                    </div>
+                    <span class="badge badge--success">{{ 'common.score' | translate : { score: scorePercent(p) } }}</span>
+                    <span class="muted">{{ p.correctCount }}/{{ p.correctCount + p.wrongCount }}</span>
+                    <span class="muted">{{ p.endedAt | date:'short' }}</span>
+                    <div class="row-actions">
+                      <button class="btn btn--sm btn--ghost" type="button" (click)="openAnswers(p)">{{ 'dashboard.appAdmin.recentParticipations.viewAnswers' | translate }}</button>
+                      <button class="btn btn--sm btn--danger" type="button" [disabled]="deletingParticipationId() === p.id" (click)="deleteParticipation(p)">
+                        @if (deletingParticipationId() === p.id) { <span class="spinner-inline"></span> } @else { {{ 'common.delete' | translate }} }
+                      </button>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty">
+                    <div class="empty__icon">
+                      <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
+                        <line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="9" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <div class="empty__title">{{ 'dashboard.appAdmin.recentParticipations.noParticipations' | translate }}</div>
+                  </div>
+                }
+              </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @case ('content') {
+        <h3 class="card__title" style="margin-bottom: 1rem;">{{ 'dashboard.appAdmin.content.title' | translate }}</h3>
+        <div class="grid-cards">
+          <button class="content-card" (click)="navigateTo('/quizzes-admin')">
+            <h4>{{ 'dashboard.appAdmin.content.quizzes' | translate }}</h4>
+            <p>{{ 'dashboard.appAdmin.content.quizzesDesc' | translate }}</p>
+          </button>
+          <button class="content-card" (click)="navigateTo('/application-admin')">
+            <h4>{{ 'dashboard.appAdmin.content.homework' | translate }}</h4>
+            <p>{{ 'dashboard.appAdmin.content.homeworkDesc' | translate }}</p>
+          </button>
+          <button class="content-card" (click)="navigateTo('/application-admin')">
+            <h4>{{ 'dashboard.appAdmin.content.stagesGroups' | translate }}</h4>
+            <p>{{ 'dashboard.appAdmin.content.stagesGroupsDesc' | translate }}</p>
+          </button>
+        </div>
+      }
+
+      @case ('analytics') {
+        <h3 class="card__title" style="margin-bottom: 1rem;">{{ 'dashboard.appAdmin.analytics.title' | translate }}</h3>
+        <div class="kpis">
+          <div class="stat">
+            <span class="stat__label">{{ 'dashboard.appAdmin.analytics.totalCompletions' | translate }}</span>
+            <div class="stat__value">{{ stats().totalParticipations }}</div>
+          </div>
+          <div class="stat">
+            <span class="stat__label">{{ 'dashboard.appAdmin.analytics.activeLearners' | translate }}</span>
+            <div class="stat__value">{{ stats().totalChildren }}</div>
+          </div>
+          <div class="stat">
+            <span class="stat__label">{{ 'dashboard.appAdmin.analytics.activeAssignments' | translate }}</span>
+            <div class="stat__value">{{ stats().activeHomework }}</div>
+          </div>
+        </div>
+        <p class="muted" style="margin-top: 1rem;">{{ 'dashboard.appAdmin.analytics.note' | translate }}</p>
+      }
+    }
+  </div>
+</div>

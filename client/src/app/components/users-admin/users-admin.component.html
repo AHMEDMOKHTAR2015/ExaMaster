@@ -1,0 +1,554 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'usersAdmin.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'usersAdmin.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <button class="btn" type="button" (click)="exportCsv()" [disabled]="filteredUsers().length === 0">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ 'usersAdmin.exportCsv' | translate }}
+    </button>
+    <button class="btn btn--primary" type="button" (click)="openAddUser()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'usersAdmin.addUser' | translate }}
+    </button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="users-tabs">
+  <button type="button"
+          class="users-tabs__tab"
+          [class.is-active]="activeTab() === 'all'"
+          (click)="setTab('all')">
+    {{ 'usersAdmin.tabs.all' | translate }} <span class="users-tabs__count">{{ counts().all }}</span>
+  </button>
+  <button type="button"
+          class="users-tabs__tab"
+          [class.is-active]="activeTab() === 'admins'"
+          (click)="setTab('admins')">
+    {{ 'usersAdmin.tabs.admins' | translate }} <span class="users-tabs__count">{{ counts().admins }}</span>
+  </button>
+  <button type="button"
+          class="users-tabs__tab"
+          [class.is-active]="activeTab() === 'parents'"
+          (click)="setTab('parents')">
+    {{ 'usersAdmin.tabs.parents' | translate }} <span class="users-tabs__count">{{ counts().parents }}</span>
+  </button>
+  <button type="button"
+          class="users-tabs__tab"
+          [class.is-active]="activeTab() === 'children'"
+          (click)="setTab('children')">
+    {{ 'usersAdmin.tabs.children' | translate }} <span class="users-tabs__count">{{ counts().children }}</span>
+  </button>
+</div>
+
+<div class="card users-card">
+  <!-- Toolbar -->
+  <div class="users-toolbar">
+    <div class="input-wrap users-toolbar__search">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search input--full"
+        type="text"
+        [placeholder]="'usersAdmin.searchPlaceholder' | translate"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </div>
+    <select class="form-input form-input--sm users-toolbar__select"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="onStatusFilterChange($event)">
+      <option value="all">{{ 'usersAdmin.filters.all' | translate }}</option>
+      <option value="active">{{ 'usersAdmin.filters.active' | translate }}</option>
+      <option value="pending">{{ 'usersAdmin.filters.pending' | translate }}</option>
+      <option value="inactive">{{ 'usersAdmin.filters.inactive' | translate }}</option>
+      <option value="suspended">{{ 'usersAdmin.filters.suspended' | translate }}</option>
+    </select>
+    <button class="btn btn--sm" type="button" disabled [title]="'usersAdmin.filters.moreFilters' | translate">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M22 3H2l8 9.46V19l4 2v-8.54z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ 'usersAdmin.filters.moreFilters' | translate }}
+    </button>
+    <div class="users-toolbar__spacer"></div>
+    <span class="muted">{{ headerCountLabel() }}</span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="empty"><span>{{ 'usersAdmin.loading' | translate }}</span></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+    <table class="tbl tbl--users">
+      <thead>
+        <tr>
+          <th class="col-expand"></th>
+          <th class="col-check">
+            <input type="checkbox"
+                   [checked]="isAllOnPageSelected()"
+                   (change)="toggleSelectAllOnPage()"
+                   [attr.aria-label]="'common.all' | translate" />
+          </th>
+          <th>{{ 'usersAdmin.table.name' | translate }}</th>
+          <th>{{ 'usersAdmin.table.role' | translate }}</th>
+          <th>{{ 'usersAdmin.table.status' | translate }}</th>
+          <th>{{ 'usersAdmin.table.linkedTo' | translate }}</th>
+          <th>{{ 'usersAdmin.table.lastActive' | translate }}</th>
+          <th>{{ 'usersAdmin.table.joined' | translate }}</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of paginatedUsers(); track u.uid) {
+          <tr [class.is-selected]="isSelected(u.uid)"
+              [class.has-expanded]="getRole(u) === 'Parent' && isExpanded(u.uid)">
+            <td class="col-expand">
+              @if (getRole(u) === 'Parent' && getChildCount(u) > 0) {
+                <button type="button"
+                        class="expand-btn"
+                        [class.is-open]="isExpanded(u.uid)"
+                        (click)="toggleParentExpand(u.uid)"
+                        [attr.aria-expanded]="isExpanded(u.uid)"
+                        [attr.aria-label]="(isExpanded(u.uid) ? 'Collapse' : 'Expand') + ' ' + u.displayName">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              }
+            </td>
+            <td class="col-check">
+              <input type="checkbox"
+                     [checked]="isSelected(u.uid)"
+                     (change)="toggleSelect(u.uid)"
+                     [attr.aria-label]="'Select ' + u.displayName" />
+            </td>
+            <td>
+              <div class="cell-stack">
+                <div class="avatar avatar--sm" [attr.data-variant]="getAvatarVariant(u)">{{ getInitials(u) }}</div>
+                <div>
+                  <div class="cell-stack__main">{{ u.displayName || '—' }}</div>
+                  <div class="cell-stack__sub">{{ u.email || u.mobileNumber || '—' }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag" [attr.data-role]="getRole(u).toLowerCase()">{{ getRole(u) }}</span></td>
+            <td>
+              <span class="status-pill" [attr.data-status]="getStatus(u)">
+                <span class="status-pill__dot"></span>
+                {{ getStatus(u) | titlecase }}
+              </span>
+            </td>
+            <td>
+              @switch (getRole(u)) {
+                @case ('Parent') {
+                  <span class="linked linked--parent">
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                      <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>
+                      <strong>{{ getChildCount(u) }}</strong>
+                      {{ getChildCount(u) === 1 ? ('usersAdmin.child' | translate) : ('usersAdmin.children' | translate) }}
+                    </span>
+                  </span>
+                }
+                @case ('Child') {
+                  <div class="linked linked--child">
+                    <div class="linked__main">{{ getChildClassName(u) }}</div>
+                    @if (getChildGradeStage(u)) {
+                      <div class="linked__sub">{{ getChildGradeStage(u) }}</div>
+                    }
+                  </div>
+                }
+                @default {
+                  <span class="muted">—</span>
+                }
+              }
+            </td>
+            <td><span class="muted">{{ formatRelative(u.lastLoginAt) }}</span></td>
+            <td><span class="muted">{{ formatJoined(u.createdAt) }}</span></td>
+            <td class="col-actions">
+              <div class="users-admin__row-actions">
+                <button class="btn btn--sm btn--ghost btn--icon" type="button"
+                        [title]="'usersAdmin.editUser' | translate"
+                        (click)="openEditUser(u)">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="btn btn--sm btn--ghost btn--icon" type="button"
+                        [title]="(u.active ?? true) ? ('usersAdmin.suspendUser' | translate) : ('usersAdmin.activateUser' | translate)"
+                        (click)="toggleUserActive(u)">
+                  @if (u.active ?? true) {
+                    <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                      <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Nested child rows when a parent is expanded -->
+          @if (getRole(u) === 'Parent' && isExpanded(u.uid)) {
+            @for (child of getChildrenOfParent(u); track child.uid) {
+              <tr class="row-child">
+                <td class="col-expand"></td>
+                <td class="col-check"></td>
+                <td>
+                  <div class="cell-stack cell-stack--indent">
+                    <div class="avatar avatar--sm" [attr.data-variant]="getAvatarVariant(child)">{{ getInitials(child) }}</div>
+                    <div>
+                      <div class="cell-stack__main">{{ child.displayName || '—' }}</div>
+                      <div class="cell-stack__sub">
+                        {{ 'usersAdmin.table.joined' | translate }} {{ formatJoined(child.createdAt) }} · {{ 'usersAdmin.table.lastActive' | translate }} {{ formatRelative(child.lastLoginAt) }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="role-tag" data-role="child">{{ 'usersAdmin.drawer.roleChild' | translate }}</span></td>
+                <td>
+                  <span class="status-pill" [attr.data-status]="getStatus(child)">
+                    <span class="status-pill__dot"></span>
+                    {{ getStatus(child) | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <div class="child-tags">
+                    @if (getChildGradeStage(child)) {
+                      <span class="tag-stage">{{ getChildGradeStage(child) }}</span>
+                    }
+                    @if (getChildClassName(child) !== '—') {
+                      <span class="tag-class">{{ getChildClassName(child) }}</span>
+                    }
+                  </div>
+                </td>
+                <td><span class="muted">{{ formatRelative(child.lastLoginAt) }}</span></td>
+                <td><span class="muted">{{ formatJoined(child.createdAt) }}</span></td>
+                <td class="col-actions">
+                  <div class="users-admin__row-actions">
+                    <button class="btn btn--sm btn--ghost btn--icon" type="button"
+                            [title]="'usersAdmin.editUser' | translate"
+                            (click)="openEditUser(child)">
+                      <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <button class="btn btn--sm btn--ghost btn--icon" type="button"
+                            [title]="(child.active ?? true) ? ('usersAdmin.suspendUser' | translate) : ('usersAdmin.activateUser' | translate)"
+                            (click)="toggleUserActive(child)">
+                      @if (child.active ?? true) {
+                        <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                          <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="row-child row-child--empty">
+                <td class="col-expand"></td>
+                <td class="col-check"></td>
+                <td colspan="7">
+                  <span class="muted">{{ 'usersAdmin.noChildrenLoaded' | translate }}</span>
+                </td>
+              </tr>
+            }
+          }
+        } @empty {
+          <tr>
+            <td colspan="9">
+              <div class="empty">
+                <div class="empty__icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="empty__title">
+                  @if (searchQuery()) { {{ 'usersAdmin.noUsersFoundSearch' | translate : { query: searchQuery() } }} }
+                  @else { {{ 'usersAdmin.noUsersFound' | translate }} }
+                </div>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="users-footer">
+      <span class="muted">{{ pageRangeLabel() }}</span>
+      <div class="users-footer__nav">
+        <button class="btn btn--sm" type="button"
+                [disabled]="currentPage() === 1"
+                (click)="previousPage()">{{ 'usersAdmin.previous' | translate }}</button>
+        <button class="btn btn--sm" type="button"
+                [disabled]="currentPage() === totalPages()"
+                (click)="nextPage()">{{ 'usersAdmin.next' | translate }}</button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Add / edit user popup -->
+@if (showAddDrawer()) {
+  <div class="popup-overlay">
+    <div class="popup popup--lg" role="dialog" aria-modal="true" aria-labelledby="add-user-title" appClickOutside (appClickOutside)="closeAddUser()">
+    <header class="users-admin__drawer__head">
+      <div class="drawer__title-wrap">
+        <div class="drawer__eyebrow">
+          {{ drawerMode() === 'edit' ? ('usersAdmin.drawer.editEyebrow' | translate) : ('usersAdmin.drawer.newEyebrow' | translate) }}
+        </div>
+        <h2 id="add-user-title" class="users-admin__drawer__title">
+          {{ drawerMode() === 'edit' ? ('usersAdmin.drawer.editTitle' | translate) : ('usersAdmin.drawer.newTitle' | translate) }}
+        </h2>
+        <p class="drawer__sub">
+          @if (drawerMode() === 'edit') {
+            {{ 'usersAdmin.drawer.editDesc' | translate }}
+          } @else {
+            {{ 'usersAdmin.drawer.newDesc' | translate }}
+          }
+        </p>
+      </div>
+      <button type="button" class="btn btn--sm" (click)="closeAddUser()" [attr.aria-label]="'common.close' | translate">×</button>
+    </header>
+
+    <div class="users-admin__drawer__body">
+      <!-- Role selector -->
+      <section class="drawer__section">
+        <div class="drawer__section-head">
+          <h3>{{ 'usersAdmin.drawer.role' | translate }}</h3>
+          @if (drawerMode() === 'edit') {
+            <span class="muted" style="font-size: 0.71875rem;">{{ 'usersAdmin.drawer.lockedWhileEditing' | translate }}</span>
+          }
+        </div>
+        <div class="role-selector" [class.is-locked]="drawerMode() === 'edit'">
+          <button type="button"
+                  class="role-selector__option"
+                  [class.is-active]="newRole() === 'admin'"
+                  [disabled]="drawerMode() === 'edit'"
+                  (click)="setNewRole('admin')">
+            <span class="role-selector__label">{{ 'usersAdmin.drawer.roleAdmin' | translate }}</span>
+            <span class="role-selector__hint">{{ 'usersAdmin.drawer.roleAdminHint' | translate }}</span>
+          </button>
+          <button type="button"
+                  class="role-selector__option"
+                  [class.is-active]="newRole() === 'parent'"
+                  [disabled]="drawerMode() === 'edit'"
+                  (click)="setNewRole('parent')">
+            <span class="role-selector__label">{{ 'usersAdmin.drawer.roleParent' | translate }}</span>
+            <span class="role-selector__hint">{{ 'usersAdmin.drawer.roleParentHint' | translate }}</span>
+          </button>
+          <button type="button"
+                  class="role-selector__option"
+                  [class.is-active]="newRole() === 'child'"
+                  [disabled]="drawerMode() === 'edit'"
+                  (click)="setNewRole('child')">
+            <span class="role-selector__label">{{ 'usersAdmin.drawer.roleChild' | translate }}</span>
+            <span class="role-selector__hint">{{ 'usersAdmin.drawer.roleChildHint' | translate }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Common fields -->
+      <section class="drawer__section">
+        <div class="drawer__section-head"><h3>{{ 'usersAdmin.drawer.account' | translate }}</h3></div>
+        <div class="drawer__form">
+          <div class="drawer__form-row">
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.firstName' | translate }}</label>
+              <input class="form-input" [ngModel]="newFirstName()" (ngModelChange)="newFirstName.set($event)" [placeholder]="'usersAdmin.drawer.firstNamePlaceholder' | translate" />
+            </div>
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.lastName' | translate }}</label>
+              <input class="form-input" [ngModel]="newLastName()" (ngModelChange)="newLastName.set($event)" [placeholder]="'usersAdmin.drawer.lastNamePlaceholder' | translate" />
+            </div>
+          </div>
+          <div class="drawer__form-row">
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.mobile' | translate }} {{ drawerMode() === 'edit' ? '' : '*' }}</label>
+              <input class="form-input"
+                     [ngModel]="newMobile()"
+                     (ngModelChange)="newMobile.set($event)"
+                     [placeholder]="'usersAdmin.drawer.mobilePlaceholder' | translate"
+                     [disabled]="drawerMode() === 'edit'" />
+            </div>
+            @if (drawerMode() === 'add') {
+              <div class="form-group">
+                <label>{{ 'usersAdmin.drawer.password' | translate }}</label>
+                <input class="form-input" type="password" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" [placeholder]="'usersAdmin.drawer.passwordPlaceholder' | translate" />
+              </div>
+            } @else {
+              <div class="form-group">
+                <label>{{ 'usersAdmin.drawer.status' | translate }}</label>
+                <label class="toggle-row">
+                  <input type="checkbox"
+                         [checked]="newActive()"
+                         (change)="newActive.set($any($event.target).checked)" />
+                  <span>{{ newActive() ? ('usersAdmin.drawer.active' | translate) : ('usersAdmin.drawer.suspended' | translate) }}</span>
+                </label>
+              </div>
+            }
+          </div>
+          <!-- There is no reset email (a child has no mailbox), so an administrator sets a forgotten password here.
+               Saved on its own, straight away: it signs the person out everywhere. -->
+          @if (drawerMode() === 'edit') {
+            <div class="drawer__form-row">
+              <div class="form-group form-group--full">
+                <label for="ua-set-password">{{ 'usersAdmin.drawer.setPassword' | translate }}</label>
+                <div class="users-admin__password-row">
+                  <input id="ua-set-password" class="form-input" type="password" autocomplete="new-password"
+                         [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
+                         [placeholder]="'usersAdmin.drawer.passwordPlaceholder' | translate" />
+                  <button type="button" class="btn btn--sm" (click)="setUserPassword()"
+                          [disabled]="newPassword().length < 6" [appLoadingButton]="isSettingPassword()">
+                    {{ 'usersAdmin.drawer.setPasswordAction' | translate }}
+                  </button>
+                </div>
+                <p class="hint">{{ 'usersAdmin.drawer.setPasswordHint' | translate }}</p>
+              </div>
+            </div>
+          }
+          @if (newRole() !== 'child') {
+            <div class="drawer__form-row">
+              <div class="form-group form-group--full">
+                <label>{{ 'usersAdmin.drawer.email' | translate }} {{ drawerMode() === 'edit' ? '' : ('usersAdmin.drawer.emailOptional' | translate) }}</label>
+                <input class="form-input"
+                       type="email"
+                       [ngModel]="newEmail()"
+                       (ngModelChange)="newEmail.set($event)"
+                       [placeholder]="'usersAdmin.drawer.emailPlaceholder' | translate"
+                       [disabled]="drawerMode() === 'edit'" />
+              </div>
+            </div>
+          }
+          <!-- A child is always enrolled on their parent's key, so the field is for parents (required) and staff (optional). -->
+          @if (newRole() !== 'child') {
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.registrationKey' | translate }} {{ drawerMode() === 'add' && newRole() === 'parent' ? '*' : '' }}</label>
+              <input
+                class="form-input"
+                type="text"
+                [required]="drawerMode() === 'add' && newRole() === 'parent'"
+                [ngModel]="newRegistrationKeyId()"
+                (ngModelChange)="newRegistrationKeyId.set($event)"
+                [placeholder]="'usersAdmin.drawer.registrationKeyPlaceholder' | translate"
+                [disabled]="drawerMode() === 'edit'"
+              />
+              @if (drawerMode() === 'add') {
+                <p class="form-hint">{{ 'usersAdmin.drawer.registrationKeyHint' | translate }}</p>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Admin role picker -->
+      @if (newRole() === 'admin') {
+        <section class="drawer__section">
+          <div class="drawer__section-head"><h3>{{ 'usersAdmin.drawer.permissions' | translate }}</h3></div>
+          <div class="drawer__form">
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.adminRole' | translate }}</label>
+              <select class="form-input" [ngModel]="newAdminRole()" (ngModelChange)="newAdminRole.set($event)">
+                <option value="userAdmin">{{ 'usersAdmin.drawer.userAdminOption' | translate }}</option>
+                <option value="applicationAdmin">{{ 'usersAdmin.drawer.appAdminOption' | translate }}</option>
+                <option value="teacher">{{ 'usersAdmin.drawer.teacherOption' | translate }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+      }
+
+      <!-- Child-specific fields -->
+      @if (newRole() === 'child') {
+        <section class="drawer__section">
+          <div class="drawer__section-head"><h3>{{ 'usersAdmin.drawer.linkage' | translate }}</h3></div>
+          <div class="drawer__form">
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.parent' | translate }}</label>
+              <select class="form-input" [ngModel]="newParentId()" (ngModelChange)="newParentId.set($event)">
+                <option value="">{{ 'usersAdmin.drawer.selectParent' | translate }}</option>
+                @for (p of parentOptions(); track p.id) {
+                  <option [value]="p.id">{{ p.displayName || (p.firstName + ' ' + p.lastName) }} ({{ p.mobileNumber || p.email }})</option>
+                }
+              </select>
+              @if (parentOptions().length === 0) {
+                <p class="form-hint">{{ 'usersAdmin.drawer.noParents' | translate }}</p>
+              }
+            </div>
+            <div class="drawer__form-row">
+              <div class="form-group">
+                <label>{{ 'usersAdmin.drawer.stage' | translate }}</label>
+                <select class="form-input" [ngModel]="newStageId()" (ngModelChange)="onNewStageChange($event)">
+                  <option value="">{{ 'usersAdmin.drawer.selectStage' | translate }}</option>
+                  @for (s of stages(); track s.id) {
+                    <option [value]="s.id">{{ s.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>{{ 'usersAdmin.drawer.grade' | translate }} {{ gradesForNewStage().length > 0 ? '*' : '' }}</label>
+                <select class="form-input"
+                        [ngModel]="newGradeId()"
+                        (ngModelChange)="onNewGradeChange($event)"
+                        [disabled]="!newStageId() || gradesForNewStage().length === 0">
+                  <option value="">{{ 'usersAdmin.drawer.selectGrade' | translate }}</option>
+                  @for (g of gradesForNewStage(); track g.id) {
+                    <option [value]="g.id">{{ g.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>{{ 'usersAdmin.drawer.group' | translate }}</label>
+              <select class="form-input"
+                      [ngModel]="newClassId()"
+                      (ngModelChange)="newClassId.set($event)"
+                      [disabled]="!newStageId()">
+                <option value="">{{ 'usersAdmin.drawer.selectGroup' | translate }}</option>
+                @for (c of classesForNewGrade(); track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+
+    <footer class="users-admin__drawer__foot">
+      <button class="btn btn--sm" type="button" (click)="closeAddUser()" [disabled]="isSavingUser()">{{ 'usersAdmin.drawer.cancel' | translate }}</button>
+      <button class="btn btn--sm btn--primary" type="button" (click)="saveNewUser()" [appLoadingButton]="isSavingUser()">
+        @if (isSavingUser()) {
+          {{ drawerMode() === 'edit' ? ('usersAdmin.drawer.saving' | translate) : ('usersAdmin.drawer.creating' | translate) }}
+        } @else {
+          {{ drawerMode() === 'edit' ? ('usersAdmin.drawer.saveChanges' | translate) : ('usersAdmin.drawer.createAccount' | translate) }}
+        }
+      </button>
+    </footer>
+    </div>
+  </div>
+}

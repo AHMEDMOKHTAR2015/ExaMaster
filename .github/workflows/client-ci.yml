@@ -1,0 +1,52 @@
+# Lint, unit tests and a production build of the Angular app.
+# Runs on pull requests that touch the client, and before every deploy (deploy.yml calls it).
+name: Client CI
+
+on:
+  pull_request:
+    paths: ['client/**', '.github/workflows/client-ci.yml']
+  workflow_call:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: client
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 22 rather than the newer runtime this is developed against: it is the
+      # highest version Angular 18 actually supports.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      # `package-lock.json` was produced by npm 12, and npm 10 — the version
+      # Node 22 ships with — builds a different ideal tree from it, then fails
+      # `npm ci` for entries the lock "is missing". Installing the matching npm
+      # keeps `npm ci` reproducible instead of loosening it to `npm install`.
+      - name: Match the npm that produced the lock file
+        run: npm install -g npm@12
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `ChromeHeadlessCI` is defined in src/karma.conf.js — plain
+      # `ChromeHeadless` cannot start its sandbox on a GitHub runner.
+      - name: Unit tests
+        run: npm test -- --watch=false --browsers=ChromeHeadlessCI
+
+      # Runs `prebuild` (tools/generate-asset-manifest.js) first; output in dist/ng6-quiz.
+      - name: Build
+        run: npm run build

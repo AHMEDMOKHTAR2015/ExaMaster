@@ -1,0 +1,30 @@
+<div class="question question--complete" dir="auto">
+  @if (question().segments?.length) {
+    <p class="question__passage">
+      @for (segment of question().segments; track $index) {
+        @if (segment.kind === 'text') {
+          <span class="passage__text">{{ segment.text }}</span>
+        } @else {
+          <input
+            type="text"
+            class="passage__blank"
+            [attr.aria-label]="'Blank ' + (segment.index + 1)"
+            [style.width.ch]="blankWidthCh(segment.expectedLength)"
+            [value]="question().blanks?.[segment.index]?.userAnswer ?? ''"
+            (input)="onBlankInput(question(), segment.index, $any($event.target).value)"
+            (keydown.enter)="onBlankEnter(question())"
+            placeholder="…"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        }
+      }
+    </p>
+  } @else {
+    <!-- Defensive fallback: a Complete question should always have segments;
+         if somehow missing (bad/legacy data), show the masked text rather than
+         rendering an empty box. -->
+    <p class="question__passage">{{ question().name }}</p>
+  }
+</div>

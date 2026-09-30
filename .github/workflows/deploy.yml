@@ -1,0 +1,83 @@
+# Every push to main: run both CIs, then build the Angular app into the API's wwwroot and deploy the API
+# to the ExaMaster Azure Web App. One package, one origin: the API serves the app, /api and /hubs.
+#
+# Needs the repository secret AZURE_WEBAPP_PUBLISH_PROFILE (the Web App's publish profile, see README.md).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+# Never two deploys at once; a newer push waits for the running one rather than cancelling it halfway.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AZURE_WEBAPP_NAME: ExaMaster
+
+jobs:
+  backend-ci:
+    uses: ./.github/workflows/backend-ci.yml
+
+  client-ci:
+    uses: ./.github/workflows/client-ci.yml
+
+  package:
+    needs: [backend-ci, client-ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm install -g npm@12        # see client-ci.yml
+      - name: Build the Angular app
+        working-directory: client
+        run: npm ci && npm run build
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish the API
+        run: dotnet publish backend/src/Services/QuizMaster/QuizMaster.API/QuizMaster.API.csproj -c Release -o publish
+
+      - name: Put the app in the API's wwwroot
+        run: mkdir -p publish/wwwroot && cp -R client/dist/ng6-quiz/. publish/wwwroot/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: examaster
+          path: publish
+          retention-days: 7
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.webapp-url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: examaster
+          path: publish
+
+      - id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish
+
+      - name: Check the API is up
+        run: |
+          for i in $(seq 1 30); do curl -sf "${{ steps.deploy.outputs.webapp-url }}/health" && exit 0; sleep 10; done
+          echo "The API did not answer /health within 5 minutes: check the Web App's log stream." ; exit 1

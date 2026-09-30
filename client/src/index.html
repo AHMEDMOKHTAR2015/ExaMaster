@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>QuizMaster</title>
+    <base href="/">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="QuizMaster — quizzes, homework and progress tracking for schools.">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="apple-touch-icon" href="assets/icon.png">
+    <!-- Removed external Material Icons link to avoid build-time inlining fetch errors. -->
+    <!--
+      The Google Fonts stylesheet is @import-ed at the top of src/styles.css and
+      inlined into the bundle at build time by the Angular optimizer, so nothing
+      requests fonts.googleapis.com at runtime — but the inlined @font-face rules
+      still point at fonts.gstatic.com. Warming that connection early overlaps
+      TLS with stylesheet parsing instead of paying for it at first paint.
+      Keep the @import where it is: moving it here re-triggers the build-time
+      inlining fetch errors noted above.
+    -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+
+<body>
+    <app-root></app-root>
+</body>
+
+</html>

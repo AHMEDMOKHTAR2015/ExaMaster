@@ -1,0 +1,295 @@
+<!-- No `.page` wrapper here: the app shell already renders `<main class="page">`
+     around the router outlet, so adding one nests the section padding and the
+     surface background twice. -->
+<div class="page__head">
+  <div>
+    <h1 class="page__title">Organizations</h1>
+    <p class="page__subtitle">Onboard and manage the schools using QuizMaster</p>
+  </div>
+  <div class="page__actions">
+    <button type="button" class="btn" (click)="loadTenants()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+    <button type="button" class="btn btn--primary" (click)="openCreate()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      New organization
+    </button>
+  </div>
+</div>
+
+@if (hasError()) {
+  <div class="alert alert--danger">{{ error() }}</div>
+}
+
+<div class="tenants-kpis">
+  <div class="kpi">
+    <div class="kpi__label">Organizations</div>
+    <div class="kpi__value">{{ tenants().length }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">Active</div>
+    <div class="kpi__value kpi__value--good">{{ activeCount() }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">Suspended</div>
+    <div class="kpi__value" [class.kpi__value--bad]="suspendedCount() > 0">{{ suspendedCount() }}</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-toolbar">
+    <div class="input-wrap">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="tenant-search" class="input input--search" type="search"
+             placeholder="Search by name or id…" aria-label="Search organizations"
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+    <div class="table-toolbar__spacer"></div>
+    <span class="muted">{{ filteredTenants().length }} of {{ tenants().length }}</span>
+  </div>
+
+  @if (loading() && tenants().length === 0) {
+    <div class="empty">
+      <div class="empty__title">Loading organizations…</div>
+    </div>
+  } @else if (filteredTenants().length === 0) {
+    <div class="empty">
+      <div class="empty__title">No organizations{{ search() ? ' match that search' : ' yet' }}.</div>
+      @if (!search()) {
+        <p>Onboard a client to get started.</p>
+        <button type="button" class="btn btn--primary" (click)="openCreate()">Onboard your first client</button>
+      }
+    </div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Organization</th>
+          <th>Id</th>
+          <th>Plan</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (tenant of filteredTenants(); track tenant.id) {
+          <tr>
+            <td><strong>{{ tenant.name }}</strong></td>
+            <td><code>{{ tenant.id }}</code></td>
+            <td>{{ tenant.plan ?? 'standard' }}</td>
+            <td>
+              <span class="badge" [class.badge--success]="tenant.active" [class.badge--muted]="!tenant.active">
+                {{ tenant.active ? 'Active' : 'Suspended' }}
+              </span>
+            </td>
+            <td>{{ formatDate(tenant.createdAt) }}</td>
+            <td class="col-actions">
+              <div class="row-actions">
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openEdit(tenant)">Edit</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openAdminPassword(tenant)">Admin password</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="toggleActive(tenant)">
+                  {{ tenant.active ? 'Suspend' : 'Restore' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+  }
+</div>
+
+<!-- Create ------------------------------------------------------------------>
+@if (showCreate()) {
+  <div class="popup-overlay">
+    <div class="popup">
+      <header class="popup__head">
+        <div>
+          <p class="popup__eyebrow">NEW ORGANIZATION</p>
+          <h2 class="popup__title">Onboard a client</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeCreate()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+
+      @if (lastCreated(); as created) {
+        <!-- Success state. Deliberately replaces the form: the generated
+             password is shown exactly once and cannot be recovered later. -->
+        <div class="popup__body">
+          <div class="alert alert--success">
+            <strong>{{ created.tenantId }}</strong> is ready.
+          </div>
+
+          <p class="field__hint">Hand these to the client's administrator:</p>
+
+          <div class="field">
+            <label class="field__label" for="created-email">Email</label>
+            <div class="row">
+              <input id="created-email" class="input input--full" [value]="created.adminEmail" readonly />
+              <button type="button" class="btn btn--ghost btn--sm" (click)="copy(created.adminEmail)">Copy</button>
+            </div>
+          </div>
+
+          @if (created.generatedPassword) {
+            <div class="field">
+              <label class="field__label" for="created-password">Password</label>
+              <div class="row">
+                <input id="created-password" class="input input--full" [value]="created.generatedPassword" readonly />
+                <button type="button" class="btn btn--ghost btn--sm" (click)="copy(created.generatedPassword)">Copy</button>
+              </div>
+              <p class="field__hint">
+                Shown once and never stored. If you close this without copying it,
+                the administrator will need to reset their password.
+              </p>
+            </div>
+          }
+
+          <p class="field__hint">
+            They sign in and set up the rest themselves: stages, grades, groups,
+            subjects, teachers, registration keys, then quizzes.
+          </p>
+        </div>
+        <footer class="popup__foot">
+          <button type="button" class="btn btn--primary" (click)="closeCreate()">Done</button>
+        </footer>
+      } @else {
+        <div class="popup__body">
+          <div class="field">
+            <label class="field__label" for="new-name">Organization name *</label>
+            <input id="new-name" class="input input--full" placeholder="e.g. Acme School"
+                   [ngModel]="newName()" (ngModelChange)="onNameChange($event)" [disabled]="isCreating()" />
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="new-id">Organization id *</label>
+            <input id="new-id" class="input input--full" placeholder="e.g. acme-school"
+                   [ngModel]="newId()" (ngModelChange)="newId.set($event)" [disabled]="isCreating()" />
+            <p class="field__hint">
+              Permanent. This becomes part of the path of every document the client owns,
+              so it cannot be changed later. Lowercase letters, digits, '-' and '_'.
+            </p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="new-plan">Plan</label>
+            <select id="new-plan" class="select" [ngModel]="newPlan()" (ngModelChange)="newPlan.set($event)" [disabled]="isCreating()">
+              @for (plan of plans; track plan) {
+                <option [value]="plan">{{ plan }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="new-admin-email">Administrator email *</label>
+            <input id="new-admin-email" class="input input--full" type="email" placeholder="head@acme.example.com"
+                   [ngModel]="newAdminEmail()" (ngModelChange)="newAdminEmail.set($event)" [disabled]="isCreating()" />
+            <p class="field__hint">
+              The person who will run this organization. Must not already have a
+              login — reusing one would link an existing account into the new
+              organization. A password is generated and shown once.
+            </p>
+          </div>
+        </div>
+        <footer class="popup__foot">
+          <button type="button" class="btn btn--ghost" (click)="closeCreate()" [disabled]="isCreating()">Cancel</button>
+          <button type="button" class="btn btn--primary" (click)="createTenant()" [disabled]="isCreating()">
+            {{ isCreating() ? 'Creating…' : 'Create organization' }}
+          </button>
+        </footer>
+      }
+    </div>
+  </div>
+}
+
+<!-- Edit -------------------------------------------------------------------->
+@if (editing(); as tenant) {
+  <div class="popup-overlay">
+    <div class="popup popup--sm">
+      <header class="popup__head">
+        <div>
+          <p class="popup__eyebrow">EDIT ORGANIZATION</p>
+          <h2 class="popup__title">{{ tenant.id }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeEdit()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <div class="field">
+          <label class="field__label" for="edit-name">Name *</label>
+          <input id="edit-name" class="input input--full"
+                 [ngModel]="editName()" (ngModelChange)="editName.set($event)" [disabled]="isSaving()" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="edit-plan">Plan</label>
+          <select id="edit-plan" class="select" [ngModel]="editPlan()" (ngModelChange)="editPlan.set($event)" [disabled]="isSaving()">
+            @for (plan of plans; track plan) {
+              <option [value]="plan">{{ plan }}</option>
+            }
+          </select>
+        </div>
+        <p class="field__hint">
+          The id cannot be changed — it is the organization's permanent id.
+        </p>
+      </div>
+      <footer class="popup__foot">
+        <button type="button" class="btn btn--ghost" (click)="closeEdit()" [disabled]="isSaving()">Cancel</button>
+        <button type="button" class="btn btn--primary" (click)="saveEdit()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Administrator password ---------------------------------------------------->
+@if (passwordFor(); as tenant) {
+  <div class="popup-overlay">
+    <div class="popup popup--sm">
+      <header class="popup__head">
+        <div>
+          <p class="popup__eyebrow">{{ tenant.name }}</p>
+          <h2 class="popup__title">Set an administrator's password</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeAdminPassword()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <div class="field">
+          <label class="field__label" for="admin-email">Administrator's email *</label>
+          <input id="admin-email" class="input input--full" type="email"
+                 [ngModel]="adminEmail()" (ngModelChange)="adminEmail.set($event)" [disabled]="isSettingPassword()" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="admin-password">New password *</label>
+          <input id="admin-password" class="input input--full" type="password" autocomplete="new-password"
+                 placeholder="At least 6 characters"
+                 [ngModel]="adminPassword()" (ngModelChange)="adminPassword.set($event)" [disabled]="isSettingPassword()" />
+        </div>
+        <p class="field__hint">
+          For a school whose administrator cannot sign in. Only an administrator of this school can be named; it signs
+          them out everywhere.
+        </p>
+      </div>
+      <footer class="popup__foot">
+        <button type="button" class="btn btn--ghost" (click)="closeAdminPassword()" [disabled]="isSettingPassword()">Cancel</button>
+        <button type="button" class="btn btn--primary" (click)="setAdminPassword()" [disabled]="isSettingPassword()">
+          {{ isSettingPassword() ? 'Setting…' : 'Set password' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

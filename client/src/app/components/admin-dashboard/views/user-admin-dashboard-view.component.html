@@ -1,0 +1,292 @@
+<!-- KPI tiles -->
+<div class="kpis">
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.userAdmin.stats.children' | translate }}</span>
+      <div class="stat__icon stat__icon--brand">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ childCount() }}</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat__head">
+      <span class="stat__label">{{ 'dashboard.userAdmin.stats.totalParticipations' | translate }}</span>
+      <div class="stat__icon stat__icon--mint">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat__value">{{ totalParticipations() }}</div>
+  </div>
+
+  @if (remainingChildSlots() !== null) {
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'dashboard.userAdmin.stats.remainingSlots' | translate }}</span>
+        <div class="stat__icon stat__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ remainingChildSlots() }}</div>
+    </div>
+  }
+</div>
+
+<!-- Recent Activity overview -->
+<div class="card">
+  <div class="card__head">
+    <h2 class="card__title">{{ 'dashboard.userAdmin.recentActivity' | translate }}</h2>
+    <div class="user-admin-dashboard-view__row-actions">
+      @if (canAddMoreChildren()) {
+        <button class="btn btn--sm btn--primary" (click)="openAddChild()" [disabled]="isLoading()">
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ 'dashboard.userAdmin.addChildBtn' | translate }}
+        </button>
+      }
+      <button class="btn btn--sm" (click)="refreshChildren()" [appLoadingButton]="isLoading()">
+        @if (isLoading()) { {{ 'dashboard.userAdmin.refreshing' | translate }} } @else { {{ 'common.refresh' | translate }} }
+      </button>
+    </div>
+  </div>
+  <div class="card__body">
+    <div class="children-overview">
+      @for (child of children(); track child.uid) {
+        <div class="child-card">
+          <div class="child-card__top">
+            <div class="avatar avatar--mint">{{ child.displayName?.charAt(0) || '?' }}</div>
+            <div class="child-card__info">
+              <div class="cell-stack__main">{{ child.displayName }}</div>
+              <div class="cell-stack__sub">{{ getStageName(child.stageId) }} · {{ getClassName(child.classId) }}</div>
+            </div>
+            <span class="badge badge--brand">{{ child.participationCount || 0 }} {{ 'dashboard.appAdmin.stats.participations' | translate }}</span>
+          </div>
+          <div class="child-card__foot">
+            <button class="btn btn--sm" (click)="selectChild(child)">{{ 'dashboard.userAdmin.viewDetails' | translate }}</button>
+            <button class="btn btn--sm btn--ghost" (click)="openSetPassword(child)">{{ 'dashboard.userAdmin.setPassword' | translate }}</button>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty">
+          <div class="empty__icon">
+            <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+              <circle cx="12" cy="8" r="5" stroke="currentColor" stroke-width="2"/>
+              <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="empty__title">{{ 'dashboard.userAdmin.noChildren' | translate }}</div>
+          <p>{{ 'dashboard.userAdmin.noChildrenDesc' | translate }}</p>
+        </div>
+      }
+    </div>
+    @if (childCursor()) {
+      <button class="btn btn--ghost" style="margin-top: 0.75rem;" (click)="loadChildren()" [disabled]="isLoading()">{{ 'common.loadMore' | translate }}</button>
+    }
+  </div>
+</div>
+
+<!-- Add Child popup -->
+@if (showAddChild()) {
+  <div class="popup-overlay">
+    <div class="popup popup--lg" role="dialog" aria-modal="true" aria-labelledby="add-child-title" appClickOutside (appClickOutside)="closeAddChild()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'dashboard.userAdmin.newChild' | translate }}</div>
+          <h2 id="add-child-title" class="popup__title">{{ 'dashboard.userAdmin.addChild' | translate }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeAddChild()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        @if (errorMessage()) {
+          <div class="alert alert--danger">
+            <span>{{ errorMessage() }}</span>
+            <button class="btn btn--ghost btn--sm btn--icon" (click)="errorMessage.set('')" [attr.aria-label]="'common.dismiss' | translate">×</button>
+          </div>
+        }
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label">{{ 'auth.fields.firstName' | translate }}</label>
+            <input class="input input--full" [placeholder]="'auth.placeholders.childFirstName' | translate" [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" [disabled]="isLoading()" />
+          </div>
+          <div class="field">
+            <label class="field__label">{{ 'auth.fields.lastName' | translate }}</label>
+            <input class="input input--full" [placeholder]="'auth.placeholders.childLastName' | translate" [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" [disabled]="isLoading()" />
+          </div>
+          <div class="field">
+            <label class="field__label">{{ 'auth.fields.mobile' | translate }}</label>
+            <input class="input input--full" [placeholder]="'auth.placeholders.childMobile' | translate" [ngModel]="mobileNumber()" (ngModelChange)="mobileNumber.set($event)" [disabled]="isLoading()" />
+          </div>
+          <div class="field">
+            <label class="field__label">{{ 'auth.fields.password' | translate }}</label>
+            <input class="input input--full" type="password" [placeholder]="'auth.placeholders.createPassword' | translate" [ngModel]="password()" (ngModelChange)="password.set($event)" [disabled]="isLoading()" />
+          </div>
+          <div class="field">
+            <label class="field__label">{{ 'common.stage' | translate }}</label>
+            <select class="select" [ngModel]="stageId()" (ngModelChange)="onStageChange($event)" [disabled]="isLoading()">
+              <option value="">{{ 'auth.placeholders.selectStage' | translate }}</option>
+              @for (stage of stages(); track stage.id) {
+                <option [value]="stage.id">{{ stage.name }}</option>
+              }
+            </select>
+          </div>
+          <!-- Stage -> Grade -> Group. Each level is disabled until the one
+               above it is chosen, and hidden entirely for a stage that has no
+               grades, so it can never block the form. -->
+          @if (gradesForStage().length > 0) {
+            <div class="field">
+              <label class="field__label" for="add-child-grade">{{ 'common.grade' | translate }}</label>
+              <select id="add-child-grade" class="select" [ngModel]="gradeId()" (ngModelChange)="onGradeChange($event)" [disabled]="isLoading() || !stageId()">
+                <option value="">{{ 'auth.placeholders.selectGrade' | translate }}</option>
+                @for (grade of gradesForStage(); track grade.id) {
+                  <option [value]="grade.id">{{ grade.name }}</option>
+                }
+              </select>
+            </div>
+          }
+          <div class="field">
+            <label class="field__label">{{ 'common.group' | translate }}</label>
+            <select class="select" [ngModel]="classId()" (ngModelChange)="classId.set($event)" [disabled]="isLoading() || !stageId()">
+              <option value="">{{ 'auth.placeholders.selectGroup' | translate }}</option>
+              @for (group of classesForGrade(); track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+      <footer class="popup__foot">
+        <button class="btn" (click)="closeAddChild()" [disabled]="isLoading()">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn--primary" (click)="addChild()" [appLoadingButton]="isLoading()">
+          @if (isLoading()) { {{ 'dashboard.userAdmin.creating' | translate }} } @else { {{ 'dashboard.userAdmin.createChildAccount' | translate }} }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Selected Child: Subjects & Teachers + Participation History, side by side -->
+@if (selectedChild()) {
+  <div class="detail-grid">
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title">{{ selectedChild()!.displayName }} — {{ 'dashboard.userAdmin.subjectsTeachers' | translate }}</h2>
+          <p class="card__sub">{{ getClassName(selectedChild()!.classId) }}</p>
+        </div>
+      </div>
+      <div class="card__body">
+        @if (selectedChildTeaching().length > 0) {
+          <div class="teach-grid">
+            @for (row of selectedChildTeaching(); track row.subjectId) {
+              <div class="teach-card">
+                <div class="teach-card__subject">
+                  @if (getSubjectColor(row.subjectId)) {
+                    <span class="color-swatch" [style.background]="getSubjectColor(row.subjectId)"></span>
+                  }
+                  <span class="teach-card__subject-name">{{ getSubjectName(row.subjectId) }}</span>
+                </div>
+                @if (row.teacherIds.length > 0) {
+                  <div class="teach-card__teachers">
+                    @for (tid of row.teacherIds; track tid) {
+                      <span class="teach-card__teacher">
+                        <span class="avatar avatar--sm avatar--brand">{{ getTeacherInitials(tid) }}</span>
+                        {{ getTeacherName(tid) }}
+                      </span>
+                    }
+                  </div>
+                } @else {
+                  <span class="teach-card__none">{{ 'dashboard.userAdmin.noTeacher' | translate }}</span>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty">
+            <div class="empty__title">{{ 'dashboard.userAdmin.noSubjects' | translate }}</div>
+            <p>{{ 'dashboard.userAdmin.noSubjectsDesc' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title">{{ selectedChild()!.displayName }} — {{ 'dashboard.userAdmin.participationHistory' | translate }}</h2>
+          <p class="card__sub">{{ 'dashboard.userAdmin.recentActivity2' | translate }}</p>
+        </div>
+        <button class="btn btn--sm" (click)="clearSelectedChild()">{{ 'dashboard.userAdmin.close' | translate }}</button>
+      </div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          @for (record of pagedSelectedChildParticipations(); track record.id) {
+            <div class="list-row">
+              <div class="list-row__main">
+                <div class="cell-stack__main badge-row">
+                  <span class="badge" [ngClass]="recordKindLabel(record) === 'quiz' ? 'badge--brand' : 'badge--info'">{{ 'common.' + recordKindLabel(record) | translate }}: {{ recordTitle(record) }}</span>
+                </div>
+              </div>
+              <span class="badge badge--success">{{ 'common.score' | translate : { score: scorePercent(record) } }}</span>
+              <span class="muted">{{ record.correctCount }}/{{ record.correctCount + record.wrongCount }}</span>
+              <span class="muted">{{ record.endedAt | date:'short' }}</span>
+            </div>
+          } @empty {
+            <div class="empty"><div class="empty__title">{{ 'dashboard.userAdmin.noParticipations' | translate }}</div></div>
+          }
+        </div>
+        @if (selectedChildParticipationsPage() > 0 || hasMoreSelectedChildParticipations()) {
+          <div class="pagination">
+            <button class="pagination__btn" [disabled]="selectedChildParticipationsPage() === 0 || isLoading()" (click)="prevSelectedChildParticipationsPage()">
+              {{ 'common.previous' | translate }}
+            </button>
+            <button class="pagination__btn" [disabled]="!hasMoreSelectedChildParticipations() || isLoading()" (click)="nextSelectedChildParticipationsPage()">
+              {{ 'common.next' | translate }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (passwordChild(); as child) {
+  <div class="popup-overlay">
+    <div class="popup popup--sm" role="dialog" aria-modal="true" aria-labelledby="child-password-title" appClickOutside (appClickOutside)="closeSetPassword()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ child.displayName }}</div>
+          <h2 id="child-password-title" class="popup__title">{{ 'dashboard.userAdmin.setPasswordTitle' | translate }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeSetPassword()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <div class="field">
+          <label class="field__label" for="child-new-password">{{ 'auth.fields.password' | translate }}</label>
+          <input id="child-new-password" class="input input--full" type="password" autocomplete="new-password"
+                 [placeholder]="'auth.placeholders.createPassword' | translate"
+                 [ngModel]="childNewPassword()" (ngModelChange)="childNewPassword.set($event)" [disabled]="isSettingChildPassword()" />
+        </div>
+        <p class="hint">{{ 'dashboard.userAdmin.setPasswordHint' | translate }}</p>
+      </div>
+      <footer class="popup__foot">
+        <button class="btn" (click)="closeSetPassword()" [disabled]="isSettingChildPassword()">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn--primary" (click)="setChildPassword()" [disabled]="childNewPassword().length < 6" [appLoadingButton]="isSettingChildPassword()">
+          {{ 'dashboard.userAdmin.setPassword' | translate }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

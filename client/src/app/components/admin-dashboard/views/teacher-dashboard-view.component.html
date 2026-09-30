@@ -1,0 +1,394 @@
+<!-- Missing teacher profile warning -->
+@if (!isLoading() && !teacher()) {
+  <div class="card">
+    <div class="card__body">
+      <div class="empty">
+        <div class="empty__title">{{ 'dashboard.teacher.noTeacherProfile' | translate }}</div>
+        <p>{{ 'dashboard.teacher.noTeacherProfileDesc' | translate }}</p>
+      </div>
+    </div>
+  </div>
+}
+
+@if (teacher()) {
+  <!-- KPI tiles -->
+  @if (isLoadingStats()) {
+    <!-- My Students and Average Score come from the class aggregates, which
+         resolve after the teacher profile does. Showing the row early would
+         flash 0 students before the real figures arrive. -->
+    <app-kpi-skeleton [count]="4" [columns]="4"></app-kpi-skeleton>
+  } @else {
+  <div class="kpis">
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'dashboard.teacher.stats.myGroups' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ myClasses().length }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'dashboard.teacher.stats.myStudents' | translate }}</span>
+        <div class="stat__icon stat__icon--mint">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ myStudentCount() }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'dashboard.teacher.stats.activeAssignments' | translate }}</span>
+        <div class="stat__icon stat__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ activeAssignmentCount() }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'dashboard.teacher.stats.averageScore' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      @if (hasScoredSubmissions()) {
+        <div class="stat__value">{{ overallAverageScore() }}%</div>
+      } @else {
+        <!-- No completed submission to average yet — "0%" would read as a result. -->
+        <div class="stat__value stat__value--muted">—</div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- Tab switch -->
+  <div class="card">
+    <div class="card__head">
+      <div class="tab-switch" role="tablist">
+        <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'students'" (click)="activeTab.set('students')">
+          {{ 'teacherDashboard.tabs.students' | translate }}
+        </button>
+        <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'assignments'" (click)="activeTab.set('assignments')">
+          {{ 'teacherDashboard.tabs.assignments' | translate }}
+          @if (activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ activeAssignmentCount() }}</span> }
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= STUDENTS TAB ======================= -->
+  @if (activeTab() === 'students') {
+    <div class="students-layout">
+    <div class="card">
+      <div class="card__head">
+        <h2 class="card__title">{{ 'teacherDashboard.myStudentsTitle' | translate }}</h2>
+        <div class="teacher-dashboard-view__row-actions">
+          <input class="input" type="search" [placeholder]="'teacherDashboard.searchPlaceholder' | translate"
+                 [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+          <select class="select" [ngModel]="classFilter()" (ngModelChange)="classFilter.set($event)">
+            <option value="">{{ 'teacherDashboard.allGroups' | translate }}</option>
+            @for (cls of myClasses(); track cls.id) {
+              <option [value]="cls.id">{{ cls.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="card__body">
+        @if (myClasses().length === 0 && !isLoading()) {
+          <div class="empty">
+            <div class="empty__title">{{ 'quizManagement.noGroupsAssigned' | translate }}</div>
+            <p>{{ 'quizManagement.noGroupsAssignedDesc' | translate }}</p>
+          </div>
+        }
+
+        @for (group of studentsByClass(); track group.cls.id) {
+          <div class="class-group">
+            <div class="class-group__head">
+              <div>
+                <h3 class="class-group__title">{{ group.cls.name }}</h3>
+                <div class="cell-stack__sub">
+                  {{ getStageName(group.cls.stageId) }}
+                  ·
+                  @for (subject of subjectsTaughtIn(group.cls); track subject.id; let last = $last) {
+                    <span>
+                      @if (subject.color) { <span class="color-swatch" [style.background]="subject.color"></span> }
+                      {{ subject.name }}@if (!last) { , }
+                    </span>
+                  } @empty { <span>{{ 'teacherDashboard.noSharedSubjects' | translate }}</span> }
+                </div>
+              </div>
+              <span class="badge badge--info">{{ 'teacherDashboard.studentsCount' | translate : { count: group.students.length } }}</span>
+            </div>
+
+            <div class="stack stack--sm">
+              @for (student of visibleStudentsOf(group); track student.uid) {
+                <div class="list-row" [class.is-selected]="selectedStudent()?.uid === student.uid">
+                  <div class="avatar avatar--sm avatar--brand">{{ studentInitial(student) }}</div>
+                  <div class="list-row__main">
+                    <div class="cell-stack__main">{{ student.displayName }}</div>
+                    <div class="cell-stack__sub">
+                      @if (student.lastLoginAt) {
+                        {{ 'teacherDashboard.lastActive' | translate : { date: (student.lastLoginAt | date:'mediumDate') } }}
+                      } @else {
+                        {{ 'teacherDashboard.neverActive' | translate }}
+                      }
+                    </div>
+                  </div>
+                  <span class="muted">{{ 'teacherDashboard.participations' | translate : { count: participationCountOf(student) } }}</span>
+                  @if (averageScoreOf(student) !== null) {
+                    <span class="badge" [ngClass]="averageScoreOf(student)! >= 50 ? 'badge--success' : 'badge--warning'">
+                      Avg {{ averageScoreOf(student) }}%
+                    </span>
+                  } @else {
+                    <span class="muted">{{ 'teacherDashboard.noScoresYet' | translate }}</span>
+                  }
+                  <button class="btn btn--sm" (click)="selectStudent(student)">{{ 'teacherDashboard.viewDetails' | translate }}</button>
+                </div>
+              } @empty {
+                <div class="empty"><div class="empty__title">{{ 'teacherDashboard.noStudentsInGroup' | translate }}</div></div>
+              }
+            </div>
+            @if (hasMoreStudents(group)) {
+              <button class="btn btn--ghost" style="margin-top: 0.625rem;" (click)="showMoreStudents(group)">
+                {{ 'teacherDashboard.showMoreStudents' | translate }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Selected student details -->
+    @if (selectedStudent(); as student) {
+      <div class="card">
+        <div class="card__head">
+          <div>
+            <h2 class="card__title">{{ 'teacherDashboard.studentParticipation' | translate : { name: student.displayName } }}</h2>
+            <p class="card__sub">{{ getStageName(student.stageId) }} · {{ getClassName(student.classId) }}</p>
+          </div>
+          <button class="btn btn--sm" (click)="clearSelectedStudent()">{{ 'common.close' | translate }}</button>
+        </div>
+        <div class="card__body">
+          <!-- Per-subject rollup of this teacher's assignments -->
+          @if (selectedStudentSubjectStats().length > 0) {
+            <div class="teach-grid subject-stats">
+              @for (stat of selectedStudentSubjectStats(); track stat.subjectId) {
+                <div class="teach-card">
+                  <div class="teach-card__subject">
+                    @if (getSubjectColor(stat.subjectId)) {
+                      <span class="color-swatch" [style.background]="getSubjectColor(stat.subjectId)"></span>
+                    }
+                    <span class="teach-card__subject-name">{{ getSubjectName(stat.subjectId) }}</span>
+                  </div>
+                  <div class="subject-stats__row">
+                    <span class="muted">{{ 'teacherDashboard.completed' | translate : { completed: stat.completed, total: stat.total } }}</span>
+                    <span class="badge" [ngClass]="stat.averageScore >= 50 ? 'badge--success' : 'badge--warning'">Avg {{ stat.averageScore }}%</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="stack stack--sm">
+            @for (record of selectedStudentParticipations(); track record.id) {
+              <div class="list-row">
+                <div class="list-row__main">
+                  <!-- Not `record.type` — that only says whether this attempt went
+                       through an assignment at all, not what kind of content the
+                       assignment is (see `assignmentKindOf`'s own doc). -->
+                  <div class="cell-stack__main">
+                    {{ (assignmentKindOf(record) === 'quiz' ? ('quizManagement.form.quiz2' | translate) : ('quizManagement.form.homework' | translate)) }}: {{ record.quizName || ('Quiz #' + record.quizId) }}
+                  </div>
+                  @if (record.homeworkTitle) {
+                    <div class="cell-stack__sub">{{ 'teacherDashboard.assignmentLabel' | translate : { title: record.homeworkTitle } }}</div>
+                  }
+                </div>
+                <span class="badge" [ngClass]="{
+                  'badge--success': record.status === 'completed',
+                  'badge--info': record.status === 'in-progress',
+                  'badge--warning': record.status === 'overdue' || record.status === 'not-started'
+                }">{{ record.status }}</span>
+                <!--
+                  Counts, not a percentage: `record.score` is a raw
+                  correct-answer count, so rendering it with a `%` sign showed
+                  7-of-10 as "7%". This also absorbs the muted "7/10" that used
+                  to sit alongside and said the same thing again.
+                -->
+                <span class="badge badge--success"
+                      [attr.aria-label]="('quizResult.correct' | translate) + ': ' + record.correctCount">
+                  <span aria-hidden="true">✓</span> {{ record.correctCount }}
+                </span>
+                <span class="badge badge--danger"
+                      [attr.aria-label]="('quizResult.incorrect' | translate) + ': ' + record.wrongCount">
+                  <span aria-hidden="true">✗</span> {{ record.wrongCount }}
+                </span>
+                <span class="muted">{{ record.endedAt | date:'short' }}</span>
+                <button class="btn btn--sm" (click)="openAnswers(record)">{{ 'common.details' | translate }}</button>
+              </div>
+            } @empty {
+              <div class="empty"><div class="empty__title">{{ 'dashboard.userAdmin.noParticipations' | translate }}</div></div>
+            }
+          </div>
+          @if (selectedStudentParticipationCursor()) {
+            <button class="btn btn--ghost" style="margin-top: 0.75rem;" (click)="loadStudentParticipations()" [disabled]="isLoading()">{{ 'common.loadMore' | translate }}</button>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- Right column placeholder until a student is selected -->
+      <div class="card students-layout__placeholder">
+        <div class="card__body">
+          <div class="empty">
+            <div class="empty__icon">
+              <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                <circle cx="12" cy="8" r="5" stroke="currentColor" stroke-width="2"/>
+                <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="empty__title">{{ 'teacherDashboard.noStudentSelected' | translate }}</div>
+            <p>{{ 'teacherDashboard.noStudentSelectedDesc' | translate }}</p>
+          </div>
+        </div>
+      </div>
+    }
+    </div>
+  }
+
+  <!-- ======================= ASSIGNMENTS TAB ======================= -->
+  @if (activeTab() === 'assignments') {
+    <div class="card">
+      <div class="card__head">
+        <h2 class="card__title">{{ 'teacherDashboard.myAssignments' | translate }}</h2>
+      </div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          @for (assignment of assignments(); track assignment.id) {
+            <div class="list-row" [class.is-inactive]="!assignment.active">
+              <div class="list-row__main">
+                <div class="cell-stack__main">
+                  {{ assignment.title }}
+                  <span class="badge" [ngClass]="(assignment.kind ?? 'homework') === 'quiz' ? 'badge--brand' : 'badge--info'">
+                    {{ (assignment.kind ?? 'homework') === 'quiz' ? ('quizManagement.form.quiz2' | translate) : ('quizManagement.form.homework' | translate) }}
+                  </span>
+                  <span class="badge badge--danger">{{ 'quizManagement.assignments.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}</span>
+                  @if (!assignment.active) { <span class="badge badge--warning">{{ 'quizManagement.assignments.inactive' | translate }}</span> }
+                  @if (assignment.active && isOverdue(assignment.dueAt)) { <span class="badge badge--warning">{{ 'quizManagement.assignments.pastDue' | translate }}</span> }
+                </div>
+                <div class="cell-stack__sub">
+                  {{ getQuizName(assignment.quizId) }}
+                  · {{ getClassName(assignment.classId) }}
+                  @if (assignment.subjectId) { · {{ getSubjectName(assignment.subjectId) }} }
+                  ·
+                  @if (assignment.assignedChildIds?.length) {
+                    {{ 'quizManagement.assignments.selectedStudents' | translate : { count: assignment.assignedChildIds!.length } }}
+                  } @else {
+                    {{ 'quizManagement.assignments.wholeGroup' | translate }}
+                  }
+                </div>
+              </div>
+                   
+                <button class="btn btn--sm" (click)="openTracking(assignment)">{{ 'teacherDashboard.trackProgress' | translate }}</button>
+                <button class="btn btn--sm btn--ghost" (click)="toggleAssignmentActive(assignment)">
+                  {{ assignment.active ? ('quizManagement.assignments.deactivate' | translate) : ('quizManagement.assignments.reactivate' | translate) }}
+                </button>
+                <!-- Last, and the only red button in the row: the reversible
+                    action should be the one that falls under the cursor first. -->
+                <button class="btn btn--sm btn--danger" (click)="deleteAssignment(assignment)">
+                  {{ 'common.delete' | translate }}
+                </button>
+              
+            </div>
+            
+          } @empty {
+            <div class="empty">
+              <div class="empty__title">{{ 'teacherDashboard.noAssignmentsYet' | translate }}</div>
+              <p>{{ 'teacherDashboard.noAssignmentsYetDesc' | translate }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================= TRACKING POPUP ======================= -->
+  @if (trackingAssignment(); as assignment) {
+    <div class="popup-overlay">
+      <div class="popup popup--lg" role="dialog" aria-modal="true" aria-labelledby="tracking-title" appClickOutside (appClickOutside)="closeTracking()">
+        <header class="popup__head">
+          <div>
+            <div class="popup__eyebrow">{{ 'teacherDashboard.progress' | translate : { kind: ((assignment.kind ?? 'homework') === 'quiz' ? ('quizManagement.form.quiz2' | translate) : ('quizManagement.form.homework' | translate)) } }}</div>
+            <h2 id="tracking-title" class="popup__title">{{ assignment.title }}</h2>
+          </div>
+          <button type="button" class="popup__close" (click)="closeTracking()" [attr.aria-label]="'common.close' | translate">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </header>
+        <div class="popup__body">
+          <p class="card__sub">
+            {{ getQuizName(assignment.quizId) }} · {{ getClassName(assignment.classId) }} · {{ 'quizManagement.assignments.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}
+            · {{ trackingCompletedCount() }}/{{ trackingRows().length }} completed
+          </p>
+          @if (isLoadingTracking()) {
+            <div class="empty">{{ 'teacherDashboard.loadingProgress' | translate }}</div>
+          } @else {
+            <div class="stack stack--sm">
+              @for (row of trackingRows(); track row.uid) {
+                <div class="list-row">
+                  <div class="list-row__main">
+                    <div class="cell-stack__main">{{ row.name }}</div>
+                    @if (row.endedAt) {
+                      <div class="cell-stack__sub">{{ 'quizManagement.participation.finished' | translate : { date: (row.endedAt | date:'short') } }}</div>
+                    }
+                  </div>
+                  @if (row.correctCount !== null) {
+                    <span class="badge badge--success"
+                          [attr.aria-label]="('quizResult.correct' | translate) + ': ' + row.correctCount">
+                      <span aria-hidden="true">✓</span> {{ row.correctCount }}
+                    </span>
+                    <span class="badge badge--danger"
+                          [attr.aria-label]="('quizResult.incorrect' | translate) + ': ' + row.wrongCount">
+                      <span aria-hidden="true">✗</span> {{ row.wrongCount }}
+                    </span>
+                  }
+                  <span class="badge" [ngClass]="{
+                    'badge--success': row.status === 'completed',
+                    'badge--info': row.status === 'in-progress',
+                    'badge--warning': row.status === 'overdue',
+                    'badge--muted': row.status === 'not-started'
+                  }">{{ row.status === 'not-started' ? ('quizManagement.participation.notStarted' | translate) : row.status }}</span>
+                </div>
+              } @empty {
+                <div class="empty"><div class="empty__title">{{ 'quizManagement.participation.noTargetStudents' | translate }}</div></div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================= ANSWER REVIEW POPUP ======================= -->
+  @if (answersRecord(); as record) {
+    <app-participation-answers-popup
+      [record]="record"
+      [kind]="assignmentKindOf(record)"
+      [studentName]="selectedStudent()?.displayName ?? null"
+      (closed)="closeAnswers()" />
+  }
+}

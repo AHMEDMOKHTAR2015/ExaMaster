@@ -1,0 +1,97 @@
+<div class="card">
+  <div class="card__head">
+    <h2 class="card__title">{{ 'quizManagement.participation.title' | translate }}</h2>
+    <div class="quiz-management__row-actions">
+      <select class="select" [ngModel]="state.selectedAssignment()?.id ?? ''" (ngModelChange)="onSelectAssignment($event)">
+        <option value="">{{ 'quizManagement.participation.selectAssignment' | translate }}</option>
+        @for (assignment of state.filteredAssignments(); track assignment.id) {
+          <option [value]="assignment.id">{{ state.assignmentKindLabel(assignment) }}: {{ assignment.title }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="card__body">
+    @if (!state.selectedAssignment()) {
+      <div class="empty">
+        <div class="empty__title">{{ 'quizManagement.participation.noAssignment' | translate }}</div>
+        <p>{{ 'quizManagement.participation.noAssignmentDesc' | translate }}</p>
+      </div>
+    } @else if (state.isLoadingRecords() && participationRows().length === 0) {
+      <div class="empty">{{ 'quizManagement.participation.loading' | translate }}</div>
+    } @else {
+      <div class="badge-row" style="margin-bottom: 0.875rem;">
+        <span class="quiz-meta-tag quiz-meta-tag--neutral">{{ state.getQuizName(state.selectedAssignment()!.quizId) }}</span>
+        <span class="quiz-meta-tag class-tag">{{ state.getClassName(state.selectedAssignment()!.classId) }}</span>
+        <span class="quiz-meta-tag quiz-meta-tag--neutral">{{ 'quizManagement.assignments.due' | translate : { date: (state.selectedAssignment()!.dueAt | date:'mediumDate') } }}</span>
+        <span class="badge badge--brand">{{ participationCompletedCount() }}/{{ participationRows().length }} {{ 'quizManagement.participation.completed' | translate }}</span>
+        @if (lockedCount() > 0) {
+          <span class="badge badge--danger">{{ 'quizManagement.participation.lockedCount' | translate : { count: lockedCount() } }}</span>
+        }
+      </div>
+      <div class="stack stack--sm">
+        @for (row of participationRows(); track row.uid) {
+          <div class="list-row">
+            <div class="avatar avatar--sm avatar--brand">{{ state.studentInitial(row.name) }}</div>
+            <div class="list-row__main">
+              <div class="cell-stack__main">{{ row.name }}</div>
+              @if (row.endedAt) {
+                <div class="quiz-management__cell-stack__sub">{{ 'quizManagement.participation.finished' | translate : { date: (row.endedAt | date:'short') } }}</div>
+              }
+            </div>
+            @if (row.correctCount !== null) {
+              <!--
+                Counts, not a percentage. The glyphs are decorative — the
+                label carries the meaning for assistive tech, since "✓ 7"
+                announces as little more than "7".
+              -->
+              <span class="badge badge--success"
+                    [attr.aria-label]="('quizResult.correct' | translate) + ': ' + row.correctCount">
+                <span aria-hidden="true">✓</span> {{ row.correctCount }}
+              </span>
+              <span class="badge badge--danger"
+                    [attr.aria-label]="('quizResult.incorrect' | translate) + ': ' + row.wrongCount">
+                <span aria-hidden="true">✗</span> {{ row.wrongCount }}
+              </span>
+            }
+            <span class="badge" [ngClass]="{
+              'badge--success': row.status === 'completed',
+              'badge--info': row.status === 'in-progress',
+              'badge--warning': row.status === 'overdue',
+              'badge--muted': row.status === 'not-started'
+            }">{{ row.status === 'not-started' ? ('quizManagement.participation.notStarted' | translate) : row.status }}</span>
+
+            <!--
+              "One Time Join" containment. Only teachers can lift this: the
+              security rules deny a student any write that clears it, so if this
+              control is not used the student stays out.
+
+              Unlock resumes the attempt they were in; Reset forgets it and
+              gives them a fresh sitting. Both are shown because a dropped
+              connection and a deliberate walk-out land in the same state, and
+              only the teacher knows which one this was.
+            -->
+            @if (row.isLocked) {
+              <span class="badge badge--danger" [title]="'quizManagement.participation.lockedHint' | translate">
+                <span aria-hidden="true">&#128274;</span>
+                {{ 'quizManagement.participation.locked' | translate }}
+                @if (row.lock!.exitAttempts > 0) {
+                  ({{ 'quizManagement.participation.exits' | translate : { count: row.lock!.exitAttempts } }})
+                }
+              </span>
+              <button type="button" class="btn btn--ghost btn--sm"
+                      (click)="unlock(row)" [disabled]="pendingLockAction() === row.uid">
+                {{ 'quizManagement.participation.unlock' | translate }}
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm"
+                      (click)="resetLock(row)" [disabled]="pendingLockAction() === row.uid">
+                {{ 'quizManagement.participation.resetAccess' | translate }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <div class="empty"><div class="empty__title">{{ 'quizManagement.participation.noTargetStudents' | translate }}</div></div>
+        }
+      </div>
+    }
+  </div>
+</div>

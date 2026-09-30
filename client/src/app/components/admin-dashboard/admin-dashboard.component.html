@@ -1,0 +1,21 @@
+<div class="dashboard-hero" [class]="'dashboard-hero--' + roleType()">
+  <div class="dashboard-hero__intro">
+    <h1 class="page__title">{{ dashboardTitleKey() | translate }}</h1>
+    <p class="page__subtitle">{{ dashboardSubtitleKey() | translate }}</p>
+  </div>
+  
+</div>
+
+<div class="dashboard-content">
+  @switch (roleType()) {
+    @case ('applicationAdmin') {
+      <app-application-admin-dashboard-view></app-application-admin-dashboard-view>
+    }
+    @case ('teacher') {
+      <app-teacher-dashboard-view></app-teacher-dashboard-view>
+    }
+    @default {
+      <app-no-access-view></app-no-access-view>
+    }
+  }
+</div>

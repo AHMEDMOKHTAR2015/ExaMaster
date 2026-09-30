@@ -1,0 +1,1063 @@
+/* ============================================================
+   QuizMaster — narrow-viewport and touch layer
+   ============================================================
+
+   Loaded immediately after `styles.css` in `angular.json`, and that order is
+   load-bearing: nearly everything here matches at the same specificity as the
+   base rule it overrides, so the cascade's "later wins" is what makes it
+   apply. Moving this above `styles.css` reverts the app to its desktop layout
+   on a phone without producing a single error.
+
+   WHAT LIVES HERE
+   Every rule gated on a viewport width or on pointer type. Adding a breakpoint
+   anywhere else splits the responsive story across two files again, which is
+   the thing this file exists to stop.
+
+   WHAT DELIBERATELY DOES NOT
+   - Rules that exist *because of* narrow screens but are not gated on one. The
+     `.tbl-scroll` / `.homework-table` overflow family in `styles.css` is the
+     main case: it applies at every width, and a table that scrolls on a wide
+     monitor is correct, not a mobile concession. Moving it would mean
+     `styles.css` alone renders a broken desktop.
+   - `@media (hover: hover)` on `.option`, which *withholds* a desktop style on
+     touch rather than adding a mobile one. It reads as one of that component's
+     states and belongs beside `:active` and `.is-selected`.
+   - Safe-area insets. `env(safe-area-inset-*)` resolves to `0px` until
+     `src/index.html` carries `viewport-fit=cover`, and turning that on makes
+     the page paint under the notch and the home indicator — every fixed and
+     edge-anchored element in 35 templates then needs its own inset. That is a
+     change worth making on purpose, not as a side effect of this split.
+
+   BREAKPOINTS
+   Four, and new work should reuse one rather than introduce a fifth:
+     1100px  `.profile-panel` stops being sticky. Its own number because the
+             panel needs more room than the shell does, not less.
+      900px  the shell mode switch — the sidebar becomes an overlay drawer, and
+             anything else that is genuinely a different layout on a phone.
+      720px  intra-table column tightening in the quiz-counts popup.
+      640px  side-by-side comparisons that stop being comparisons once each
+             side is a few characters wide.
+   Plus `pointer: coarse`, which is not a breakpoint — see its section.
+   A custom property cannot be used in a media query condition, so these cannot
+   be tokenised; this list is the only place they are written down together.
+   Prefer a container query over adding a fifth.
+   ============================================================ */
+
+
+/* ============================================================
+   Shell — the drawer
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-w);
+    /* The base rule sets `height: 100vh`, which on iOS Safari means the tallest
+       possible viewport — the part behind the address bar is unreachable, so the
+       sign-out control at the drawer's foot cannot be tapped. `dvh` tracks the
+       visible height; the `vh` line stays as the fallback for browsers without it. */
+    height: 100vh;
+    height: 100dvh;
+    max-width: 86vw;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .app.is-sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle {
+    display: grid;
+  }
+
+  .mobile-only {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 900px) {
+  [dir="rtl"] .sidebar {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  [dir="rtl"] .app.is-sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+}
+
+
+/* ============================================================
+   Shell — topbar and page gutters
+   ============================================================ */
+
+@media (max-width: 900px) {
+  /* 75px of a 640px-tall phone viewport is 12% of the screen given to a
+     breadcrumb, on every route, permanently — the topbar is sticky. The
+     controls inside it are unaffected: they are 36px, and the coarse-pointer
+     section below raises them to 44px, which still clears 60px. */
+  :root {
+    --topbar-h: 3.75rem;
+  }
+
+  .topbar {
+    padding: 0 var(--pad-page-inline);
+    gap: 0.625rem;
+    background: var(--brand-600);
+  }
+
+  .crumbs__current{
+    color: var(--surface);
+  }
+
+  /* The topbar is --brand-600 here, so its three icon buttons (hamburger,
+     language, bell — all `.topbar__icon`) need a dark-ground treatment. The
+     base class is built for the light topbar: a --surface card with a
+     --border ring and an --ink-2 glyph.
+
+     Scoped to `.topbar` and gated on this width rather than folded into the
+     `pointer: coarse` tap-target rule below, which is shared with .nav-item,
+     .popup__close (12 dialogs), .back-btn and four more — recolouring there
+     would repaint every dialog's close button and every sidebar link on any
+     touchscreen, including tablets at desktop widths where this topbar is
+     still light. */
+  .topbar .topbar__icon {
+    background: color-mix(in srgb, var(--surface) 14%, transparent);
+    border-color: color-mix(in srgb, var(--surface) 34%, transparent);
+    color: var(--surface);
+    border-radius: var(--r-pill);
+  }
+
+  /* The base :hover is --surface-3, a near-white card meant for the light
+     topbar. It matters more than hover usually does on a phone: touch
+     browsers hold :hover on the last thing tapped until something else is
+     tapped, so that light grey is what a tap leaves sitting on the dark bar. */
+  .topbar .topbar__icon:hover {
+    background: color-mix(in srgb, var(--surface) 26%, transparent);
+  }
+
+  /* `--pad-page-inline` was defined for exactly this and used nowhere, while
+     `.page` hardcoded 32px and then reassigned it to 16px here — the stepped
+     gutter the token was written to replace. Reading the token instead makes
+     the gutter continuous across the breakpoint rather than jumping at it. */
+  .page {
+    padding: var(--pad-section) var(--pad-page-inline) 2.5rem;
+  }
+
+  /* Extra clearance only for the roles that actually get a fixed tab bar —
+     see .page--has-tabbar in app.component.html. A blanket bottom padding on
+     every route would be wrong for teacher/admin, who still navigate via the
+     drawer and have no bar to clear. */
+  .page.page--has-tabbar {
+    padding-block-end: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tabbar {
+    display: flex;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 0.375rem 0.75rem calc(0.375rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-top: 1px solid var(--border);
+    /* 2px, matching every other backdrop-filter in the app (styles.css:1443,
+       1898, 6594, 8950) — those are all transient overlays; this one sits
+       fixed over actively-scrolling content for the whole session, so it is
+       the one place a heavier blur would cost a repaint on every scroll
+       frame rather than once on open. */
+    backdrop-filter: blur(2px);
+    gap: 0.25rem;
+  }
+
+  .tabbar__item {
+    flex: 1;
+    min-height: var(--tap-min, 2.75rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1875rem;
+    border: 0;
+    background: transparent;
+    color: var(--ink-4);
+    font-size: var(--font-2xs);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tabbar__item svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .tabbar__item.is-active {
+    color: var(--brand-700);
+    font-weight: 700;
+  }
+
+  /* Page actions are a wrapped flex row; below the drawer breakpoint a wrapped
+     row of two buttons leaves each one a sliver of the line it wrapped onto.
+     Letting them span the row makes them both readable and tappable. */
+  .page__head {
+    gap: 0.875rem;
+    margin-bottom: 1.125rem;
+  }
+
+  .page__actions {
+    width: 100%;
+  }
+
+  .page__actions > .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+
+/* ============================================================
+   Dashboard hero
+   ============================================================
+
+   `.page__title` used to be pinned to `width: 300px` here and `.page__subtitle`
+   to 180px, with `-7px` and `20px` margin corrections on top. That was a fix
+   for one surface applied to all thirteen: the constraint existed to keep hero
+   text off the illustration behind it, and every other `.page__head` in the app
+   paid for it with a title that stopped at 300px and a subtitle reflowed into a
+   180px ribbon — narrower than the phone it was meant to fit.
+
+   The constraint belongs to the artwork, so it is answered at the artwork: on a
+   narrow panel the legibility wash runs the full width and the illustration
+   drops behind it as a faint accent. The headings are then free to use the
+   whole line, which is what a phone actually has to offer.
+
+   Both directions are restated in full. The `[dir="rtl"]` mirrors in
+   `styles.css` re-declare these backgrounds at (0,2,0), and a media query adds
+   no specificity of its own — so a single bare-class override here would take
+   effect in English and be silently ignored in Arabic, which is exactly the
+   split-language bug the base file's comment warns about. And it is the whole
+   `background` shorthand rather than `background-image` because the last layer
+   is the gradient border clipped to `border-box`: replacing only the image list
+   drops that layer and the panel loses its outline. */
+
+@media (max-width: 900px) {
+  .dashboard-hero--teacher,
+  .dashboard-hero--student,
+  .dashboard-hero--applicationAdmin,
+  .dashboard-hero--userAdmin {
+    min-height: 6.25rem;
+    background:
+      linear-gradient(to right,
+          var(--surface) 0%,
+          var(--surface) 58%,
+          color-mix(in srgb, var(--surface) 84%, transparent) 100%)
+        left top / 100% 100% no-repeat padding-box,
+      var(--dashboard-hero-art) right center / auto 76% no-repeat padding-box,
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(to right, #4274A8 0%, #D0DBE9 100%) border-box;
+  }
+
+  [dir="rtl"] .dashboard-hero--teacher,
+  [dir="rtl"] .dashboard-hero--student,
+  [dir="rtl"] .dashboard-hero--applicationAdmin,
+  [dir="rtl"] .dashboard-hero--userAdmin {
+    background:
+      linear-gradient(to left,
+          var(--surface) 0%,
+          var(--surface) 58%,
+          color-mix(in srgb, var(--surface) 84%, transparent) 100%)
+        right top / 100% 100% no-repeat padding-box,
+      var(--dashboard-hero-art) left center / auto 76% no-repeat padding-box,
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(to left, #4274A8 0%, #D0DBE9 100%) border-box;
+  }
+}
+
+
+/* ============================================================
+   Tab strips
+   ============================================================ */
+
+@media (max-width: 900px) {
+  /* `.tabs` is a flex row with no `flex-wrap`, so a five-tab strip does not
+     wrap — it overflows the page and takes the horizontal scrollbar with it,
+     which then moves every other surface sideways too. Scrolling the strip
+     itself keeps the overflow where it belongs and keeps the tab labels
+     readable; wrapping them would give a two-line strip whose second row reads
+     as a different control. */
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs button {
+    flex: 0 0 auto;
+  }
+
+  /* Toolbar search fields carry a `min-width` of 220-240px so they stay usable
+     in a wide row. On a phone that floor plus a select beside it exceeds the
+     line, and the search box — the control the screen is for — is the one that
+     loses. Give it the row. */
+  .users-toolbar__search,
+  .keys-toolbar__search,
+  .search-box,
+  .table-toolbar .input-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .table-toolbar .input-wrap > .input {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   Dialogs
+   ============================================================ */
+
+@media (max-width: 900px) {
+  /* `.popup` caps its height at `100dvh - 2 * clamp(12px, 3vw, 24px)`, but the
+     overlay's padding was a flat 24px. Below an 800px-wide viewport the clamp
+     resolves under 24px, so the dialog reserved less room than the overlay
+     actually took and stood up to 24px taller than the space it had — enough
+     to push a footer button off a phone screen. Same expression, so they agree
+     at every width. */
+  .popup-overlay {
+    padding: clamp(0.75rem, 3vw, 1.5rem);
+  }
+
+  .popup__head,
+  .popup__body,
+  .popup__foot {
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Two buttons on one line at this width are each about 140px of a 328px row,
+     and the labels here are sentences ("Save changes", "Add teacher"), not
+     verbs. Stacked, they are full-width targets; DOM order is cancel-then-
+     confirm throughout, so `column` lands the confirming action at the bottom,
+     nearest the thumb. */
+  .popup__foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .popup__foot > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* One Time Join as a bottom sheet, ported from the "Contained sitting"
+     Claude Design artboard. Opt-in modifier rather than touching
+     .popup-overlay/.popup directly — those are shared by 14 dialogs. */
+  .popup-overlay--sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .popup-overlay--sheet > .popup {
+    width: 100%;
+    max-width: none;
+    /* .popup sets `margin: auto`, and a cross-axis auto margin overrides
+       align-items — without this the sheet stays centred instead of
+       docking to the bottom. */
+    margin-block: auto 0;
+    border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+    max-height: 88dvh;
+    animation: otjSheetIn 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popup-overlay--sheet > .popup {
+      animation: none;
+    }
+  }
+
+  @keyframes otjSheetIn {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  .one-time-join::before {
+    content: "";
+    width: 2.375rem;
+    height: 0.25rem;
+    border-radius: var(--r-pill);
+    background: var(--border);
+    margin: 0.75rem auto 0.25rem;
+  }
+
+  .one-time-join__head {
+    display: block;
+    background: none;
+    border-bottom: 0;
+    padding-block: 0.25rem 0;
+  }
+
+  .one-time-join__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--r-pill);
+    background: var(--rose-50);
+    color: var(--rose-500);
+  }
+
+  .one-time-join__head .popup__title {
+    font-size: var(--font-h1);
+    font-weight: 800;
+    line-height: 1.25;
+    margin-top: 0;
+  }
+
+  .one-time-join__icon,
+  .one-time-join__icon--danger {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0;
+    background: none;
+    color: inherit;
+  }
+
+  .one-time-join__icon svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .one-time-join__points {
+    list-style: none;
+    padding-inline-start: 0;
+    counter-reset: otj-point;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .one-time-join__points > li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0.625rem;
+    align-items: start;
+    counter-increment: otj-point;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--ink-1);
+  }
+
+  .one-time-join__points > li::before {
+    content: counter(otj-point);
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--r-pill);
+    display: grid;
+    place-items: center;
+    font: 800 0.6875rem/1 inherit;
+    background: var(--surface-3);
+    color: var(--ink-3);
+  }
+
+  .one-time-join__points > li.one-time-join__point--critical::before {
+    background: var(--rose-50);
+    color: var(--rose-500);
+  }
+
+  .one-time-join .popup__body {
+    padding-block: 0.75rem 0.25rem;
+  }
+
+  .one-time-join .popup__foot {
+    border-top: 0;
+    gap: 0.625rem;
+    padding-block: 0.25rem max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+
+/* ============================================================
+   Notifications panel
+   ============================================================ */
+
+@media (max-width: 900px) {
+  /* Full-screen sheet, ported from the "Notifications" Claude Design
+     artboard — replaces the popover sizing this block used to carry, since
+     a 340px popover has no "outside" to close it against on a phone. */
+  .notif-panel {
+    inset: 0;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notif-panel__head {
+    flex: none;
+    position: static;
+    padding: 0.875rem var(--pad-page-inline);
+    font-size: var(--font-h2);
+    font-weight: 800;
+    color: var(--ink-2);
+    gap: 0.625rem;
+  }
+
+  .notif-panel__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.75rem var(--pad-page-inline) 1.25rem;
+    gap: 0.5rem;
+    background: var(--bg);
+  }
+
+  .notif-item {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    padding: 0.8125rem 0.875rem;
+  }
+
+  .notif-item.is-unread {
+    background: var(--brand-50);
+    border-color: var(--brand-100);
+  }
+
+  .notif-empty {
+    padding-block: 2.5rem;
+    min-height: 60dvh;
+    justify-content: center;
+  }
+
+  /* No page behind a full-screen sheet should scroll with it. Scoped to the
+     panel's own presence, so it needs no component state — .notif-panel is
+     only in the DOM while the sheet is open. */
+  body:has(.notif-panel) {
+    overflow: hidden;
+  }
+}
+
+
+/* ============================================================
+   Key–value detail lists
+   ============================================================ */
+
+@media (max-width: 640px) {
+  /* A 140px key column against a ~330px line leaves the value under 180px, and
+     the values here are names, emails and dates — the half that has to wrap.
+     Stacked, the key becomes a label above its value and both get the line. */
+  .kv {
+    grid-template-columns: 1fr;
+    gap: 0.25rem 0;
+  }
+
+  .kv__key + .kv__val {
+    margin-bottom: 0.5rem;
+  }
+}
+
+
+/* ============================================================
+   Login
+   ============================================================ */
+
+/* The phone login: density only, same tokens as the desktop card. Ported
+   from the "Mobile app design project" Claude Design artboard 1e — every
+   colour it draws already resolves to an existing token. */
+@media (max-width: 900px) {
+  .auth-shell {
+    min-height: 100dvh;
+    padding: 2rem var(--pad-page-inline) 1.5rem;
+    background-image: none;
+    background-color: var(--bg);
+  }
+
+  .auth-frame {
+    border-radius: var(--r-2xl);
+  }
+
+  
+
+  .auth-card {
+    --field-bg: var(--surface-2);
+  }
+
+  .auth-lang {
+    position: static;
+    order: -1;
+    align-self: flex-end;
+    min-width: 3.25rem;
+    justify-content: center;
+    margin-bottom: 0.375rem;
+  }
+
+  .auth-logo--card {
+    display: grid;
+  }
+
+  .auth-card__brand {
+    margin-bottom: 0.875rem;
+  }
+
+  .auth-card__illustration {
+    width: 100%;
+    max-height: 8.25rem;
+    object-fit: contain;
+    margin-bottom: 1.125rem;
+  }
+
+  .auth-form {
+    padding-top: 0;
+    gap: 0.875rem;
+  }
+
+  .auth-submit {
+    height: 3.25rem;
+    border-radius: var(--r-md);
+  }
+}
+
+/* The login's two-column split: the frame widens and the decorative panel
+   appears together, so they belong in one block. 900px, not the 992px this
+   used to carry — that was the only place in the file using a second desktop
+   threshold, and it left 900-992px windows showing a desktop app shell next to
+   a phone-shaped login, with enough room for the split going unused.
+
+   Written as `min-width`, which makes it the one rule here that adds rather
+   than overrides: the base stylesheet's login *is* the phone login, and this
+   is the desktop enhancement on top. It lives in this file anyway, because the
+   question it answers — what happens at 900px — is this file's question. */
+@media (min-width: 900px) {
+  .auth-frame {
+    max-width: 65rem;
+    min-height: 40rem;
+    grid-template-columns: 1.05fr 1fr;
+    align-items: stretch;
+  }
+
+  .auth-brand {
+    display: flex;
+    order: -1;
+  }
+}
+
+
+/* ============================================================
+   Available Quizzes — profile panel
+   ============================================================ */
+
+/* On narrow screens, stack profile below content */
+@media (max-width: 1100px) {
+  .profile-panel {
+    position: static;
+  }
+}
+
+
+/* ============================================================
+   Student profile
+   ============================================================ */
+
+/* Same component embedded in Available Quizzes' side panel and standalone at
+   /profile — one set of rules covers both, since both host it inside a
+   `container-type: inline-size` ancestor (.profile-panel or .profile-page). */
+@media (max-width: 900px) {
+  /* Shed the card chrome so content sits on the page ground, matching every
+     other screen in this pass. */
+  .profile-card {
+    background: none;
+    border: 0;
+    padding: 0;
+    box-shadow: none;
+    gap: 0.875rem;
+  }
+
+  /* The embedded copy inside Available Quizzes' side panel is redundant on
+     mobile now that Profile is its own bottom-tab destination (.profile-page,
+     below) — showing it here duplicated the same widget under the quiz list.
+     Scoped to .profile-panel specifically so the standalone /profile route's
+     own .profile-card is unaffected. */
+  .profile-panel .profile-card {
+    display: none;
+  }
+
+  .profile-card .avatar {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .profile-name {
+    font-size: var(--font-h1);
+  }
+
+  .profile-email {
+    font-size: var(--font-sm);
+  }
+
+  .member-badge {
+    background: var(--surface-3);
+    color: var(--ink-3);
+  }
+
+  .class-badge {
+    background: var(--iris-50);
+    color: var(--iris-700);
+  }
+
+  /* .stats-grid's own @container rule needs 420px of a panel that measures
+     ~358px on a phone, so it never fires there — force 3-up directly. */
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stat-card {
+    background: var(--surface);
+  }
+
+  .stat-value {
+    font-size: var(--font-display);
+  }
+
+  .stat-label {
+    font-size: var(--font-xs);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .stat-card.highlight {
+    background: var(--brand-50);
+    border-color: var(--brand-700);
+  }
+
+  .stat-card.highlight .stat-value,
+  .stat-card.highlight .stat-label {
+    color: var(--brand-700);
+  }
+
+  .section-header h4 {
+    font-size: var(--font-h2);
+  }
+
+  /* A 320px inner scroller nested inside a page that also scrolls. */
+  .quizzes-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .quiz-item {
+    background: var(--surface);
+    padding: 0.8125rem 0.875rem;
+    border-radius: var(--r-lg);
+  }
+
+  .quiz-name {
+    font-size: var(--font-body);
+  }
+
+  .quiz-score {
+    font-size: var(--font-h3);
+  }
+
+  .quiz-item-meta,
+  .quiz-item-pending {
+    font-size: var(--font-xs);
+  }
+
+  .sign-out-btn {
+    height: 3rem;
+    margin-block-start: 0.375rem;
+  }
+}
+
+/* The standalone /profile route reads as a narrow settings-style page even on
+   a wide screen, rather than stretching a single card edge-to-edge. */
+@media (min-width: 900px) {
+  .profile-page {
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+}
+
+
+/* ============================================================
+   Quiz builder
+   ============================================================ */
+
+/* Below this the two columns would each be too narrow to be worth splitting. */
+@media (max-width: 900px) {
+
+  .builder-top .form-section {
+    margin-top: 0;
+    height: auto;
+  }
+}
+
+/* The paired shuffle toggles stop being a pair once each side is about
+   150px — the label wraps and the two read as broken rows rather than a
+   comparison. Same reasoning as the other 640px rules in this file. */
+@media (max-width: 640px) {
+  .config-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ============================================================
+   Quiz counts popup
+   ============================================================ */
+
+@media (max-width: 720px) {
+
+  .qc-columns__metric,
+  .qc-metric {
+    width: 3.5rem;
+  }
+
+  .qc-children {
+    padding-inline-start: 0.625rem;
+  }
+}
+
+
+/* ============================================================
+   Blank grading — expected vs. given
+   ============================================================ */
+
+/* The comparison needs both strings side by side to be worth anything; on a
+   narrow panel they stack rather than each being squeezed to a few characters. */
+@media (max-width: 640px) {
+  .blank-grade__row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .blank-grade__expected,
+  .blank-grade__flag {
+    grid-column: 2;
+  }
+
+  .blank-grade__flag {
+    justify-self: start;
+  }
+}
+
+
+/* ============================================================
+   Touch targets — coarse pointers
+   ============================================================
+
+   Gated on `pointer: coarse`, not on a width. That is the whole point of this
+   block and the reason it does not add a fifth breakpoint to the four
+   documented at the top of the file: tap size does not vary with the viewport.
+   A 1024px tablet needs large targets; an 900px desktop window does not. Width
+   cannot tell those apart and `pointer` answers exactly the question being
+   asked — is the thing driving this UI a fingertip or a mouse.
+
+   `pointer` reports the *primary* input, so a touchscreen laptop with a
+   trackpad stays `fine` and keeps the desktop density. Nothing here reaches a
+   mouse user, which is why it can be generous without a visual review of every
+   admin screen.
+
+   The floor is 44px (Apple HIG; Material asks 48dp). WCAG 2.2 SC 2.5.8 only
+   requires 24px and applies to mice too, but the controls that fail it here —
+   the checkboxes — sit in table rows whose rhythm a 24px box would change
+   across every admin list, and SC 2.5.8's spacing exception already covers
+   them for a precise pointer. So the desktop keeps 16px and touch gets a real
+   target.
+
+   `min-height` rather than `height`: the used height is clamped by min-height
+   even when a fixed `height` is declared, so each control keeps its own
+   authored height as the floor-free case and simply stops going below the tap
+   minimum here. No existing rule needs editing.
+   ============================================================ */
+
+@media (pointer: coarse) {
+  :root {
+    /* The visible box grows too, not just the hit area — a 16px checkbox under
+       a 44px invisible target reads as a mis-hit when the tap lands "next to"
+       the mark it can see. */
+    --control-box: 1.375rem;
+    --tap-min: 2.75rem;
+  }
+
+  /* The shared button system. Covers most of the app in four selectors. */
+  .btn {
+    min-height: var(--tap-min);
+  }
+
+  .btn--icon {
+    min-width: var(--tap-min);
+  }
+
+  /* Descendant rules that re-declare `height` out-specify `.btn` above, so they
+     are restated at their own specificity. These four are the complete set in
+     this file today — `awk` for `height:` under a selector containing `.btn`
+     to re-derive it if that changes. */
+  .quiz-result__button-container .btn,
+  .assign-popup .popup__foot .btn,
+  .stage-card__actions .btn {
+    min-height: var(--tap-min);
+  }
+
+  /* The One Time Join sheet's own buttons, at the artboard's 48px rather
+     than the generic 44px floor — kept a separate rule since the value
+     differs from the group above. */
+  .one-time-join .popup__foot .btn {
+    min-height: 3rem;
+  }
+
+  /* Chrome that is reachable on a phone: the drawer's nav, the topbar icons,
+     and every dialog's dismiss control. A close button that misses is the most
+     expensive one to miss — it traps the user in the dialog. */
+  .nav-item,
+  .topbar__icon,
+  .back-btn,
+  .popup__close,
+  .modal__close,
+  .modal-close-btn,
+  .notif-panel__close,
+  .sidebar-toggle {
+    min-height: var(--tap-min);
+    min-width: var(--tap-min);
+  }
+
+  /* Tab strips and segmented controls are laid out by padding, not height. */
+  .tabs button,
+  .segmented button {
+    min-height: var(--tap-min);
+  }
+
+  /* Per-surface buttons that predate the `.btn` system — the same
+     copy-per-section drift that produced nine checkbox rules and five
+     `.form-input`s. Listed explicitly because they are not `.btn`; when the BEM
+     pass folds them into the button block, these lines delete themselves and
+     the surfaces inherit the rule above for free. */
+  .expand-btn,
+  .danger-btn,
+  .pagination__btn,
+  .pagination__num,
+  .remove-image-btn,
+  .edit-selected-btn,
+  .primary-btn,
+  .secondary-btn,
+  .sign-out-btn,
+  .toggle-btn,
+  .input-eye {
+    min-height: var(--tap-min);
+    min-width: var(--tap-min);
+  }
+}
+
+
+/* ============================================================
+   Text input on touch — the iOS zoom floor
+   ============================================================
+
+   Mobile Safari zooms the page when a form control smaller than 16px takes
+   focus, and it does not zoom back out. The app's field tokens resolve to
+   12.5-14px, so tapping any search box, filter or answer field magnified the
+   layout and left the page scrolled sideways with the sidebar toggle off
+   screen — recoverable only by pinching back, once per field.
+
+   16px is the browser's threshold, not a design choice, which is why it is a
+   literal here rather than a rung of the type scale: no rung is defined at 16px
+   and inventing one to satisfy a Safari heuristic would put a number in the
+   scale that means nothing to the scale.
+
+   Only the controls the user types into. Buttons, labels and table text keep
+   their authored size — the zoom is triggered by focus, and those never take
+   it. Gated with the tap targets above for the same reason: it is a property of
+   the input device, not of the viewport. */
+
+@media (pointer: coarse) {
+  :root {
+    --field-font: 1rem;
+    /* 16px text does not fit the 38px field the desktop uses — the glyphs sit
+       against the border. 44px is the same floor the tap targets above take. */
+    --field-h: 2.75rem;
+    --select-h: 2.5rem;
+  }
+
+  /* The elements are listed as well as the token, and not redundantly:
+     `.assign-popup` reassigns `--field-font` on itself, and a custom property
+     set on a nearer ancestor beats one set on `:root` no matter which file it
+     came from. The token alone would leave that dialog's fields zooming. */
+  .input,
+  select,
+  .select,
+  textarea,
+  .field textarea,
+  .form-input {
+    font-size: 1rem;
+  }
+
+  /* .input--lg hardcodes its own height, so it never picked up --field-h
+     above — the login fields were the one place in the app that missed the
+     44px tap floor. Reading the token instead of a literal is the fix. */
+  .auth-card {
+    --field-h: 3rem;
+  }
+
+  .input--lg {
+    height: var(--field-h);
+  }
+}
+
+
+/* ============================================================
+   Long unbroken strings
+   ============================================================ */
+
+@media (max-width: 640px) {
+  /* Emails, registration keys and quiz ids have no break opportunity, so at
+     this width they push their container past the viewport and the whole page
+     gains a horizontal scroll — one 40-character string moving every other
+     surface sideways. `anywhere` rather than `break-word` so the browser may
+     also shrink the container's intrinsic minimum, which is what stops the
+     overflow rather than merely wrapping after it. Scoped to the surfaces that
+     display user-entered strings; tables are excluded on purpose, because they
+     have their own horizontal scroll and breaking a column mid-word there
+     would make it harder to read, not easier. */
+  .card__title,
+  .card__sub,
+  .popup__title,
+  .popup__sub,
+  .kv__val,
+  .empty__title,
+  .notif-item__title,
+  .notif-item__msg,
+  .notif-item__feedback,
+  .user-detail__subtitle {
+    overflow-wrap: anywhere;
+  }
+}

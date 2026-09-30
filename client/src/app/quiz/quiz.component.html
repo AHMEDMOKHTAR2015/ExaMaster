@@ -1,0 +1,137 @@
+@if (runner.currentQuiz(); as quiz) {
+  @if (quiz.config?.showClock && runner.mode() !== 'result') {
+    <div class="quiz__timer">
+      {{ runner.questionTimeRemaining() }} / {{ runner.questionDurationLabel() }}
+    </div>
+    <div class="quiz__timer" [attr.title]="'availableQuizzes.totalDuration' | translate">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ runner.totalDurationLabel() }}
+    </div>
+  }
+
+  @if (runner.mode() !== 'result') {
+    <div class="progress-container">
+      <div class="quiz__progress-bar">
+        <div class="quiz__progress-fill" [style.width]="runner.progressWidth()"></div>
+      </div>
+    </div>
+  }
+
+  <div class="quiz__quiz-content">
+    @if (runner.isLoading()) {
+      <div class="question-container active">
+        <div class="skeleton-container">
+          <div class="quiz__skeleton skeleton-question-badge"></div>
+          <div class="quiz__skeleton skeleton-question-text"></div>
+          <div class="quiz__skeleton-options">
+            <div class="quiz__skeleton skeleton-option"></div>
+            <div class="quiz__skeleton skeleton-option"></div>
+            <div class="quiz__skeleton skeleton-option"></div>
+            <div class="quiz__skeleton skeleton-option"></div>
+          </div>
+          <div class="quiz__button-container">
+            <div class="quiz__skeleton skeleton-button"></div>
+          </div>
+        </div>
+      </div>
+    } @else if (runner.mode() === 'quiz' && runner.currentPageQuestions().length > 0) {
+      <div class="question-container active">
+        @if (quiz.config?.showPager) {
+          <div class="question-number">Question {{ runner.pageQuestionLabel() }}</div>
+        }
+
+        @for (question of runner.currentPageQuestions(); track question.id) {
+          <div class="question-page-item">
+            @switch (question.questionTypeId) {
+              @case (QUESTION_TYPE.COMPLETE) {
+                <question-complete
+                  [question]="question"
+                  (answerSelected)="runner.onAnswerSelected()">
+                </question-complete>
+              }
+              @case (QUESTION_TYPE.EXPLAIN) {
+                <question-explain
+                  [question]="question"
+                  (answerSelected)="runner.onAnswerSelected()">
+                </question-explain>
+              }
+              @default {
+                <!-- Choose and Right-or-Wrong: Right-or-Wrong is stored as a
+                     two-option Choose question, so it renders through this path. -->
+                <question-options
+                  [question]="question"
+                  [richText]="!!quiz.config?.richText"
+                  (answerSelected)="runner.onAnswerSelected()">
+                </question-options>
+              }
+            }
+          </div>
+        }
+
+        <div class="quiz__button-container">
+          @if (quiz.config?.allowBack && runner.currentQuestionIndex() > 0) {
+            <button class="btn btn--ghost" (click)="runner.prev()" [disabled]="runner.isSubmitting()">
+              Previous Question
+            </button>
+          }
+          @if (!runner.isLastPage()) {
+            <button class="btn btn--primary" (click)="runner.next()" [disabled]="runner.isSubmitting()">
+              Next Question
+            </button>
+          } @else {
+            <button class="btn btn--primary" (click)="runner.requestSubmit()" [disabled]="runner.isSubmitting()">
+              @if (runner.isSubmitting()) { Submitting... } @else { Submit Quiz }
+            </button>
+          }
+        </div>
+      </div>
+    } @else if (runner.mode() === 'review') {
+      <div class="question-container active review-container">
+        <h3>Review Your Answers</h3>
+        <p>Check your answers below. Click a question to go back and change it.</p>
+        <div class="review-list">
+          @for (item of runner.reviewItems(); track item.index) {
+            <button type="button" class="review-item" (click)="runner.reviewQuestion(item.index)">
+              <span class="review-item__question">{{ item.index + 1 }}. {{ item.name }}</span>
+              @if (item.selectedOptionText) {
+                <span class="review-item__answer">{{ item.selectedOptionText }}</span>
+              } @else {
+                <span class="review-item__answer review-item__answer--missing">Not answered</span>
+              }
+            </button>
+          }
+        </div>
+        <div class="quiz__button-container">
+          <button class="btn btn--primary" (click)="runner.submit()" [disabled]="runner.isSubmitting()">
+            @if (runner.isSubmitting()) { Submitting... } @else { Confirm &amp; Submit }
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (runner.isSubmitting()) {
+      <div class="question-container active">
+        <div class="submitting-container">
+          <div class="submitting-spinner"></div>
+          <h3>Submitting your answers...</h3>
+          <p>Please wait while we validate your responses.</p>
+        </div>
+      </div>
+    }
+
+    @if (runner.mode() === 'result' && !runner.isSubmitting()) {
+      <quiz-result
+        [quiz]="quiz"
+        [embedded]="embedded()"
+        [resultsAvailable]="runner.lastSubmissionSummary()?.resultsAvailable ?? true"
+        [resultsAvailableAt]="runner.lastSubmissionSummary()?.resultsAvailableAt ?? null"
+        [serverScorePercent]="runner.lastSubmissionSummary()?.scorePercent ?? null"
+        [serverCorrectCount]="runner.lastSubmissionSummary()?.correctCount ?? null"
+        (backToDashboard)="goToDashboard()">
+      </quiz-result>
+    }
+  </div>
+}

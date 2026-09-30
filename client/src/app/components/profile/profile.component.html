@@ -1,0 +1,11 @@
+<div class="profile-page">
+  <app-user-profile
+    [profile]="userProfile()"
+    [completedQuizzes]="completedQuizzes()"
+    [stageName]="stageName()"
+    [gradeName]="gradeName()"
+    [className]="className()"
+    [quizStats]="quizStats()"
+    (signOut)="onSignOut()">
+  </app-user-profile>
+</div>

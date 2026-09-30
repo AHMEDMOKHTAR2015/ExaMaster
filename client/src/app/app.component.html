@@ -1,0 +1,464 @@
+<!-- Pre-auth full-screen loading -->
+@if (isAuthLoading()) {
+  <div class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">
+        <img src="assets/icon.png" alt="" />
+      </div>
+      <div class="loading-spinner"></div>
+      <p>{{ 'app.loading' | translate }}</p>
+    </div>
+  </div>
+} @else if (!isAuthenticated()) {
+  <!-- Public layout (login uses .auth-shell internally) -->
+  <router-outlet></router-outlet>
+} @else {
+  <!-- Authenticated app shell -->
+  <!-- `is-locked-down` collapses the grid to a single column: while a "One Time
+       Join" quiz is open the sidebar is not merely hidden, it is not rendered,
+       so nothing in it can be reached by keyboard, by screen reader, or by a
+       stray `routerLink` still sitting in the accessibility tree. -->
+  <div class="app" [class.is-sidebar-open]="isSidebarOpen() && !isLockedDown()" [class.is-locked-down]="isLockedDown()">
+    <!-- Closes the drawer when tapping the dimmed page behind it. Rendered only
+         while open so it never intercepts taps on a desktop viewport. -->
+    @if (isSidebarOpen() && !isLockedDown()) {
+      <div class="sidebar-backdrop" (click)="closeSidebar()" aria-hidden="true"></div>
+    }
+    @if (!isLockedDown()) {
+    <aside class="sidebar" id="app-sidebar">
+      <a [routerLink]="homeRoute()" class="sidebar__brand">
+        <div class="sidebar__logo"><img src="assets/icon.png" alt="" /></div>
+        <div>
+          <div class="sidebar__brand-name">{{ 'app.name' | translate }}</div>
+          <div class="sidebar__brand-sub">{{ 'app.tagline' | translate }}</div>
+        </div>
+      </a>
+
+      @if (isApplicationAdmin() || isTeacher()) {
+        <div class="sidebar__cta">
+          <a [routerLink]="createQuizRoute()" [queryParams]="{ action: 'create' }" class="btn btn--primary sidebar__cta-btn">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            {{ 'nav.createQuiz' | translate }}
+          </a>
+        </div>
+      }
+
+      <nav class="sidebar__sections">
+        @if (isStudentNav()) {
+          <div class="sidebar__label">{{ 'nav.learn' | translate }}</div>
+          <a routerLink="/available-quizzes" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.availableQuizzes' | translate }}
+          </a>
+          <a routerLink="/my-participations" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.myParticipations' | translate }}
+          </a>
+        }
+
+        @if (hasAdminAccess()) {
+          <div class="sidebar__label">{{ 'nav.overview' | translate }}</div>
+          <a [routerLink]="dashboardRoute()" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            {{ 'nav.dashboard' | translate }}
+          </a>
+
+          @if (isParentAdminOnly()) {
+            <a routerLink="/participation-history" routerLinkActive="is-active" class="nav-item">
+              <span class="nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              {{ 'nav.participationHistory' | translate }}
+            </a>
+          }
+
+          @if (isApplicationAdmin()) {
+            <a routerLink="/participations-history" routerLinkActive="is-active" class="nav-item">
+              <span class="nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              {{ 'nav.allParticipations' | translate }}
+            </a>
+          }
+        }
+
+        @if (isTeacher()) {
+          <div class="sidebar__label">{{ 'nav.teaching' | translate }}</div>
+          <a routerLink="/quiz-management" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.quizManagement' | translate }}
+          </a>
+          <!--
+            The workspace's tabs, repeated here as direct links so a teacher can
+            jump straight to one. Same labels as the in-page tab strip (shared
+            `quizManagement.tabs.*` keys) so the two entry points can't drift.
+            `exact` matching keeps only the open tab highlighted — without it the
+            parent's prefix match would light every sub-item up at once.
+          -->
+          <a routerLink="/quiz-management/my-quizzes" routerLinkActive="is-active"
+             [routerLinkActiveOptions]="{ exact: true }" class="nav-item nav-item--sub">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            {{ 'quizManagement.tabs.myQuizzes' | translate }}
+          </a>
+          <a routerLink="/quiz-management/participation" routerLinkActive="is-active"
+             [routerLinkActiveOptions]="{ exact: true }" class="nav-item nav-item--sub">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="9.5" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'quizManagement.tabs.participation' | translate }}
+          </a>
+          <a routerLink="/quiz-management/results" routerLinkActive="is-active"
+             [routerLinkActiveOptions]="{ exact: true }" class="nav-item nav-item--sub">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 15l4-4 3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'quizManagement.tabs.results' | translate }}
+          </a>
+          <a routerLink="/quiz-management/validation" routerLinkActive="is-active"
+             [routerLinkActiveOptions]="{ exact: true }" class="nav-item nav-item--sub">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 3l7 3.2v5.1c0 4.3-3 8.3-7 9.2-4-.9-7-4.9-7-9.2V6.2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'quizManagement.tabs.validation' | translate }}
+            @if (pendingReviewCount() > 0) {
+              <span class="nav-item__count">{{ pendingReviewCount() }}</span>
+            }
+          </a>
+        }
+
+        @if (isApplicationAdmin()) {
+          <div class="sidebar__label">{{ 'nav.application' | translate }}</div>
+          <a routerLink="/quizzes-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12c.552 0 1-.448 1-1V5c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 21h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.quizzesHomework' | translate }}
+          </a>
+          <a routerLink="/users-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.users' | translate }}
+          </a>
+          <a routerLink="/application-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.stagesGroups' | translate }}
+          </a>
+          <a routerLink="/teachers-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.teachers' | translate }}
+          </a>
+          <a routerLink="/subjects-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.subjects' | translate }}
+          </a>
+          <a routerLink="/translations-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 5h10M9 3v2m0 0c0 4-2 7-5 9m3-3c1.5 2 3.5 3.5 6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 19l3.5-8 3.5 8m-6-2h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.translations' | translate }}
+          </a>
+          <a routerLink="/registration-keys-admin" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.registrationKeys' | translate }}
+          </a>
+        }
+
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="avatar avatar--sm">{{ userInitials() }}</div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:600; font-size:0.8125rem; color: var(--sidebar-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ user()?.displayName }}</div>
+            <div style="font-size:0.6875rem; color: var(--sidebar-ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ roleLabel() }}</div>
+            <!-- Which organization this account belongs to. Hidden rather than
+                 blank for the vendor's platformAdmin, who belongs to none. -->
+            @if (tenantName()) {
+              <div style="display:flex; align-items:center; gap:0.25rem; margin-top:0.125rem; font-size:0.6875rem; color: var(--sidebar-ink-faint); opacity:.75; overflow:hidden;">
+                <svg viewBox="0 0 24 24" fill="none" width="11" height="11" style="flex-shrink:0;" aria-hidden="true">
+                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1M9 13h1m4 0h1M9 17h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ tenantName() }}</span>
+              </div>
+            }
+          </div>
+          <button class="btn btn--ghost btn--icon btn--sm lang-btn" (click)="lang.toggle()" [title]="'lang.switchTo' | translate" [attr.aria-label]="'lang.switchTo' | translate">
+            {{ 'lang.label' | translate }}
+          </button>
+          <button class="btn btn--ghost btn--icon btn--sm" (click)="showChangePassword.set(true)" [title]="'changePassword.title' | translate" [attr.aria-label]="'changePassword.title' | translate">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true">
+              <circle cx="8" cy="15" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="m10.8 12.2 9.2-9.2M17 6l3 3M14 9l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="btn btn--ghost btn--icon btn--sm" (click)="signOut()" [title]="'nav.signOut' | translate" [attr.aria-label]="'nav.signOut' | translate">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+    }
+
+    <div class="main">
+      @if (!isLockedDown()) {
+      <header class="topbar" [style.opacity]="topbarOpacity()" [class.topbar--faded]="topbarOpacity() === 0">
+        <!-- The only way to reach navigation below 900px, where the sidebar is
+             parked off-screen. CSS hides this button on wider viewports. -->
+        <button
+          class="topbar__icon sidebar-toggle"
+          (click)="toggleSidebar($event)"
+          [attr.aria-expanded]="isSidebarOpen()"
+          aria-controls="app-sidebar"
+          [title]="'nav.menu' | translate"
+          [attr.aria-label]="'nav.menu' | translate">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20" aria-hidden="true">
+            @if (isSidebarOpen()) {
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            } @else {
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            }
+          </svg>
+        </button>
+        <div class="crumbs">
+          <span class="crumbs__current">
+            @if (user()?.displayName) {
+              {{ 'topbar.welcomeBack' | translate : { name: user()?.displayName } }}
+            } @else {
+              {{ 'topbar.welcome' | translate }}
+            }
+          </span>
+        </div>
+        <div class="topbar__spacer"></div>
+        <button class="topbar__icon lang-toggle" (click)="lang.toggle()" [title]="'lang.switchTo' | translate">
+          <span class="lang-toggle__label">{{ 'lang.label' | translate }}</span>
+        </button>
+        <div class="notif-wrap">
+          <button class="topbar__icon" (click)="toggleNotifications($event)" [title]="'topbar.notifications' | translate" [attr.aria-label]="'topbar.notifications' | translate" [attr.aria-expanded]="isNotifOpen()" aria-controls="app-notif-panel">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            @if (unreadCount() > 0) { <span class="topbar__icon-dot"></span> }
+          </button>
+        </div>
+      </header>
+      <!-- Hoisted out of .topbar/.notif-wrap: .topbar is a sticky positioned
+           element (a stacking context) and also fades to opacity:0 after
+           150px of scroll, so a panel born inside it could never paint above
+           the mobile drawer and would vanish the moment the page scrolled.
+           Still gated on !isLockedDown() so a One Time Join sitting renders
+           no navigation chrome at all. -->
+      @if (isNotifOpen()) {
+        <div class="notif-panel" id="app-notif-panel" role="dialog" [attr.aria-label]="'notifications.title' | translate" (click)="$event.stopPropagation()">
+          <div class="notif-panel__head">
+            <span>{{ 'notifications.title' | translate }}</span>
+            @if (unreadCount() > 0) {
+              <button class="btn btn--ghost btn--sm" (click)="markAllRead()">{{ 'notifications.markAllRead' | translate }}</button>
+            }
+            <button type="button" class="notif-panel__close mobile-only" (click)="closeNotifications()" [attr.aria-label]="'common.close' | translate">
+              <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="notif-panel__list">
+            @for (n of notifications(); track n.id) {
+              <button class="notif-item" [class.is-unread]="!n.read" (click)="markRead(n)">
+                <span class="notif-item__icon" [class]="'notif-item__icon--' + notifTone(n)" aria-hidden="true">
+                  @switch (notifTone(n)) {
+                    @case ('approved') {
+                      <svg viewBox="0 0 24 24" fill="none" width="17" height="17"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    }
+                    @case ('revision') {
+                      <svg viewBox="0 0 24 24" fill="none" width="17" height="17"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    }
+                    @case ('completed') {
+                      <svg viewBox="0 0 24 24" fill="none" width="17" height="17"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/></svg>
+                    }
+                    @default {
+                      <svg viewBox="0 0 24 24" fill="none" width="17" height="17"><path d="M12 3l7 3.2v5.1c0 4.3-3 8.3-7 9.2-4-.9-7-4.9-7-9.2V6.2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    }
+                  }
+                </span>
+                <span class="notif-item__body">
+                  <span class="notif-item__head">
+                    <span class="notif-item__title">{{ notifTitleKey(n) | translate }}</span>
+                    @if (!n.read) { <span class="notif-item__dot" aria-hidden="true"></span> }
+                  </span>
+                  <span class="notif-item__msg">{{ notifMessageKey(n) | translate : notifMessageParams(n) }}</span>
+                  @if (n.feedback) { <span class="notif-item__feedback">{{ n.feedback }}</span> }
+                  <span class="notif-item__date">{{ n.createdAt | date:'short' }}</span>
+                </span>
+              </button>
+            } @empty {
+              <div class="notif-empty">
+                <img src="assets/quiz-images/AllCaughtUp.svg" alt="" width="120" height="120" />
+                <p>{{ 'notifications.empty' | translate }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      }
+
+      <main class="page" [class.page--has-tabbar]="showTabbar() && !isLockedDown()" [@routeAnimation]="outlet.isActivated ? outlet.activatedRoute : ''">
+        <router-outlet #outlet="outlet"></router-outlet>
+      </main>
+
+      <!-- Bottom tab bar: the sidebar's mobile replacement for the two roles
+           an artboard covers. Same !isLockedDown() gate as the sidebar/topbar
+           above — a One Time Join sitting renders no navigation at all. -->
+      @if (!isLockedDown() && showTabbar()) {
+        <nav class="tabbar">
+          @if (isStudentNav()) {
+            <a routerLink="/available-quizzes" routerLinkActive="is-active" class="tabbar__item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ 'nav.tabs.quizzes' | translate }}
+            </a>
+            <a routerLink="/my-participations" routerLinkActive="is-active" class="tabbar__item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ 'nav.tabs.history' | translate }}
+            </a>
+          } @else if (isParentAdminOnly()) {
+            <a routerLink="/parent-dashboard" routerLinkActive="is-active" class="tabbar__item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              {{ 'nav.dashboard' | translate }}
+            </a>
+            <a routerLink="/participation-history" routerLinkActive="is-active" class="tabbar__item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ 'nav.tabs.history' | translate }}
+            </a>
+          }
+          <button type="button" class="tabbar__item" [class.is-active]="isNotifOpen()" (click)="toggleNotifications($event)" [attr.aria-expanded]="isNotifOpen()" aria-controls="app-notif-panel">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ 'nav.tabs.alerts' | translate }}
+          </button>
+          @if (isStudentNav()) {
+            <!-- Parents have no equivalent destination yet: /profile renders
+                 the student's own quiz-completion stats via studentGuard, and
+                 nothing analogous exists for a parent account. Ships as a
+                 3-tab bar for that role until one does — see the shell
+                 write-up for the open question. -->
+            <a routerLink="/profile" routerLinkActive="is-active" class="tabbar__item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              {{ 'nav.tabs.profile' | translate }}
+            </a>
+          }
+        </nav>
+      }
+    </div>
+  </div>
+}
+
+@if (showChangePassword()) {
+  <app-change-password-dialog (closed)="showChangePassword.set(false)" />
+}
+
+<!-- Global Loading Spinner -->
+<app-loading-spinner></app-loading-spinner>

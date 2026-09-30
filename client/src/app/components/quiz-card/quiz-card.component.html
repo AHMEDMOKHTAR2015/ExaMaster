@@ -1,0 +1,127 @@
+<!--
+  Deliberately shares `.assignment-start-card`'s classes rather than keeping a
+  second card style of its own. Both cards sit in the same "Your Quizzes" grid,
+  one per bank quiz and one per assignment, and two different card languages
+  side by side read as an inconsistency rather than a distinction. The content
+  differs — a quiz has a cover image and a difficulty, an assignment has a
+  teacher and a due date — but the frame, the type scale and the footer button
+  are now one thing.
+-->
+<div
+  class="assignment-start-card quiz-card"
+  [class.quiz-card--locked]="locked()"
+  [@cardHover]="isHovered() ? 'hovered' : 'normal'"
+  (mouseenter)="setHovered(true)"
+  (mouseleave)="setHovered(false)">
+
+  <span class="difficulty-badge badge" [ngClass]="difficulty.class">
+    {{ difficulty.level }}
+  </span>
+
+  <!-- Cover image. `contain` inside a fixed band, so the whole illustration is
+       visible whatever its proportions — see `.card-header__img`. -->
+  <div class="card-header">
+    @if (quiz().config?.ImagePath && !imageError()) {
+      <img
+        class="card-header__img"
+        [src]="quiz().config?.ImagePath"
+        [alt]="quiz().name"
+        loading="lazy"
+        (error)="onImageError()"
+      />
+    } @else {
+      <!-- The fallback cover. Points at a file that exists: this was
+           `DefaultQuiz.png`, which is not in `src/assets/quiz-images` and never
+           has been — so every quiz without its own image, and every image that
+           failed to load, rendered a broken-image icon. -->
+      <img
+        class="card-header__img"
+        src="assets/quiz-images/QuizImages/QuizImage1.svg"
+        [alt]="quiz().name"
+        loading="lazy"
+      />
+    }
+  </div>
+
+  <div class="assignment-start-card__body">
+    <!-- Same three bands as the assignment card beside it: subject, title,
+         stats — then the card's own third piece below them. -->
+    @if (subjectName()) {
+      <span class="subject-tag" [style.--subject-color]="subjectColor() || 'var(--ink-3)'">{{ subjectName() }}</span>
+    }
+
+    <h3 class="assignment-start-card__title">{{ quiz().name }}</h3>
+
+    <div class="assignment-start-card__stats">
+      <div class="assignment-start-card__stat">
+        <span class="assignment-start-card__stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
+            <path d="M9 6h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+            <path d="M9 12h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
+            <path d="M9 18h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="assignment-start-card__stat-value">{{ quiz().questionCount }}</span>
+        <span class="assignment-start-card__stat-label">{{ 'availableQuizzes.questionsLabel' | translate }}</span>
+      </div>
+
+      <span class="assignment-start-card__divider" aria-hidden="true"></span>
+
+      <div class="assignment-start-card__stat">
+        <span class="assignment-start-card__stat-icon assignment-start-card__stat-icon--accent">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="assignment-start-card__stat-value">{{ estimatedMinutes }}</span>
+        <span class="assignment-start-card__stat-label">{{ 'availableQuizzes.minutesLabel' | translate }}</span>
+      </div>
+    </div>
+
+    @if (quiz().reviewerName) {
+      <!-- Who marks this quiz's Complete and Explain answers. A bank quiz has no
+           assignment, so this is the only place a student can see who reviews
+           it — the assignment card shows its assigning teacher in the same slot.
+           Absent on quizzes saved before the reviewer field existed. -->
+      <div class="assignment-start-card__teacher">
+        <!-- "Reviewed by", not "Created by": a bank quiz is authored by an
+             application admin, and this teacher is the reviewer that admin
+             nominated to mark its Complete and Explain answers. Saying they
+             created it would be wrong, and would contradict the assignment
+             card, where the named teacher genuinely is the author. -->
+        <span class="assignment-start-card__teacher-label">{{ 'availableQuizzes.reviewedByTeacher' | translate }}</span>
+        <span class="assignment-start-card__teacher-name">
+          <span class="avatar avatar--brand">{{ reviewerInitials }}</span>
+          {{ quiz().reviewerName }}
+        </span>
+      </div>
+    }
+
+    @if (quiz().description) {
+      <p class="assignment-start-card__desc">{{ quiz().description }}</p>
+    }
+  </div>
+
+  @if (locked()) {
+    <!-- Shown rather than hidden: a student who left a One Time Join quiz needs
+         to see that this specific quiz is what they are locked out of. -->
+    <span class="assignment-start-card__action assignment-locked">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+        <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'availableQuizzes.oneTimeJoin.lockedShort' | translate }}
+    </span>
+  } @else {
+    <button class="btn btn--primary assignment-start-card__action" (click)="onStartQuiz()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+      </svg>
+      {{ 'availableQuizzes.start' | translate }}
+    </button>
+  }
+</div>

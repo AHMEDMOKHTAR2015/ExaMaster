@@ -1,0 +1,53 @@
+@if (loading()) {
+  <div class="quiz-grid skeleton-grid">
+    @for (item of [].constructor(skeletonCount()); track $index) {
+      <div class="quiz-card skeleton-card">
+        <div class="skeleton-badge skeleton-shimmer"></div>
+        <div class="skeleton-header">
+          <div class="skeleton-icon skeleton-shimmer"></div>
+        </div>
+        <div class="skeleton-content">
+          <div class="skeleton-line skeleton-title skeleton-shimmer"></div>
+          <div class="skeleton-line skeleton-desc skeleton-shimmer"></div>
+          <div class="skeleton-line skeleton-desc short skeleton-shimmer"></div>
+          <div class="skeleton-meta">
+            <div class="skeleton-pill skeleton-shimmer"></div>
+            <div class="skeleton-pill skeleton-shimmer"></div>
+          </div>
+        </div>
+        <div class="skeleton-footer">
+          <div class="skeleton-button skeleton-shimmer"></div>
+        </div>
+      </div>
+    }
+  </div>
+} @else if (quizzes().length + extraCount() > 0) {
+  <div class="quiz-grid" [@staggerList]="quizzes().length">
+    @for (quiz of quizzes(); track trackByQuizId($index, quiz)) {
+      <app-quiz-card
+        [quiz]="quiz"
+        [locked]="lockedQuizIds().has(quiz.id)"
+        [subjectName]="subjectLookup().get(quiz.subjectId ?? '')?.name ?? ''"
+        [subjectColor]="subjectLookup().get(quiz.subjectId ?? '')?.color"
+        (startQuiz)="onStartQuiz($event)">
+      </app-quiz-card>
+    }
+    <ng-content></ng-content>
+  </div>
+} @else {
+  <div class="empty-state">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3>All Caught Up!</h3>
+    <p>You've completed all available quizzes. Check back later for new challenges!</p>
+    <div class="confetti">
+      <span>🎉</span>
+      <span>🏆</span>
+      <span>⭐</span>
+    </div>
+  </div>
+}

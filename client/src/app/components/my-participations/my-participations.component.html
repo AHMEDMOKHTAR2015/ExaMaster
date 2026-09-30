@@ -1,0 +1,87 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'myParticipations.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'myParticipations.subtitle' | translate }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card__body">
+    <div class="segmented my-participations__filters" role="group" [attr.aria-label]="'myParticipations.title' | translate">
+      <button type="button" [class.is-active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">
+        {{ 'common.all' | translate }} <span class="tabs__count">{{ counts().all }}</span>
+      </button>
+      <button type="button" [class.is-active]="filter() === 'quiz'" [attr.aria-pressed]="filter() === 'quiz'" (click)="setFilter('quiz')">
+        {{ 'myParticipations.quizzes' | translate }} <span class="tabs__count">{{ counts().quiz }}</span>
+      </button>
+      <button type="button" [class.is-active]="filter() === 'homework'" [attr.aria-pressed]="filter() === 'homework'" (click)="setFilter('homework')">
+        {{ 'common.homework' | translate }} <span class="tabs__count">{{ counts().homework }}</span>
+      </button>
+    </div>
+
+    @if (hasError()) {
+      <p class="hint hint--error">{{ error() }}</p>
+    }
+
+    <div class="stack stack--sm">
+      <!-- Skeletons only while nothing is known yet: a refresh keeps the attempts already shown. -->
+      @if (loading() && counts().all === 0) {
+        <div class="skeleton skeleton-homework-item"></div>
+        <div class="skeleton skeleton-homework-item"></div>
+        <div class="skeleton skeleton-homework-item"></div>
+      } @else {
+        @for (row of visible(); track row.record.id) {
+          @let record = row.record;
+          <div class="participation-card participation-card--own">
+            <div class="participation-card__body">
+              <div class="participation-card__header">
+                <span class="participation-card__name" dir="auto">{{ title(record) }}</span>
+                <span class="badge" [ngClass]="row.kind === 'quiz' ? 'badge--brand' : 'badge--info'">{{ 'common.' + row.kind | translate }}</span>
+                @if (row.kind === 'homework') {
+                  <span class="badge" [ngClass]="reviewStatusBadgeClass(record)">{{ 'notifications.reviewStatus.' + reviewStatusKey(record) | translate }}</span>
+                }
+                @if ((record.pendingReviewCount ?? 0) > 0) {
+                  <span class="badge badge--warning">{{ 'myParticipations.awaitingReview' | translate : { count: record.pendingReviewCount } }}</span>
+                }
+              </div>
+              <div class="participation-card__meta">
+                <span>{{ 'myParticipations.correct' | translate : { correct: record.correctCount, total: record.correctCount + record.wrongCount } }}</span>
+                <span class="participation-card__dot"></span>
+                <span>{{ record.endedAt | date:'medium' }}</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="selected.set(record)">
+              {{ 'myParticipations.viewAnswers' | translate }}
+            </button>
+            <div class="participation-card__score" [ngClass]="'participation-card__score--' + scoreTier(record)">
+              {{ scorePercent(record) }}%
+            </div>
+          </div>
+        } @empty {
+          <div class="empty">
+            <div class="empty__title">{{ (counts().all === 0 ? 'myParticipations.empty' : 'myParticipations.emptyFiltered') | translate }}</div>
+          </div>
+        }
+      }
+    </div>
+
+    @if (pageCount() > 1) {
+      <div class="pagination">
+        <button type="button" class="pagination__btn" [disabled]="page() === 0" (click)="prevPage()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <button type="button" class="pagination__btn" [disabled]="page() >= pageCount() - 1" (click)="nextPage()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+@if (selected(); as record) {
+  <app-participation-answers-popup
+    [record]="record"
+    [kind]="selectedKind()"
+    [ownAttempt]="true"
+    (closed)="selected.set(null)" />
+}

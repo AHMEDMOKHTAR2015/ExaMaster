@@ -1,0 +1,623 @@
+@if (!showQuiz() && isChild()) {
+  <div class="dashboard-hero dashboard-hero--student">
+    <div class="dashboard-hero__intro">
+      <h1 class="page__title">{{ 'availableQuizzes.welcomeBack' | translate }}</h1>
+      <p class="page__subtitle">{{ 'availableQuizzes.pickQuiz' | translate }}</p>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'availableQuizzes.stats.completedQuizzes' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ quizStats().completedCount }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'availableQuizzes.stats.completedHomework' | translate }}</span>
+        <div class="stat__icon stat__icon--mint">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ completedHomeworkCount() }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'availableQuizzes.stats.averageScore' | translate }}</span>
+        <div class="stat__icon stat__icon--sky">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 7h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ quizStats().averageScore }}%</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'availableQuizzes.stats.bestScore' | translate }}</span>
+        <div class="stat__icon stat__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M12 2l2.9 6.26L21.8 9l-5 4.87L18.2 21 12 17.27 5.8 21l1.4-7.13-5-4.87 6.9-.74L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ quizStats().bestScore }}%</div>
+    </div>
+  </div>
+} @else {
+  <div class="page__head">
+    <div class="quiz-header__media">
+      <img class="quiz-header__illustration" src="assets/illustrations/quiz-in-progress.svg" alt="" />
+      <div>
+        <h1 class="page__title">
+          @if (showQuiz()) {
+            <!-- The name only exists once the quiz has loaded; until then this is
+                 still the header for an open quiz, so it falls back to the
+                 generic phrase rather than rendering a stray dash. -->
+            @if (runner.currentQuiz(); as openQuiz) {
+              {{ (runner.mode() === 'result' ? 'availableQuizzes.quizTitleCompleted' : 'availableQuizzes.quizTitleInProgress')
+                   | translate : { name: openQuiz.name } }}
+            } @else {
+              {{ 'availableQuizzes.quizInProgress' | translate }}
+            }
+          } @else { {{ 'availableQuizzes.welcomeBack' | translate }} }
+        </h1>
+        <p class="page__subtitle">
+          @if (!showQuiz()) { {{ 'availableQuizzes.pickQuiz' | translate }} }
+        </p>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showQuiz()) {
+  <div class="quiz-container" @fadeIn>
+    @if (runner.isLoading()) {
+      <div class="quiz-loading">
+        <div class="skeleton skeleton-question-text"></div>
+        <div class="skeleton-options">
+          <div class="skeleton skeleton-option"></div>
+          <div class="skeleton skeleton-option"></div>
+          <div class="skeleton skeleton-option"></div>
+          <div class="skeleton skeleton-option"></div>
+        </div>
+      </div>
+    } @else if (runner.currentQuiz()) {
+      @let quiz = runner.currentQuiz()!;
+      @if (runner.mode() === 'result') {
+        <quiz-result
+          [quiz]="quiz"
+          [embedded]="true"
+          [resultsAvailable]="runner.lastSubmissionSummary()?.resultsAvailable ?? true"
+          [resultsAvailableAt]="runner.lastSubmissionSummary()?.resultsAvailableAt ?? null"
+          [serverScorePercent]="runner.lastSubmissionSummary()?.scorePercent ?? null"
+          [serverCorrectCount]="runner.lastSubmissionSummary()?.correctCount ?? null"
+          (backToDashboard)="onBackToQuizList()">
+        </quiz-result>
+      } @else if (runner.questionCount() === 0) {
+        <div class="available-quizzes__empty">
+          <div class="available-quizzes__empty__title">{{ 'availableQuizzes.noQuestions' | translate }}</div>
+          <p>{{ 'availableQuizzes.noQuestionsDesc' | translate }}</p>
+          <!-- A contained attempt with no questions has nothing to submit, so
+               this is the only ending it has; leaving is allowed here. -->
+          <button class="btn btn--primary" (click)="onBackToQuizList()">{{ 'availableQuizzes.backToQuizzes' | translate }}</button>
+        </div>
+      } @else {
+        <div class="quiz-header-row">
+          <!-- The one in-page way out of a running quiz. Withheld entirely (not
+               disabled) for a One Time Join attempt: submitting or running out
+               of time are the only two endings, and `runner.isContained()` goes
+               false at the first of them, so the result screen gets it back. -->
+          @if (!runner.isContained()) {
+            <button class="back-btn" type="button" (click)="onBackToQuizList()" [attr.aria-label]="'availableQuizzes.backToQuizzes' | translate">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          } @else {
+            <span class="quiz-contained-badge">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              {{ 'availableQuizzes.oneTimeJoin.badge' | translate }}
+            </span>
+          }
+          @if (quiz.config?.showClock) {
+            <!-- Whole-quiz elapsed / total, not per-question remaining / this
+                 question's duration — most questions in a quiz share the same
+                 configured duration, which made the old "remaining / duration"
+                 pill's right-hand number look frozen across every question
+                 even though it was correctly re-set each time. Elapsed always
+                 visibly advances instead, regardless of per-question config. -->
+            <div class="timer" [attr.title]="'availableQuizzes.timeElapsedOfTotal' | translate">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ runner.quizElapsedLabel() }} / {{ runner.totalDurationLabel() }}
+            </div>
+          }
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width]="runner.progressWidth()"></div>
+          </div>
+          <span class="progress-text">{{ runner.progressText() }}</span>
+        </div>
+
+        <div class="quiz-content">
+          @if (runner.mode() === 'review') {
+            <div class="review-container">
+              <h3>{{ 'availableQuizzes.reviewTitle' | translate }}</h3>
+              <p>{{ 'availableQuizzes.reviewHint' | translate }}</p>
+              <div class="review-list">
+                @for (item of runner.reviewItems(); track item.index) {
+                  <button type="button" class="review-item" (click)="runner.reviewQuestion(item.index)">
+                    <span class="review-item__question">{{ item.index + 1 }}. {{ item.name }}</span>
+                    @if (item.selectedOptionText) {
+                      <span class="review-item__answer">{{ item.selectedOptionText }}</span>
+                    } @else {
+                      <span class="review-item__answer review-item__answer--missing">{{ 'availableQuizzes.notAnswered' | translate }}</span>
+                    }
+                  </button>
+                }
+              </div>
+              <div class="button-container">
+                <button class="btn btn--primary" type="button" (click)="runner.submit()" [disabled]="runner.isSubmitting()">
+                  @if (runner.isSubmitting()) { {{ 'availableQuizzes.submitting' | translate }} } @else { {{ 'availableQuizzes.confirmSubmit' | translate }} }
+                </button>
+              </div>
+            </div>
+          } @else if (runner.currentPageQuestions().length > 0) {
+            @if (quiz.config?.showPager) {
+              <div class="question-number">{{ 'availableQuizzes.question' | translate : { current: runner.pageQuestionLabel(), total: runner.questionCount() } }}</div>
+            }
+
+            @for (question of runner.currentPageQuestions(); track question.id) {
+              <div class="question-page-item">
+                @switch (question.questionTypeId) {
+                  @case (QUESTION_TYPE.COMPLETE) {
+                    <question-complete
+                      [question]="question"
+                      (answerSelected)="onAnswerSelected($event)">
+                    </question-complete>
+                  }
+                  @case (QUESTION_TYPE.EXPLAIN) {
+                    <question-explain
+                      [question]="question"
+                      (answerSelected)="onAnswerSelected($event)">
+                    </question-explain>
+                  }
+                  @default {
+                    <!-- Choose and Right-or-Wrong: Right-or-Wrong is stored as a
+                         two-option Choose question, so it renders through this path. -->
+                    <question-options
+                      [question]="question"
+                      [richText]="!!quiz.config?.richText"
+                      (answerSelected)="onAnswerSelected($event)">
+                    </question-options>
+                  }
+                }
+              </div>
+            }
+
+            <div class="button-container">
+              @if (quiz.config?.allowBack && runner.currentQuestionIndex() > 0) {
+                <button class="btn btn--ghost" type="button" (click)="runner.prev()" [disabled]="runner.isSubmitting()">
+                  {{ 'availableQuizzes.previousQuestion' | translate }}
+                </button>
+              }
+              @if (!runner.isLastPage()) {
+                <button class="btn btn--primary" type="button" (click)="runner.next()" [disabled]="runner.isSubmitting()">
+                  {{ 'availableQuizzes.nextQuestion' | translate }}
+                </button>
+              } @else {
+                <button class="btn btn--primary" type="button" (click)="runner.requestSubmit()" [disabled]="runner.isSubmitting()">
+                  @if (runner.isSubmitting()) { {{ 'availableQuizzes.submitting' | translate }} } @else { {{ 'availableQuizzes.submitQuiz' | translate }} }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+} @else {
+  <div class="dash-grid" @fadeIn>
+    <!-- Main column -->
+    <section class="quiz-panel">
+      @if (isChild()) {
+        <div class="segmented quiz-tabs">
+          <button [class.is-active]="activeTab() === 'quizzes'" (click)="setActiveTab('quizzes')">
+            {{ 'availableQuizzes.tabs.quizzes' | translate }}
+            @if (availableQuizzes().length + pendingQuizAssignments().length > 0) {
+              <span class="tabs__count">{{ availableQuizzes().length + pendingQuizAssignments().length }}</span>
+            }
+          </button>
+          <button [class.is-active]="activeTab() === 'homework'" (click)="setActiveTab('homework')">
+            {{ 'availableQuizzes.tabs.homework' | translate }}
+            @if (pendingHomeworkOnlyAssignments().length > 0) {
+              <span class="tabs__count">{{ pendingHomeworkOnlyAssignments().length }}</span>
+            }
+          </button>
+          <button [class.is-active]="activeTab() === 'teachers'" (click)="setActiveTab('teachers')">
+            {{ 'availableQuizzes.tabs.teachers' | translate }}
+            @if (myTeaching().length > 0) {
+              <span class="tabs__count">{{ myTeaching().length }}</span>
+            }
+          </button>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="available-quizzes__empty">
+          <div class="empty__icon" style="background: var(--danger-bg); color: var(--danger);">
+            <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="12" cy="16" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="available-quizzes__empty__title">{{ 'availableQuizzes.somethingWentWrong' | translate }}</div>
+          <p>{{ error() }}</p>
+          <button class="btn btn--primary" (click)="ngOnInit()">{{ 'availableQuizzes.tryAgain' | translate }}</button>
+        </div>
+      } @else {
+        @if (!isChild() || activeTab() === 'quizzes') {
+          <div class="row--between" style="margin-bottom: 0.875rem;">
+            <h2 class="card__title">{{ 'availableQuizzes.yourQuizzes' | translate }}</h2>
+            <span class="muted">
+              @if (isLoadingQuizzes()) { {{ 'availableQuizzes.loading' | translate }} }
+              @else if (availableQuizzes().length + pendingQuizAssignments().length > 0) { {{ 'availableQuizzes.available' | translate : { count: availableQuizzes().length + pendingQuizAssignments().length } }} }
+              @else { {{ 'availableQuizzes.allCaughtUp' | translate }} }
+            </span>
+          </div>
+
+          @if (isLoadingQuizzes()) {
+            <div class="grid-cards">
+              <div class="skeleton skeleton-card"></div>
+              <div class="skeleton skeleton-card"></div>
+              <div class="skeleton skeleton-card"></div>
+            </div>
+          } @else {
+            <app-quiz-list
+              [quizzes]="availableQuizzes()"
+              [loading]="loading()"
+              [extraCount]="pendingQuizAssignments().length"
+              [lockedQuizIds]="lockedQuizIds()"
+              [subjectLookup]="subjectLookup()"
+              (startQuiz)="onStartQuiz($event)">
+              @for (assignment of pendingQuizAssignments(); track assignment.id) {
+                <!-- Deliberately its own class, not a `.assigned-quiz-card` restyle:
+                     that class (and its __header/__top/__body BEM children) is shared
+                     with the teacher's "My Quizzes" management card
+                     (quiz-management/tabs/my-quizzes-tab.component.html), which keeps
+                     the compact thumbnail-row layout. Reusing it here would have
+                     redefined those shared rules out from under that card too. -->
+                <div class="assignment-start-card">
+                  @if (isOverdue(assignment.dueAt)) {
+                    <span class="difficulty-badge badge badge--danger">{{ 'availableQuizzes.overdue' | translate }}</span>
+                  }
+
+                  <div class="assignment-start-card__body">
+                    @if (assignmentSubjectName(assignment)) {
+                      <span class="subject-tag" [style.--subject-color]="assignmentSubjectColor(assignment) || 'var(--ink-3)'">{{ assignmentSubjectName(assignment) }}</span>
+                    }
+
+                    <h3 class="assignment-start-card__title">{{ assignment.title }}</h3>
+
+                    <div class="assignment-start-card__stats">
+                      <div class="assignment-start-card__stat">
+                        <span class="assignment-start-card__stat-icon">
+                          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                            <circle cx="4" cy="6" r="1.5" fill="currentColor"/>
+                            <path d="M9 6h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+                            <path d="M9 12h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="4" cy="18" r="1.5" fill="currentColor"/>
+                            <path d="M9 18h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                          </svg>
+                        </span>
+                        <span class="assignment-start-card__stat-value">{{ assignmentQuestionCount(assignment) }}</span>
+                        <span class="assignment-start-card__stat-label">{{ 'availableQuizzes.questionsLabel' | translate }}</span>
+                      </div>
+
+                      <span class="assignment-start-card__divider" aria-hidden="true"></span>
+
+                      <div class="assignment-start-card__stat">
+                        <span class="assignment-start-card__stat-icon assignment-start-card__stat-icon--accent">
+                          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </span>
+                        @if (assignmentDurationMinutes(assignment) > 0) {
+                          <span class="assignment-start-card__stat-value">{{ assignmentDurationMinutes(assignment) }}</span>
+                          <span class="assignment-start-card__stat-label">{{ 'availableQuizzes.minutesLabel' | translate }}</span>
+                        } @else {
+                          <span class="assignment-start-card__stat-value">&infin;</span>
+                          <span class="assignment-start-card__stat-label">{{ 'availableQuizzes.noTimeLimit' | translate }}</span>
+                        }
+                      </div>
+                    </div>
+
+                    @if (assignmentTeacherName(assignment); as teacherName) {
+                      <div class="assignment-start-card__teacher">
+                        <span class="assignment-start-card__teacher-label">{{ 'availableQuizzes.createdByTeacher' | translate }}</span>
+                        <span class="assignment-start-card__teacher-name">
+                          <span class="avatar avatar--brand">{{ assignmentTeacherInitials(assignment) }}</span>
+                          {{ teacherName }}
+                        </span>
+                      </div>
+                    }
+
+                    <span class="assignment-start-card__due">
+                      <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      {{ 'availableQuizzes.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}
+                    </span>
+                  </div>
+
+                  @if (isAssignmentLocked(assignment)) {
+                    <span class="assignment-start-card__action assignment-locked">
+                      <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                        <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      {{ 'availableQuizzes.oneTimeJoin.lockedShort' | translate }}
+                    </span>
+                  } @else if (!isOverdue(assignment.dueAt)) {
+                    <button class="btn btn--primary assignment-start-card__action" (click)="onStartHomework(assignment)">
+                      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                        <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+                      </svg>
+                      {{ 'availableQuizzes.start' | translate }}
+                    </button>
+                  }
+                </div>
+              }
+            </app-quiz-list>
+          }
+        }
+
+        @if (isChild() && activeTab() === 'homework') {
+          <div class="row--between" style="margin-bottom: 0.875rem;">
+            <h2 class="card__title">{{ 'availableQuizzes.yourHomework' | translate }}</h2>
+            <span class="muted">
+              @if (isLoadingHomework()) { {{ 'availableQuizzes.loading' | translate }} }
+              @else if (pendingHomeworkOnlyAssignments().length > 0) { {{ 'availableQuizzes.pending' | translate : { count: pendingHomeworkOnlyAssignments().length } }} }
+              @else { {{ 'availableQuizzes.nothingDue' | translate }} }
+            </span>
+          </div>
+
+          @if (isLoadingHomework()) {
+            <div class="stack stack--sm">
+              <div class="skeleton skeleton-homework-item"></div>
+              <div class="skeleton skeleton-homework-item"></div>
+              <div class="skeleton skeleton-homework-item"></div>
+            </div>
+          } @else {
+            @if (pendingHomeworkOnlyAssignments().length > 0) {
+              <div class="stack stack--sm">
+                @for (assignment of pendingHomeworkOnlyAssignments(); track assignment.id) {
+                  <div class="homework-item" [class.is-overdue]="isOverdue(assignment.dueAt)">
+                    <app-assignment-thumbnail class="homework-item__thumb" kind="homework" />
+                    <div class="homework-item__info">
+                      <strong class="homework-item__title">{{ assignment.title }}</strong>
+                      @if (needsRevisionFeedback().get(assignment.id); as v) {
+                        <span class="badge badge--warning">{{ 'availableQuizzes.needsRevision' | translate }}</span>
+                        @if (v.feedback) { <span class="homework-item__due">{{ v.feedback }}</span> }
+                      }
+                      <span class="homework-item__due">
+                        <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                          <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        {{ 'availableQuizzes.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}
+                        @if (isOverdue(assignment.dueAt)) {
+                          <span class="homework-item__overdue">{{ 'availableQuizzes.overdue' | translate }}</span>
+                        }
+                      </span>
+                    </div>
+                    @if (isAssignmentLocked(assignment)) {
+                      <span class="homework-item__action assignment-locked">
+                        <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                          <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                          <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        {{ 'availableQuizzes.oneTimeJoin.lockedShort' | translate }}
+                      </span>
+                    } @else if (!isOverdue(assignment.dueAt)) {
+                      <button class="btn btn--primary homework-item__action" (click)="onStartHomework(assignment)">
+                        <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                          <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+                        </svg>
+                        {{ (needsRevisionFeedback().get(assignment.id) ? 'availableQuizzes.resubmit' : 'availableQuizzes.start') | translate }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="available-quizzes__empty">
+                <div class="empty__icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="available-quizzes__empty__title">{{ 'availableQuizzes.noHomework' | translate }}</div>
+                <p>{{ 'availableQuizzes.noHomeworkDesc' | translate }}</p>
+              </div>
+            }
+          }
+        }
+
+        @if (isChild() && activeTab() === 'teachers') {
+          <div class="row--between" style="margin-bottom: 0.875rem;">
+            <h2 class="card__title">{{ 'availableQuizzes.mySubjectsTeachers' | translate }}</h2>
+            <span class="muted">
+              @if (myTeaching().length > 0) { {{ 'availableQuizzes.subjects' | translate : { count: myTeaching().length } }} }
+              @else { {{ 'availableQuizzes.notSetUpYet' | translate }} }
+            </span>
+          </div>
+
+          @if (myTeaching().length > 0) {
+            <div class="available-quizzes__teach-grid">
+              @for (row of myTeaching(); track row.subjectId) {
+                <div class="teach-card">
+                  <div class="teach-card__subject">
+                    @if (getSubjectColor(row.subjectId)) {
+                      <span class="color-swatch" [style.background]="getSubjectColor(row.subjectId)"></span>
+                    }
+                    <span class="teach-card__subject-name">{{ getSubjectName(row.subjectId) || ('availableQuizzes.deletedSubject' | translate) }}</span>
+                  </div>
+                  @if (row.teacherIds.length > 0) {
+                    <div class="teach-card__teachers">
+                      @for (tid of row.teacherIds; track tid) {
+                        <span class="teach-card__teacher">
+                          <span class="avatar avatar--sm avatar--brand">{{ getTeacherInitials(tid) }}</span>
+                          {{ getTeacherName(tid) }}
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="teach-card__none">{{ 'availableQuizzes.noTeacherAssigned' | translate }}</span>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="available-quizzes__empty">
+              <div class="empty__icon">
+                <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                  <path d="M12 14l9-5-9-5-9 5 9 5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 14l6.16-3.42A12 12 0 0 1 12 21a12 12 0 0 1-6.16-10.42L12 14z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="available-quizzes__empty__title">{{ 'availableQuizzes.noSubjectsYet' | translate }}</div>
+              <p>{{ 'availableQuizzes.noSubjectsDesc' | translate }}</p>
+            </div>
+          }
+        }
+      }
+    </section>
+
+    <!-- Side: user profile widget -->
+    <aside class="profile-panel">
+      <app-user-profile
+        [profile]="userProfile()"
+        [completedQuizzes]="completedQuizzes()"
+        [stageName]="stageName()"
+        [gradeName]="gradeName()"
+        [className]="className()"
+        [quizStats]="quizStats()"
+        (signOut)="onSignOut()">
+      </app-user-profile>
+    </aside>
+  </div>
+}
+
+<!-- ============================================================
+     "One Time Join" — pre-quiz confirmation
+     ============================================================
+     The quiz is not loaded and no lock is written until this is accepted, so
+     backing out here costs the student nothing. Rendered outside the two
+     branches above because it belongs to neither: it is shown while the list
+     is still on screen, and it is what decides whether the quiz replaces it.
+-->
+@if (pendingStart(); as pending) {
+  <div class="popup-overlay popup-overlay--sheet">
+    <div class="popup popup--sm one-time-join" role="alertdialog" aria-modal="true"
+         aria-labelledby="otj-title" aria-describedby="otj-body">
+      <header class="popup__head one-time-join__head">
+        <span class="one-time-join__tag">
+          <span class="one-time-join__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+              <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="popup__eyebrow">{{ 'availableQuizzes.oneTimeJoin.eyebrow' | translate }}</span>
+        </span>
+        <h2 class="popup__title" id="otj-title">{{ pending.title }}</h2>
+      </header>
+
+      <div class="popup__body" id="otj-body">
+        <p class="one-time-join__message">{{ 'availableQuizzes.oneTimeJoin.warning' | translate }}</p>
+        <ul class="one-time-join__points">
+          <li>{{ 'availableQuizzes.oneTimeJoin.pointNoExit' | translate }}</li>
+          <li class="one-time-join__point--critical">{{ 'availableQuizzes.oneTimeJoin.pointLocked' | translate }}</li>
+          <li>{{ 'availableQuizzes.oneTimeJoin.pointEndings' | translate }}</li>
+        </ul>
+      </div>
+
+      <div class="popup__foot">
+        <button type="button" class="btn btn--ghost" (click)="cancelPendingStart()">
+          {{ 'availableQuizzes.oneTimeJoin.notYet' | translate }}
+        </button>
+        <button type="button" class="btn btn--primary" (click)="confirmPendingStart()">
+          {{ 'availableQuizzes.oneTimeJoin.confirm' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================================================
+     "One Time Join" — locked out
+     ============================================================
+     Reached when the entry check finds a lock the student cannot clear. The
+     wording names the only way back in, because there is exactly one.
+-->
+@if (blockedByLock(); as lock) {
+  <div class="popup-overlay popup-overlay--sheet">
+    <div class="popup popup--sm one-time-join one-time-join--blocked" role="alertdialog" aria-modal="true"
+         aria-labelledby="otj-blocked-title">
+      <header class="popup__head one-time-join__head">
+        <span class="one-time-join__tag">
+          <span class="one-time-join__icon one-time-join__icon--danger" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+              <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="popup__eyebrow">{{ 'availableQuizzes.oneTimeJoin.eyebrow' | translate }}</span>
+        </span>
+        <h2 class="popup__title" id="otj-blocked-title">{{ 'availableQuizzes.oneTimeJoin.lockedTitle' | translate }}</h2>
+      </header>
+
+      <div class="popup__body">
+        <p class="one-time-join__message">{{ 'availableQuizzes.oneTimeJoin.lockedBody' | translate : { name: lock.quizName || '' } }}</p>
+        @if (lock.exitAttempts > 0) {
+          <p class="one-time-join__meta">
+            {{ 'availableQuizzes.oneTimeJoin.lockedExits' | translate : { count: lock.exitAttempts } }}
+          </p>
+        }
+      </div>
+
+      <div class="popup__foot">
+        <button type="button" class="btn btn--primary" (click)="dismissBlocked()">
+          {{ 'common.close' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

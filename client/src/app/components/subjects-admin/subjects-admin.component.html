@@ -1,0 +1,314 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'subjectsAdmin.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'subjectsAdmin.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <input type="file" accept="application/json,.json" #importInput hidden (change)="onImportFileSelected($event)" />
+    <button class="btn" type="button" (click)="importInput.click()">
+      {{ 'subjectsAdmin.import.button' | translate }}
+    </button>
+    <button class="btn btn--primary" (click)="openForm()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'subjectsAdmin.newSubject' | translate }}
+    </button>
+  </div>
+</div>
+
+@if (showForm()) {
+  <div class="popup-overlay">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="subject-form-title" appClickOutside (appClickOutside)="closeForm()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ editingId() ? ('subjectsAdmin.form.editEyebrow' | translate) : ('subjectsAdmin.form.newEyebrow' | translate) }}</div>
+          <h2 id="subject-form-title" class="popup__title">{{ editingId() ? ('subjectsAdmin.form.editTitle' | translate) : ('subjectsAdmin.form.newTitle' | translate) }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeForm()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>{{ 'subjectsAdmin.form.id' | translate }}</label>
+            <input class="form-input" [ngModel]="form().id" disabled />
+          </div>
+          <div class="form-group">
+            <label>{{ 'subjectsAdmin.form.name' | translate }}</label>
+            <input class="form-input" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" placeholder="e.g. Math" />
+          </div>
+          <div class="form-group">
+            <label>{{ 'subjectsAdmin.form.color' | translate }}</label>
+            <input class="form-input" [ngModel]="form().color" (ngModelChange)="updateField('color', $event)" placeholder="#6366f1" />
+          </div>
+        </div>
+      </div>
+      <footer class="popup__foot">
+        <button class="secondary-btn" (click)="closeForm()">{{ 'subjectsAdmin.form.cancel' | translate }}</button>
+        <button class="primary-btn" (click)="save()">{{ editingId() ? ('subjectsAdmin.form.save' | translate) : ('subjectsAdmin.form.add' | translate) }}</button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (showImportForm()) {
+  <div class="popup-overlay" (click)="cancelImport()">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="import-subjects-title" (click)="$event.stopPropagation()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'subjectsAdmin.import.eyebrow' | translate }}</div>
+          <h2 id="import-subjects-title" class="popup__title">{{ 'subjectsAdmin.import.title' | translate }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="cancelImport()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <p class="subjects-admin__muted">{{ 'subjectsAdmin.import.fileLabel' | translate : { name: importFileName() } }}</p>
+
+        @if (importErrors().length > 0) {
+          <div class="import-errors">
+            <strong>{{ 'subjectsAdmin.import.errorsTitle' | translate : { count: importErrors().length } }}</strong>
+            <ul>
+              @for (err of importErrors(); track err) {
+                <li>{{ err }}</li>
+              }
+            </ul>
+            <p>{{ 'subjectsAdmin.import.fixAndReupload' | translate }}</p>
+          </div>
+        } @else {
+          <p class="subjects-admin__muted">{{ 'subjectsAdmin.import.parsedCount' | translate : { count: importParsedSubjects().length } }}</p>
+          <div class="import-preview">
+            @for (s of importParsedSubjects(); track $index) {
+              <div class="import-preview__row">
+                @if (s.color) { <span class="subjects-admin__color-swatch" [style.background]="s.color"></span> }
+                <span>{{ s.name }}</span>
+                @if (s.id) { <span class="subjects-admin__muted">({{ s.id }})</span> }
+              </div>
+            }
+          </div>
+        }
+
+        <button class="secondary-btn" type="button" (click)="downloadImportSample()" style="margin-top: 0.75rem;">
+          {{ 'subjectsAdmin.import.downloadSample' | translate }}
+        </button>
+      </div>
+      <footer class="popup__foot">
+        <button class="secondary-btn" (click)="cancelImport()">{{ 'subjectsAdmin.form.cancel' | translate }}</button>
+        <button class="primary-btn" (click)="confirmImport()" [disabled]="!importCanConfirm() || isImporting()">
+          @if (isImporting()) {
+            {{ 'subjectsAdmin.import.importing' | translate }}
+          } @else {
+            {{ 'subjectsAdmin.import.confirm' | translate : { count: importParsedSubjects().length } }}
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (detailsSubject(); as ds) {
+  <div class="popup-overlay">
+    <div class="popup popup--xl" role="dialog" aria-modal="true" appClickOutside (appClickOutside)="closeDetails()">
+
+      <header class="popup__head">
+        <div class="detail-subject-header">
+          <div class="avatar detail-subject-avatar" [style.background]="ds.color || 'var(--brand-300)'">{{ subjectInitial(ds) }}</div>
+          <div>
+            <div class="popup__eyebrow">{{ 'subjectsAdmin.details.eyebrow' | translate }}</div>
+            <h2 class="popup__title">{{ ds.name }}</h2>
+            <p class="popup__sub">
+              @if (ds.color) {
+                <span class="subjects-admin__color-swatch" [style.background]="ds.color"></span>{{ ds.color }}
+              } @else {
+                {{ 'subjectsAdmin.details.noColor' | translate }}
+              }
+            </p>
+          </div>
+        </div>
+        <button type="button" class="popup__close" (click)="closeDetails()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+
+      <div class="popup__body">
+
+        <!-- Stats row -->
+        <div class="detail-stats">
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailTeachers().length }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.teachers' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailClasses().length }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.groups' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailStudents().length }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.students' | translate }}</div>
+          </div>
+        </div>
+
+        <!-- Teachers -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">
+            {{ 'subjectsAdmin.details.teachers' | translate }}
+            <span class="detail-section__count">{{ detailTeachers().length }}</span>
+          </h3>
+          <div class="teacher-chips">
+            @for (t of detailTeachers(); track t.id) {
+              <span class="teacher-chip" [title]="t.firstName + ' ' + t.lastName">
+                <span class="teacher-chip__avatar">{{ teacherInitials(t) }}</span>
+                <span>{{ t.firstName }} {{ t.lastName }}</span>
+              </span>
+            } @empty {
+              <span class="subjects-admin__muted">{{ 'subjectsAdmin.details.noTeacherYet' | translate }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Groups -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">
+            {{ 'subjectsAdmin.details.groups' | translate }}
+            <span class="detail-section__count">{{ detailClasses().length }}</span>
+          </h3>
+          <div class="class-chips">
+            @for (c of detailClasses(); track c.id) {
+              <span class="subjects-admin__chip chip--static">
+                {{ c.name }}
+                <span class="chip__meta">{{ getStageName(c.stageId) }} · {{ getStudentCountForClass(c.id) }} {{ getStudentCountForClass(c.id) === 1 ? ('subjectsAdmin.details.student' | translate) : ('subjectsAdmin.details.studentsPlural' | translate) }}</span>
+              </span>
+            } @empty {
+              <span class="subjects-admin__muted">{{ 'subjectsAdmin.details.noGroupsYet' | translate }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Students -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">
+            {{ 'subjectsAdmin.details.students' | translate }}
+            <span class="detail-section__count">{{ detailStudents().length }}</span>
+          </h3>
+          @if (detailStudents().length === 0) {
+            <p class="subjects-admin__muted detail-empty">{{ 'subjectsAdmin.details.noStudentsYet' | translate }}</p>
+          } @else {
+            <div class="detail-students-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>{{ 'subjectsAdmin.table.student' | translate }}</th>
+                    <th>{{ 'subjectsAdmin.table.email' | translate }}</th>
+                    <th>{{ 'subjectsAdmin.table.group' | translate }}</th>
+                    <th>{{ 'subjectsAdmin.table.stage' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of detailStudents(); track s.uid) {
+                    <tr>
+                      <td>
+                        <div class="cell-stack">
+                          <div class="avatar avatar--sm avatar--brand">{{ (s.displayName || '?')[0].toUpperCase() }}</div>
+                          <div>
+                            <div class="cell-stack__main">{{ s.displayName }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{{ s.email || '—' }}</td>
+                      <td>{{ getClassName(s.classId) || '—' }}</td>
+                      <td>{{ getStageName(s.stageId) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+}
+
+<div class="card">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title">{{ 'subjectsAdmin.allSubjects' | translate }}</h2>
+      <p class="card__sub">{{ subjectList.total() === 1 ? ('subjectsAdmin.subjectCount' | translate : { count: subjectList.total() }) : ('subjectsAdmin.subjectsCount' | translate : { count: subjectList.total() }) }}</p>
+    </div>
+    <div class="input-wrap">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search"
+        type="text"
+        [placeholder]="'subjectsAdmin.searchPlaceholder' | translate"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  @if (subjectList.isLoading()) {
+    <div class="empty"><div class="empty__title">{{ 'subjectsAdmin.loading' | translate }}</div></div>
+  } @else {
+    <div class="subject-grid">
+      @for (s of filteredSubjects(); track s.id) {
+        <article class="subject-card" [style.border-top-color]="s.color || 'var(--brand-300)'">
+          <header class="subject-card__head">
+            <span class="subject-card__dot" [style.background]="s.color || 'var(--brand-300)'" [title]="s.color || ('subjectsAdmin.details.noColor' | translate)"></span>
+            <h3 class="subject-card__name">{{ s.name }}</h3>
+            <div class="row-actions">
+              <button class="btn btn--sm" type="button" (click)="openDetails(s)">{{ 'common.details' | translate }}</button>
+              <button class="btn btn--sm" type="button" (click)="edit(s)">{{ 'common.edit' | translate }}</button>
+              <button class="btn btn--sm btn--danger" type="button" (click)="remove(s.id)">{{ 'common.delete' | translate }}</button>
+            </div>
+          </header>
+
+          <div class="subject-card__stats">
+            <div class="subjects-admin__stat">
+              <div class="subjects-admin__stat__value">{{ getClassCountForSubject(s.id) }}</div>
+              <div class="subjects-admin__stat__label">{{ getClassCountForSubject(s.id) === 1 ? ('subjectsAdmin.group' | translate) : ('subjectsAdmin.groups' | translate) }}</div>
+            </div>
+            <div class="subjects-admin__stat">
+              <div class="subjects-admin__stat__value">{{ getStudentCountForSubject(s.id) }}</div>
+              <div class="subjects-admin__stat__label">{{ getStudentCountForSubject(s.id) === 1 ? ('subjectsAdmin.student' | translate) : ('subjectsAdmin.students' | translate) }}</div>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty subject-grid__empty">
+          <div class="empty__title">{{ 'subjectsAdmin.noSubjectsYet' | translate }}</div>
+          <p>{{ 'subjectsAdmin.noSubjectsYetDesc' | translate }}</p>
+          <button class="btn btn--primary" (click)="openForm()">{{ 'subjectsAdmin.form.add' | translate }}</button>
+        </div>
+      }
+    </div>
+
+    @if (subjectList.totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="!subjectList.hasPrevious()" (click)="subjectList.previous()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of subjectList.pageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="subjectList.currentPage() === page"
+                      (click)="subjectList.goTo(+page)">{{ page }}</button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="!subjectList.hasNext()" (click)="subjectList.next()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+</div>

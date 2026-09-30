@@ -1,0 +1,395 @@
+<!-- ============================================================
+     Teacher Details Popup
+     ============================================================ -->
+@if (detailTeacher()) {
+  <div class="popup-overlay">
+    <div class="popup popup--xl" role="dialog" aria-modal="true" appClickOutside (appClickOutside)="closeDetails()">
+
+      <header class="popup__head">
+        <div class="detail-teacher-header">
+          @if (detailTeacher()!.photoURL) {
+            <img class="detail-teacher-photo" [src]="detailTeacher()!.photoURL" [alt]="detailTeacher()!.firstName" />
+          } @else {
+            <div class="avatar detail-teacher-avatar avatar--brand">{{ initials(detailTeacher()!) }}</div>
+          }
+          <div>
+            <div class="popup__eyebrow">{{ 'teachersAdmin.teacherProfile' | translate }}</div>
+            <h2 class="popup__title">{{ detailTeacher()!.firstName }} {{ detailTeacher()!.lastName }}</h2>
+            @if (detailTeacher()!.email) {
+              <p class="popup__sub">{{ detailTeacher()!.email }}</p>
+            }
+          </div>
+        </div>
+        <button type="button" class="popup__close" (click)="closeDetails()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+
+      <div class="popup__body">
+
+        <!-- Stats row -->
+        <div class="detail-stats">
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailClasses().length }}</div>
+            <div class="detail-stat__label">{{ 'teachersAdmin.stats.groups' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailSubjects().length }}</div>
+            <div class="detail-stat__label">{{ 'teachersAdmin.stats.subjects' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailStudents().length }}</div>
+            <div class="detail-stat__label">{{ 'teachersAdmin.stats.students' | translate }}</div>
+          </div>
+        </div>
+
+        <!-- Subjects -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">{{ 'teachersAdmin.subjects' | translate }}</h3>
+          <div class="subject-chips">
+            @for (s of detailSubjects(); track s.id) {
+              <span class="teachers-admin__chip chip--static">
+                @if (s.color) { <span class="teachers-admin__color-swatch" [style.background]="s.color"></span> }
+                {{ s.name }}
+              </span>
+            } @empty {
+              <span class="teachers-admin__muted">{{ 'teachersAdmin.noSubjects' | translate }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Groups taught -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">{{ 'teachersAdmin.classesTaught' | translate }}</h3>
+          <div class="subject-chips">
+            @for (c of detailClasses(); track c.id) {
+              <span class="teachers-admin__chip chip--static">{{ c.name }}</span>
+            } @empty {
+              <span class="teachers-admin__muted">{{ 'teachersAdmin.noGroups' | translate }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Students -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">
+            {{ 'teachersAdmin.students' | translate }}
+            <span class="detail-section__count">{{ detailStudents().length }}</span>
+          </h3>
+          @if (detailStudents().length === 0) {
+            <p class="teachers-admin__muted detail-empty">{{ 'teachersAdmin.noStudents' | translate }}</p>
+          } @else {
+            <div class="detail-students-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>{{ 'teachersAdmin.table.student' | translate }}</th>
+                    <th>{{ 'teachersAdmin.table.email' | translate }}</th>
+                    <th>{{ 'teachersAdmin.table.group' | translate }}</th>
+                    <th>{{ 'teachersAdmin.table.stage' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of detailStudents(); track s.uid) {
+                    <tr>
+                      <td>
+                        <div class="cell-stack">
+                          <div class="avatar avatar--sm avatar--brand">{{ (s.displayName || '?')[0].toUpperCase() }}</div>
+                          <div>
+                            <div class="cell-stack__main">{{ s.displayName }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{{ s.email || '—' }}</td>
+                      <td>{{ getClassName(s.classId) || '—' }}</td>
+                      <td>{{ getStageName(s.stageId) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+}
+
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'teachersAdmin.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'teachersAdmin.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <button class="btn btn--primary" (click)="openForm()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'teachersAdmin.newTeacher' | translate }}
+    </button>
+  </div>
+</div>
+
+@if (showForm()) {
+  <div class="popup-overlay">
+    <div class="popup popup--lg" role="dialog" aria-modal="true" aria-labelledby="teacher-form-title" appClickOutside (appClickOutside)="closeForm()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ editingId() ? ('teachersAdmin.form.editEyebrow' | translate) : ('teachersAdmin.form.newEyebrow' | translate) }}</div>
+          <h2 id="teacher-form-title" class="popup__title">{{ editingId() ? ('teachersAdmin.form.editTitle' | translate) : ('teachersAdmin.form.newTitle' | translate) }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeForm()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.id' | translate }}</label>
+          <input class="form-input" [ngModel]="form().id" disabled />
+        </div>
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.firstName' | translate }}</label>
+          <input class="form-input" [ngModel]="form().firstName" (ngModelChange)="updateField('firstName', $event)" [placeholder]="'teachersAdmin.form.firstNamePlaceholder' | translate" />
+        </div>
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.lastName' | translate }}</label>
+          <input class="form-input" [ngModel]="form().lastName" (ngModelChange)="updateField('lastName', $event)" [placeholder]="'teachersAdmin.form.lastNamePlaceholder' | translate" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.email' | translate }}</label>
+          <input class="form-input" type="email" [ngModel]="form().email" (ngModelChange)="updateField('email', $event)" [placeholder]="'teachersAdmin.form.emailPlaceholder' | translate" />
+        </div>
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.photoUrl' | translate }}</label>
+          <input class="form-input" [ngModel]="form().photoURL" (ngModelChange)="updateField('photoURL', $event)" [placeholder]="'teachersAdmin.form.photoUrlPlaceholder' | translate" />
+        </div>
+        <div class="form-group"></div>
+      </div>
+      <div class="form-row form-row--single">
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.subjectsEducated' | translate }}</label>
+          <div class="chips-picker">
+            <div class="chips-picker__field" (click)="subjectPickerOpen() || toggleSubjectPicker()">
+              @for (s of selectedSubjectsForForm(); track s.id) {
+                <span class="teachers-admin__chip">
+                  @if (s.color) { <span class="teachers-admin__color-swatch" [style.background]="s.color"></span> }
+                  <span>{{ s.name }}</span>
+                  <button type="button" class="chip__remove" (click)="$event.stopPropagation(); removeSubjectFromForm(s.id)" [attr.aria-label]="'common.delete' | translate">×</button>
+                </span>
+              }
+              @if (selectedSubjectsForForm().length === 0) {
+                <span class="chips-picker__placeholder">{{ 'teachersAdmin.noSubjects' | translate }}</span>
+              }
+              <button type="button" class="chips-picker__toggle" (click)="$event.stopPropagation(); toggleSubjectPicker()">
+                {{ subjectPickerOpen() ? ('appAdmin.subjects.close' | translate) : ('appAdmin.subjects.addSubject' | translate) }}
+              </button>
+            </div>
+            @if (subjectPickerOpen()) {
+              <div class="chips-picker__popover" (click)="$event.stopPropagation()">
+                <input
+                  class="form-input form-input--sm"
+                  type="text"
+                  [placeholder]="'appAdmin.subjects.search' | translate"
+                  [ngModel]="subjectPickerQuery()"
+                  (ngModelChange)="subjectPickerQuery.set($event)"
+                />
+                <div class="chips-picker__list">
+                  @for (s of availableSubjectsForPicker(); track s.id) {
+                    <button type="button" class="chips-picker__option" (click)="addSubjectToForm(s.id)">
+                      <span class="chips-picker__option-name">{{ s.name }}</span>
+                      @if (s.color) { <span class="teachers-admin__color-swatch" [style.background]="s.color"></span> }
+                    </button>
+                  } @empty {
+                    <div class="chips-picker__empty">
+                      @if (subjects().length === 0) {
+                        {{ 'appAdmin.subjects.noSubjects' | translate }}
+                      } @else {
+                        {{ 'appAdmin.subjects.noMore' | translate }}
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="form-row form-row--single">
+        <div class="form-group">
+          <label>{{ 'teachersAdmin.form.groupsTaught' | translate }}</label>
+          <div class="chips-picker">
+            <div class="chips-picker__field" (click)="classPickerOpen() || toggleClassPicker()">
+              @for (c of selectedClassesForForm(); track c.id) {
+                <span class="teachers-admin__chip">
+                  <span>{{ c.name }}</span>
+                  <button type="button" class="chip__remove" (click)="$event.stopPropagation(); removeClassFromForm(c.id)" [attr.aria-label]="'common.delete' | translate">×</button>
+                </span>
+              }
+              @if (selectedClassesForForm().length === 0) {
+                <span class="chips-picker__placeholder">{{ 'teachersAdmin.form.noGroupAssigned' | translate }}</span>
+              }
+              <button type="button" class="chips-picker__toggle" (click)="$event.stopPropagation(); toggleClassPicker()">
+                {{ classPickerOpen() ? ('appAdmin.subjects.close' | translate) : ('teachersAdmin.form.addGroup' | translate) }}
+              </button>
+            </div>
+            @if (classPickerOpen()) {
+              <div class="chips-picker__popover" (click)="$event.stopPropagation()">
+                <input
+                  class="form-input form-input--sm"
+                  type="text"
+                  [placeholder]="'appAdmin.group.search' | translate"
+                  [ngModel]="classPickerQuery()"
+                  (ngModelChange)="classPickerQuery.set($event)"
+                />
+                <div class="chips-picker__list">
+                  @for (c of availableClassesForPicker(); track c.id) {
+                    <button type="button" class="chips-picker__option" (click)="addClassToForm(c.id)">
+                      <span class="chips-picker__option-name">{{ c.name }}</span>
+                      <span class="chips-picker__option-meta">{{ c.id }}</span>
+                    </button>
+                  } @empty {
+                    <div class="chips-picker__empty">
+                      @if (classes().length === 0) {
+                        {{ 'teachersAdmin.form.noGroupsExist' | translate }}
+                      } @else {
+                        {{ 'teachersAdmin.form.noMoreGroups' | translate }}
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <p class="field-hint">{{ 'teachersAdmin.form.groupHint' | translate }}</p>
+        </div>
+      </div>
+      </div>
+      <footer class="popup__foot">
+        <button class="secondary-btn" (click)="closeForm()">{{ 'teachersAdmin.form.cancel' | translate }}</button>
+        <button class="primary-btn" (click)="save()">{{ editingId() ? ('teachersAdmin.form.saveChanges' | translate) : ('teachersAdmin.form.addTeacher' | translate) }}</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<div class="card">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title">{{ 'teachersAdmin.allTeachers' | translate }}</h2>
+      <p class="card__sub">{{ teacherList.total() === 1 ? ('teachersAdmin.teacherCount' | translate : { count: teacherList.total() }) : ('teachersAdmin.teachersCount' | translate : { count: teacherList.total() }) }}</p>
+    </div>
+    <div class="input-wrap">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search"
+        type="text"
+        [placeholder]="'teachersAdmin.searchPlaceholder' | translate"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  @if (teacherList.isLoading()) {
+    <div class="empty"><div class="empty__title">{{ 'teachersAdmin.loading' | translate }}</div></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>{{ 'teachersAdmin.table.teacher' | translate }}</th>
+          <th>{{ 'teachersAdmin.table.email' | translate }}</th>
+          <th>{{ 'teachersAdmin.table.subjects' | translate }}</th>
+          <th>{{ 'teachersAdmin.table.groups' | translate }}</th>
+          <th>{{ 'teachersAdmin.table.students' | translate }}</th>
+          <th class="col-actions">{{ 'teachersAdmin.table.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of filteredTeachers(); track t.id) {
+          <tr>
+            <td>
+              <div class="cell-stack">
+                <div class="avatar avatar--sm avatar--brand">{{ initials(t) }}</div>
+                <div class="cell-stack__main">{{ t.firstName }} {{ t.lastName }}</div>
+              </div>
+            </td>
+            <td>{{ t.email || '—' }}</td>
+            <td>
+              @if (getSubjectsForTeacher(t).length > 0) {
+                <div class="subject-chips">
+                  @for (s of getSubjectsForTeacher(t); track s.id) {
+                    <span class="teachers-admin__chip chip--static">
+                      @if (s.color) { <span class="teachers-admin__color-swatch" [style.background]="s.color"></span> }
+                      <span>{{ s.name }}</span>
+                    </span>
+                  }
+                </div>
+              } @else {
+                <span class="teachers-admin__muted">—</span>
+              }
+            </td>
+            <td>
+              @if (getClassesForTeacher(t.id).length > 0) {
+                <div class="subject-chips">
+                  @for (c of getClassesForTeacher(t.id); track c.id) {
+                    <span class="teachers-admin__chip chip--static">{{ c.name }}</span>
+                  }
+                </div>
+              } @else {
+                <span class="teachers-admin__muted">—</span>
+              }
+            </td>
+            <td>{{ getStudentCountForTeacher(t) }}</td>
+            <td class="col-actions">
+              <div class="row-actions">
+                <button class="btn btn--sm" type="button" (click)="openDetails(t)">{{ 'common.details' | translate }}</button>
+                <button class="btn btn--sm" type="button" (click)="edit(t)">{{ 'common.edit' | translate }}</button>
+                <button class="btn btn--sm btn--danger" type="button" (click)="remove(t.id)">{{ 'common.delete' | translate }}</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6">
+              <div class="empty">
+                <div class="empty__title">{{ 'teachersAdmin.noTeachersYet' | translate }}</div>
+                <p>{{ 'teachersAdmin.noTeachersYetDesc' | translate }}</p>
+                <button class="btn btn--primary" (click)="openForm()">{{ 'teachersAdmin.addTeacher' | translate }}</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    @if (teacherList.totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination__btn" [disabled]="!teacherList.hasPrevious()" (click)="teacherList.previous()">
+          {{ 'common.previous' | translate }}
+        </button>
+        <div class="pagination__numbers">
+          @for (page of teacherList.pageNumbers(); track $index) {
+            @if (page === '...') {
+              <span class="pagination__ellipsis">...</span>
+            } @else {
+              <button class="pagination__num" [class.is-active]="teacherList.currentPage() === page"
+                      (click)="teacherList.goTo(+page)">{{ page }}</button>
+            }
+          }
+        </div>
+        <button class="pagination__btn" [disabled]="!teacherList.hasNext()" (click)="teacherList.next()">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+</div>

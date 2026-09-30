@@ -1,0 +1,204 @@
+<div class="popup-overlay">
+  <div class="popup answers-popup" role="dialog" aria-modal="true" aria-labelledby="answers-title" appClickOutside (appClickOutside)="closed.emit()">
+    <header class="popup__head">
+      <div>
+        <!-- Falls back to `record().type` only if a caller ever omits [kind] —
+             see the input's own doc for why that field is the wrong source. -->
+        <div class="popup__eyebrow">{{ 'participationAnswers.eyebrow.' + (kind() ?? (record().type === 'quiz' ? 'quiz' : 'homework')) | translate }}</div>
+        <h2 id="answers-title" class="popup__title">{{ record().quizName || ('Quiz #' + record().quizId) }}</h2>
+      </div>
+      <button type="button" class="popup__close" (click)="closed.emit()" [attr.aria-label]="'common.close' | translate">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+    <div class="popup__body">
+      <div class="meta-cards">
+        @if (studentName()) {
+          <div class="meta-card">
+            <div class="meta-card__icon meta-card__icon--brand">
+              <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="meta-card__body">
+              <span class="meta-card__label">{{ 'participationAnswers.student' | translate }}</span>
+              <span class="meta-card__value">{{ studentName() }}</span>
+            </div>
+          </div>
+        }
+
+        <div class="meta-card">
+          <div class="meta-card__icon" [ngClass]="scoreLabel() >= 50 ? 'meta-card__icon--mint' : 'meta-card__icon--amber'">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 7v4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="meta-card__body">
+            <span class="meta-card__label">{{ 'participationAnswers.score' | translate }}</span>
+            <span class="meta-card__value">
+              {{ scoreLabel() }}%
+              @if (pendingReviewCount() > 0) {
+                <span class="meta-card__hint">{{ 'participationAnswers.soFar' | translate }}</span>
+              }
+            </span>
+          </div>
+        </div>
+
+        <div class="meta-card">
+          <div class="meta-card__icon meta-card__icon--mint">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="meta-card__body">
+            <span class="meta-card__label">{{ 'participationAnswers.autoGraded' | translate }}</span>
+            <span class="meta-card__value">{{ record().correctCount }}/{{ record().correctCount + record().wrongCount }}</span>
+          </div>
+        </div>
+
+        @if (pendingReviewCount() > 0) {
+          <div class="meta-card">
+            <div class="meta-card__icon meta-card__icon--amber">
+              <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="meta-card__body">
+              <span class="meta-card__label">{{ 'participationAnswers.awaitingReview' | translate }}</span>
+              <span class="meta-card__value">{{ pendingReviewCount() }}</span>
+            </div>
+          </div>
+        }
+
+        <div class="meta-card">
+          <div class="meta-card__icon meta-card__icon--brand">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="meta-card__body">
+            <span class="meta-card__label">{{ 'participationAnswers.completed' | translate }}</span>
+            <span class="meta-card__value">{{ record().endedAt | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+
+      @if (feedback()) {
+        <div class="answer-row answer-row--stacked answers-popup__feedback">
+          <span class="answer-row__label">{{ 'participationAnswers.teacherFeedback' | translate }}</span>
+          <span class="answer-row__value" dir="auto">{{ feedback() }}</span>
+        </div>
+      }
+
+      @if (resultsWithheld()) {
+        <p class="hint">{{ 'participationAnswers.withheld' | translate }}</p>
+      }
+
+      @if (answers().length > 0) {
+        <ol class="answer-list">
+          @for (answer of answers(); track answer.questionId; let i = $index) {
+            <li class="answer-item"
+              [class.answer-item--correct]="answer.isCorrect && !answer.requiresReview"
+              [class.answer-item--wrong]="!answer.isCorrect && !answer.requiresReview"
+              [class.answer-item--pending]="answer.requiresReview && !answer.manualGrade">
+              <div class="answer-item__head">
+                <span class="answer-item__num">Q{{ i + 1 }}</span>
+                <span class="answer-item__question" dir="auto">{{ answer.questionName }}</span>
+                @if (answer.requiresReview) {
+                  @if (answer.manualGrade) {
+                    <span class="badge badge--info">{{ 'participationAnswers.graded' | translate : { awarded: awardedLabel(answer), weight: weightLabel(answer) } }}</span>
+                  } @else {
+                    <span class="badge badge--warning">{{ 'participationAnswers.pendingReview' | translate }}</span>
+                  }
+                } @else {
+                  <span class="badge" [ngClass]="answer.isCorrect ? 'badge--success' : 'badge--danger'">
+                    {{ (answer.isCorrect ? 'participationAnswers.correct' : 'participationAnswers.wrong') | translate }}
+                  </span>
+                }
+              </div>
+              <div class="answer-item__rows">
+                @if (answer.requiresReview) {
+                  @if (answer.blanks?.length) {
+                    <!-- Complete: teacher-marked, since a blank can have more than one right word. Not styled right or
+                         wrong here — the author's keyword is shown as what was expected, not as the verdict. -->
+                    @for (blank of answer.blanks; track blank.index) {
+                      <div class="answer-row">
+                        <span class="answer-row__label">{{ 'participationAnswers.blank' | translate : { n: blank.index + 1 } }}</span>
+                        <span class="answer-row__value" dir="auto">
+                          {{ blank.userAnswer || ('participationAnswers.noAnswer' | translate) }}
+                          @if (!resultsWithheld() && blank.correctAnswer) {
+                            <span class="muted"> ({{ 'participationAnswers.expected' | translate : { answer: blank.correctAnswer } }})</span>
+                          }
+                        </span>
+                      </div>
+                    }
+                  } @else {
+                    <div class="answer-row answer-row--stacked">
+                      <span class="answer-row__label">{{ answeredLabel | translate }}</span>
+                      @if (answer.responseText) {
+                        <div class="answer-row__rich" dir="auto" [innerHTML]="answer.responseText"></div>
+                      } @else {
+                        <span class="answer-row__value answer-row__value--wrong">{{ 'participationAnswers.noAnswer' | translate }}</span>
+                      }
+                    </div>
+                  }
+                  @if (answer.referenceAnswer) {
+                    <div class="answer-row answer-row--stacked">
+                      <span class="answer-row__label">{{ 'participationAnswers.referenceAnswer' | translate }}</span>
+                      <div class="answer-row__rich answer-row__rich--reference" dir="auto" [innerHTML]="answer.referenceAnswer"></div>
+                    </div>
+                  }
+                  @if (answer.manualGrade?.comment) {
+                    <div class="answer-row answer-row--stacked">
+                      <span class="answer-row__label">{{ 'participationAnswers.teacherComment' | translate }}</span>
+                      <span class="answer-row__value" dir="auto">{{ answer.manualGrade?.comment }}</span>
+                    </div>
+                  }
+                } @else if (answer.blanks?.length) {
+                  @for (blank of answer.blanks; track blank.index) {
+                    <div class="answer-row">
+                      <span class="answer-row__label">{{ 'participationAnswers.blank' | translate : { n: blank.index + 1 } }}</span>
+                      <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!blank.isCorrect">
+                        {{ blank.userAnswer ?? ('participationAnswers.noAnswer' | translate) }}
+                        @if (!blank.isCorrect && !resultsWithheld()) {
+                          <span class="answer-row__value--correct" dir="auto"> → {{ blank.correctAnswer }}</span>
+                        }
+                      </span>
+                    </div>
+                  }
+                } @else {
+                  <div class="answer-row">
+                    <span class="answer-row__label">{{ answeredLabel | translate }}</span>
+                    <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!answer.isCorrect">
+                      {{ answer.selectedOptionText ?? ('participationAnswers.noAnswer' | translate) }}
+                    </span>
+                  </div>
+                  @if (!answer.isCorrect && !resultsWithheld()) {
+                    <div class="answer-row">
+                      <span class="answer-row__label">{{ 'participationAnswers.correctAnswer' | translate }}</span>
+                      <span class="answer-row__value answer-row__value--correct" dir="auto">
+                        {{ answer.correctOptionText ?? '—' }}
+                      </span>
+                    </div>
+                  }
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <div class="empty">
+          <div class="empty__title">{{ (isLoadingAnswers() ? 'common.loading' : 'participationAnswers.noDetails') | translate }}</div>
+        </div>
+      }
+    </div>
+    <footer class="popup__foot">
+      <button class="btn btn--primary" (click)="closed.emit()">{{ 'common.close' | translate }}</button>
+    </footer>
+  </div>
+</div>

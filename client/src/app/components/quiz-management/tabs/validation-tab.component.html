@@ -1,0 +1,202 @@
+<div class="card">
+  <div class="card__head">
+    <h2 class="card__title">{{ 'quizManagement.validation.title' | translate }}</h2>
+    <div class="quiz-management__row-actions">
+      <select class="select" [ngModel]="validationFilter()" (ngModelChange)="validationFilter.set($event)">
+        <option value="pending">{{ 'quizManagement.validation.pending' | translate }}</option>
+        <option value="reviewed">{{ 'quizManagement.validation.reviewed' | translate }}</option>
+        <option value="all">{{ 'quizManagement.validation.all' | translate }}</option>
+      </select>
+    </div>
+  </div>
+  <div class="card__body">
+    <div class="stack stack--sm">
+      @for (item of filteredValidationItems(); track item.record.id) {
+        <div class="list-row">
+          <div class="avatar avatar--sm avatar--brand">{{ state.studentInitial(item.studentName) }}</div>
+          <div class="list-row__main">
+            <div class="cell-stack__main">{{ item.studentName }}</div>
+            <div class="quiz-management__cell-stack__sub">
+              {{ item.title }}
+              @if (item.assignment) {
+                · {{ state.getClassName(item.assignment.classId) }}
+              } @else {
+                <!-- No assignment: this is a quiz from the shared bank that a
+                     student started themselves, routed here by the reviewer the
+                     admin set on it. Labelled so the teacher knows why it is in
+                     their queue without a class or due date to explain it. -->
+                · <span class="badge badge--muted">{{ 'quizManagement.validation.fromBank' | translate }}</span>
+              }
+              · {{ 'quizManagement.validation.finished' | translate : { date: (item.record.endedAt | date:'short') } }}
+            </div>
+            @if (item.record.validation; as v) {
+              <div class="quiz-management__cell-stack__sub">
+                {{ 'quizManagement.validation.reviewedOn' | translate : { date: (v.validatedAt | date:'short'), name: v.validatedByName || '' } }}
+                @if (v.feedback) { — {{ v.feedback }} }
+              </div>
+            }
+          </div>
+          <span class="badge badge--brand">{{ state.scorePercentOf(item.record) }}%</span>
+          @if (item.record.pendingReviewCount) {
+            <span class="badge badge--warning">
+              {{ 'quizManagement.validation.awaitingMark' | translate : { count: item.record.pendingReviewCount } }}
+            </span>
+          }
+          @if (item.record.validation; as v) {
+            <span class="badge" [ngClass]="v.status === 'approved' ? 'badge--success' : 'badge--warning'">
+              {{ v.status === 'approved' ? ('quizManagement.validation.approved' | translate) : ('quizManagement.validation.needsRevision' | translate) }}
+            </span>
+          } @else {
+            <span class="badge badge--muted">{{ 'quizManagement.validation.pending' | translate }}</span>
+          }
+          <button class="btn btn--sm" (click)="openAnswers(item.record, item.studentName, item.kind)">{{ 'quizManagement.validation.review' | translate }}</button>
+          <button class="btn btn--sm btn--primary" (click)="openValidation(item)">{{ 'quizManagement.validation.validate' | translate }}</button>
+        </div>
+      } @empty {
+        <div class="empty">
+          <div class="empty__title">{{ 'quizManagement.validation.noSubmissions' | translate }}</div>
+          <p>{{ 'quizManagement.validation.noSubmissionsDesc' | translate }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ======================= VALIDATION POPUP ======================= -->
+@if (validationTarget(); as item) {
+  <div class="popup-overlay" (click)="closeValidation()">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="validate-title" (click)="$event.stopPropagation()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'quizManagement.validationPopup.title' | translate }}</div>
+          <h2 id="validate-title" class="popup__title">{{ item.studentName }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeValidation()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <p class="card__sub">
+          {{ item.title }} · {{ state.scorePercentOf(item.record) }}%
+          · {{ item.record.correctCount }}/{{ item.record.correctCount + item.record.wrongCount }}
+        </p>
+        <div class="field" style="margin-bottom: 0.875rem;">
+          <button class="btn btn--sm btn--ghost" (click)="openAnswers(item.record, item.studentName, item.kind)">{{ 'quizManagement.validation.review' | translate }}</button>
+        </div>
+
+        @if (reviewAnswers().length > 0) {
+          <div class="field field--full" style="margin-bottom: 0.875rem;">
+            <label class="field__label">{{ 'quizManagement.validationPopup.gradeAnswers' | translate }}</label>
+            <p class="field__hint">{{ 'quizManagement.validationPopup.gradeAnswersHint' | translate }}</p>
+            @for (answer of reviewAnswers(); track answer.questionId) {
+              <div class="explain-grade">
+                <p class="explain-grade__question" dir="auto">{{ answer.questionName }}</p>
+
+                @if (answer.blanks?.length) {
+                  <!--
+                    A Complete answer. Shown blank by blank, each pairing what the
+                    student typed with the keyword the author expected, because
+                    "close but not identical" is the case this whole review flow
+                    exists for — the teacher has to see both strings to judge it.
+                    The auto-match result is a hint, never a verdict.
+                  -->
+                  <span class="explain-grade__label">{{ 'quizManagement.validationPopup.blanks' | translate }}</span>
+                  <div class="blank-grade">
+                    @for (blank of answer.blanks; track blank.index) {
+                      <div class="blank-grade__row" [class.blank-grade__row--matched]="blank.isCorrect">
+                        <span class="blank-grade__index">{{ blank.index + 1 }}</span>
+                        <span class="blank-grade__value" dir="auto">
+                          {{ blank.userAnswer || ('quizResult.noAnswer' | translate) }}
+                        </span>
+                        <span class="blank-grade__expected" dir="auto">
+                          {{ 'quizManagement.validationPopup.expected' | translate : { answer: blank.correctAnswer } }}
+                        </span>
+                        <span class="blank-grade__flag" [class.blank-grade__flag--matched]="blank.isCorrect">
+                          {{ (blank.isCorrect
+                                ? 'quizManagement.validationPopup.blankMatched'
+                                : 'quizManagement.validationPopup.blankDiffers') | translate }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                  <p class="field__hint">{{ 'quizManagement.validationPopup.suggestedHint' | translate }}</p>
+                } @else {
+                  <span class="explain-grade__label">{{ 'quizManagement.validationPopup.studentAnswer' | translate }}</span>
+                  @if (answer.responseText) {
+                    <div class="explain-grade__body" dir="auto" [innerHTML]="answer.responseText"></div>
+                  } @else {
+                    <p class="explain-grade__body explain-grade__body--empty">{{ 'quizResult.noAnswer' | translate }}</p>
+                  }
+
+                  @if (answer.referenceAnswer) {
+                    <span class="explain-grade__label">{{ 'quizManagement.validationPopup.referenceAnswer' | translate }}</span>
+                    <div class="explain-grade__body explain-grade__body--reference" dir="auto" [innerHTML]="answer.referenceAnswer"></div>
+                  }
+                }
+
+                <div class="explain-grade__mark">
+                  <label class="field__label" [attr.for]="'award-' + answer.questionId">
+                    {{ 'quizManagement.validationPopup.awarded' | translate : { max: maxAwardFor(answer) } }}
+                  </label>
+                  <input
+                    class="input explain-grade__input"
+                    type="number"
+                    min="0"
+                    [max]="maxAwardFor(answer)"
+                    step="1"
+                    [id]="'award-' + answer.questionId"
+                    [ngModel]="awardFor(answer)"
+                    (ngModelChange)="setAward(answer, $event)"
+                    [disabled]="isSavingValidation()" />
+                </div>
+
+                <input
+                  class="input input--full"
+                  [placeholder]="'quizManagement.validationPopup.markCommentPlaceholder' | translate"
+                  [ngModel]="commentFor(answer)"
+                  (ngModelChange)="setAwardComment(answer, $event)"
+                  [disabled]="isSavingValidation()" />
+              </div>
+            }
+          </div>
+        }
+
+        <div class="field field--full" style="margin-bottom: 0.875rem;">
+          <label class="field__label">{{ 'quizManagement.validationPopup.verdict' | translate }}</label>
+          <div class="option-cards" role="radiogroup" aria-label="Verdict">
+            <label class="option-card" [class.is-active]="validationStatus() === 'approved'">
+              <input type="radio" name="verdict" value="approved" [checked]="validationStatus() === 'approved'" (change)="validationStatus.set('approved')" [disabled]="isSavingValidation()" />
+              <span class="option-card__title">{{ 'quizManagement.validationPopup.approve' | translate }}</span>
+              <span class="option-card__desc">{{ 'quizManagement.validationPopup.approveDesc' | translate }}</span>
+            </label>
+            <label class="option-card" [class.is-active]="validationStatus() === 'rejected'">
+              <input type="radio" name="verdict" value="rejected" [checked]="validationStatus() === 'rejected'" (change)="validationStatus.set('rejected')" [disabled]="isSavingValidation()" />
+              <span class="option-card__title">{{ 'quizManagement.validationPopup.reject' | translate }}</span>
+              <span class="option-card__desc">{{ 'quizManagement.validationPopup.rejectDesc' | translate }}</span>
+            </label>
+          </div>
+        </div>
+        <div class="field field--full">
+          <label class="field__label">{{ 'quizManagement.validationPopup.feedback' | translate }}</label>
+          <textarea class="input input--full" rows="3" [placeholder]="'quizManagement.validationPopup.feedbackPlaceholder' | translate"
+                    [ngModel]="validationFeedback()" (ngModelChange)="validationFeedback.set($event)" [disabled]="isSavingValidation()"></textarea>
+        </div>
+      </div>
+      <footer class="popup__foot">
+        <button class="btn" (click)="closeValidation()" [disabled]="isSavingValidation()">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn--primary" (click)="saveValidation()" [appLoadingButton]="isSavingValidation()">
+          @if (isSavingValidation()) { {{ 'quizManagement.validationPopup.saving' | translate }} } @else { {{ 'quizManagement.validationPopup.save' | translate }} }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ======================= ANSWER REVIEW POPUP ======================= -->
+@if (answersRecord(); as record) {
+  <app-participation-answers-popup
+    [record]="record"
+    [kind]="answersKind()"
+    [studentName]="answersStudentName()"
+    (closed)="closeAnswers()" />
+}

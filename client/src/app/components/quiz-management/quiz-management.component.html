@@ -1,0 +1,399 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'quizManagement.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'quizManagement.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <span class="badge badge--success">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M22 10L12 5 2 10l10 5 10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      {{ 'roles.teacher' | translate }}
+    </span>
+  </div>
+</div>
+
+<!-- Missing teacher profile -->
+@if (!state.isLoading() && !state.teacher()) {
+  <div class="card">
+    <div class="card__body">
+      <div class="empty">
+        <div class="empty__title">{{ 'quizManagement.noTeacherProfile' | translate }}</div>
+        <p>{{ 'quizManagement.noTeacherProfileDesc' | translate }}</p>
+      </div>
+    </div>
+  </div>
+}
+
+@if (state.teacher()) {
+  <!-- KPI tiles -->
+  <div class="kpis">
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'quizManagement.stats.myGroups' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ state.myClasses().length }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'quizManagement.stats.myStudents' | translate }}</span>
+        <div class="stat__icon stat__icon--mint">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ state.students().length }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'quizManagement.stats.assignmentsFiltered' | translate }}</span>
+        <div class="stat__icon stat__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ state.filteredAssignments().length }}</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'quizManagement.stats.averageScore' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ state.overallAverageScore() }}%</div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="card">
+    <div class="card__body">
+      <div class="filter-bar">
+        <div class="field">
+          <label class="field__label">{{ 'quizManagement.filters.subject' | translate }}</label>
+          <select class="select" [ngModel]="state.filterSubjectId()" (ngModelChange)="state.filterSubjectId.set($event)">
+            <option value="">{{ 'quizManagement.filters.allSubjects' | translate }}</option>
+            @for (subject of state.mySubjects(); track subject.id) {
+              <option [value]="subject.id">{{ subject.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label">{{ 'quizManagement.filters.semester' | translate }}</label>
+          <select class="select" [ngModel]="state.filterSemester()" (ngModelChange)="state.filterSemester.set($event)">
+            <option value="all">{{ 'semester.all' | translate }}</option>
+            @for (sem of state.semesterOptions; track sem.value) {
+              <option [value]="sem.value">{{ sem.label | translate }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label">{{ 'quizManagement.filters.group' | translate }}</label>
+          <select class="select" [ngModel]="state.filterClassId()" (ngModelChange)="state.filterClassId.set($event)">
+            <option value="">{{ 'quizManagement.filters.allGroups' | translate }}</option>
+            @for (cls of state.myClasses(); track cls.id) {
+              <option [value]="cls.id">{{ cls.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label">{{ 'quizManagement.filters.type' | translate }}</label>
+          <select class="select" [ngModel]="state.filterKind()" (ngModelChange)="state.filterKind.set($event)">
+            <option value="all">{{ 'quizManagement.filters.allTypes' | translate }}</option>
+            <option value="quiz">{{ 'quizManagement.filters.quizzesOnly' | translate }}</option>
+            <option value="homework">{{ 'quizManagement.filters.homeworkOnly' | translate }}</option>
+          </select>
+        </div>
+        <div class="field field--grow">
+          <label class="field__label">{{ 'quizManagement.filters.search' | translate }}</label>
+          <input class="input input--full" type="search" [placeholder]="'quizManagement.filters.searchPlaceholder' | translate"
+                 [ngModel]="state.searchQuery()" (ngModelChange)="state.searchQuery.set($event)" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Tabs + actions. Each tab is a child route rather than a local signal, so the
+    same view is reachable from the sidebar's Teaching section and is
+    deep-linkable / back-button friendly.
+  -->
+  <div class="card">
+    <div class="card__head">
+      <nav class="tab-switch">
+        <a class="tab-switch__btn" routerLink="assignments" routerLinkActive="is-active">
+          {{ 'quizManagement.tabs.assignments' | translate }}
+          @if (state.activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ state.activeAssignmentCount() }}</span> }
+        </a>
+        <a class="tab-switch__btn" routerLink="my-quizzes" routerLinkActive="is-active">
+          {{ 'quizManagement.tabs.myQuizzes' | translate }}
+          @if (state.myCustomQuizzes().length > 0) { <span class="badge badge--brand">{{ state.myCustomQuizzes().length }}</span> }
+        </a>
+        <a class="tab-switch__btn" routerLink="participation" routerLinkActive="is-active">
+          {{ 'quizManagement.tabs.participation' | translate }}
+        </a>
+        <a class="tab-switch__btn" routerLink="results" routerLinkActive="is-active">
+          {{ 'quizManagement.tabs.results' | translate }}
+        </a>
+        <a class="tab-switch__btn" routerLink="validation" routerLinkActive="is-active">
+          {{ 'quizManagement.tabs.validation' | translate }}
+          @if (state.pendingValidationCount() > 0) { <span class="badge badge--warning">{{ state.pendingValidationCount() }}</span> }
+        </a>
+      </nav>
+      <div class="quiz-management__row-actions">
+        <button class="btn btn--sm btn--ghost" (click)="state.refreshRecords()" [disabled]="state.isLoadingRecords()" [title]="'quizManagement.actions.refresh' | translate">
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {{ 'quizManagement.actions.refresh' | translate }}
+        </button>
+        <button class="btn btn--sm btn--primary" (click)="state.openAssignmentForm('quiz')" [disabled]="state.isLoading() || state.myClasses().length === 0">
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ 'quizManagement.actions.assignQuiz' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (state.myClasses().length === 0 && !state.isLoading()) {
+    <div class="card"><div class="card__body">
+      <div class="empty">
+        <div class="empty__title">{{ 'quizManagement.noGroupsAssigned' | translate }}</div>
+        <p>{{ 'quizManagement.noGroupsAssignedDesc' | translate }}</p>
+      </div>
+    </div></div>
+  }
+
+  <!-- The active tab -->
+  <router-outlet />
+
+  <!-- ======================= CREATE ASSIGNMENT POPUP ======================= -->
+  @if (state.showAssignmentForm()) {
+    <div class="popup-overlay">
+      <div class="popup assign-popup" role="dialog" aria-modal="true" aria-labelledby="assign-title" appClickOutside (appClickOutside)="state.closeAssignmentForm()">
+        <header class="popup__head assign-popup__head">
+          <div class="assign-popup__heading">
+            <div class="assign-popup__icon">
+              @if (state.assignKind() === 'quiz') {
+                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8.5 12l2.2 2.2L15.5 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 7h8M8 11h8M8 15h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              }
+            </div>
+            <div>
+              <div class="popup__eyebrow">{{ state.editingAssignmentId() ? ('quizManagement.form.editAssignment' | translate) : ('quizManagement.form.newAssignment' | translate) }}</div>
+              <h2 id="assign-title" class="popup__title">
+                @if (state.editingAssignmentId()) {
+                  {{ state.assignKind() === 'quiz' ? ('quizManagement.form.editQuiz' | translate) : ('quizManagement.form.editHomework' | translate) }}
+                } @else {
+                  {{ state.assignKind() === 'quiz' ? ('quizManagement.form.assignQuiz' | translate) : ('quizManagement.form.assignHomework' | translate) }}
+                }
+              </h2>
+              <p class="assign-popup__subtitle">{{ 'quizManagement.form.subtitle' | translate }}</p>
+            </div>
+          </div>
+          <button type="button" class="popup__close" (click)="state.closeAssignmentForm()" [attr.aria-label]="'common.close' | translate">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </header>
+        <div class="popup__body">
+          @if (state.formError()) {
+            <div class="alert alert--danger">
+              <span>{{ state.formError() }}</span>
+              <button class="btn btn--ghost btn--sm btn--icon" (click)="state.formError.set('')" [attr.aria-label]="'common.dismiss' | translate">×</button>
+            </div>
+          }
+          <div class="form-grid">
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.form.type' | translate }}</label>
+              <div class="quiz-management__segmented" role="radiogroup" aria-label="Assignment type">
+                <label class="segmented__opt" [class.is-active]="state.assignKind() === 'homework'">
+                  <input type="radio" name="assignKind" value="homework" [checked]="state.assignKind() === 'homework'" (change)="state.assignKind.set('homework')" [disabled]="state.isSaving() || !!state.editingAssignmentId()" />
+                  {{ 'quizManagement.form.homework' | translate }}
+                </label>
+                <label class="segmented__opt" [class.is-active]="state.assignKind() === 'quiz'">
+                  <input type="radio" name="assignKind" value="quiz" [checked]="state.assignKind() === 'quiz'" (change)="state.assignKind.set('quiz')" [disabled]="state.isSaving() || !!state.editingAssignmentId()" />
+                  {{ 'quizManagement.form.quiz2' | translate }}
+                </label>
+              </div>
+              @if (state.editingAssignmentId()) {
+                <span class="field__hint">{{ 'quizManagement.form.typeLockedHint' | translate }}</span>
+              }
+            </div>
+
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.form.title' | translate }}</label>
+              <input class="input input--full" [placeholder]="'quizManagement.form.titlePlaceholder' | translate" [ngModel]="state.assignTitle()" (ngModelChange)="state.assignTitle.set($event)" [disabled]="state.isSaving()" />
+            </div>
+
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.form.subject' | translate }}</label>
+              <select class="select" [ngModel]="state.assignSubjectId()" (ngModelChange)="state.onAssignSubjectChange($event)" [disabled]="state.isSaving()">
+                <option value="">{{ 'quizManagement.form.allMySubjects' | translate }}</option>
+                @for (subject of state.mySubjects(); track subject.id) {
+                  <option [value]="subject.id">{{ subject.name }}</option>
+                }
+              </select>
+            </div>
+            <!--
+              Stage and Grade narrow the group list below; neither is stored as
+              a choice of its own, because the chosen group already determines
+              both. Semester used to sit here and no longer does — it is
+              settled when the quiz is authored, so asking again only hid
+              quizzes the teacher had already classified.
+            -->
+            <div class="field">
+              <label class="field__label" for="assign-stage">{{ 'common.stage' | translate }}</label>
+              <select id="assign-stage" class="select" [ngModel]="state.assignStageId()" (ngModelChange)="state.onAssignStageChange($event)" [disabled]="state.isSaving() || !!state.editingAssignmentId()">
+                <option value="">{{ 'common.selectStage' | translate }}</option>
+                @for (stage of state.myStages(); track stage.id) {
+                  <option [value]="stage.id">{{ stage.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label" for="assign-grade">{{ 'common.grade' | translate }}</label>
+              <select id="assign-grade" class="select" [ngModel]="state.assignGradeId()" (ngModelChange)="state.onAssignGradeChange($event)" [disabled]="state.isSaving() || !!state.editingAssignmentId()">
+                <option value="">{{ 'common.allGrades' | translate }}</option>
+                @for (grade of state.assignGradeOptions(); track grade.id) {
+                  <option [value]="grade.id">{{ grade.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.form.quiz' | translate }}</label>
+              <select class="select" [ngModel]="state.assignQuizId()" (ngModelChange)="state.assignQuizId.set($event)"
+                      [disabled]="state.isSaving() || (state.assignableQuizzes().length === 0 && state.assignableCustomQuizzes().length === 0)">
+                <option value="">{{ (state.assignableQuizzes().length || state.assignableCustomQuizzes().length) ? ('quizManagement.form.selectQuiz' | translate) : ('quizManagement.form.noQuizzes' | translate) }}</option>
+                @if (state.assignableCustomQuizzes().length > 0) {
+                  <optgroup [label]="'quizManagement.form.myQuizzesGroup' | translate">
+                    @for (quiz of state.assignableCustomQuizzes(); track quiz.id) {
+                      <option [value]="'custom:' + quiz.id">{{ quiz.name }} ({{ quiz.questions.length }} {{ 'quizManagement.form.questions' | translate }})</option>
+                    }
+                  </optgroup>
+                }
+                @if (state.assignableQuizzes().length > 0) {
+                  <optgroup [label]="'quizManagement.form.quizBankGroup' | translate">
+                    @for (quiz of state.assignableQuizzes(); track quiz.id) {
+                      <option [value]="quiz.id">{{ quiz.name }} ({{ quiz.questionCount }} {{ 'quizManagement.form.questions' | translate }})</option>
+                    }
+                  </optgroup>
+                }
+              </select>
+              @if (state.assignableQuizzes().length === 0 && state.assignableCustomQuizzes().length === 0) {
+                <span class="field__hint">{{ 'quizManagement.form.noQuizzesHint' | translate }}</span>
+              }
+            </div>
+            <!--
+              A checkbox list rather than a native `multiple` select: the point
+              is assigning to several groups at once, and a multi-select needs
+              ctrl-click to do that — undiscoverable, and impossible on touch.
+              Locked to the one group being edited when editing, since a
+              `HomeworkAssignment` is one record for one group.
+            -->
+            <div class="field field--full">
+              <label class="field__label">
+                {{ 'quizManagement.form.group' | translate }}
+                @if (state.assignClassIds().length > 0) {
+                  <span class="badge badge--brand">{{ state.assignClassIds().length }}</span>
+                }
+              </label>
+              @if (state.editingAssignmentId()) {
+                <p class="muted">{{ state.getClassName(state.assignClassIds()[0]) }}</p>
+                <span class="field__hint">{{ 'quizManagement.form.groupLockedHint' | translate }}</span>
+              } @else if (state.assignableClasses().length > 0) {
+                <div class="student-picker">
+                  @for (cls of state.assignableClasses(); track cls.id) {
+                    <label class="student-picker__item" [class.is-checked]="state.isClassAssigned(cls.id)">
+                      <input type="checkbox" [checked]="state.isClassAssigned(cls.id)"
+                             (change)="state.toggleAssignClass(cls.id)" [disabled]="state.isSaving()" />
+                      {{ cls.name }} — {{ state.getStageName(cls.stageId) }}
+                    </label>
+                  }
+                </div>
+              } @else {
+                <p class="muted">{{ 'quizManagement.form.noGroupsForGrade' | translate }}</p>
+              }
+            </div>
+            <div class="field">
+              <label class="field__label">{{ 'quizManagement.form.dueDate' | translate }}</label>
+              <input class="input input--full" type="date" [ngModel]="state.assignDueAt()" (ngModelChange)="state.assignDueAt.set($event)" [disabled]="state.isSaving()" />
+            </div>
+
+            <div class="field field--full">
+              <label class="field__label">{{ 'quizManagement.form.assignTo' | translate }}</label>
+              <div class="option-cards" role="radiogroup" aria-label="Assign to">
+                <label class="option-card" [class.is-active]="state.assignTargetMode() === 'class'">
+                  <input type="radio" name="targetMode" value="class" [checked]="state.assignTargetMode() === 'class'" (change)="state.assignTargetMode.set('class')" [disabled]="state.isSaving()" />
+                  <span class="option-card__title">{{ 'quizManagement.form.wholeGroup' | translate }}</span>
+                  <span class="option-card__desc">{{ 'quizManagement.form.wholeGroupDesc' | translate }}</span>
+                </label>
+                <label class="option-card" [class.is-active]="state.assignTargetMode() === 'students'">
+                  <input type="radio" name="targetMode" value="students" [checked]="state.assignTargetMode() === 'students'" (change)="state.assignTargetMode.set('students')" [disabled]="state.isSaving()" />
+                  <span class="option-card__title">{{ 'quizManagement.form.selectedStudents' | translate }}</span>
+                  <span class="option-card__desc">{{ 'quizManagement.form.selectedStudentsDesc' | translate }}</span>
+                </label>
+              </div>
+            </div>
+
+            @if (state.assignTargetMode() === 'students') {
+              <div class="field field--full">
+                <label class="field__label">{{ 'quizManagement.form.selectedStudents' | translate }} ({{ state.assignSelectedUids().length }})</label>
+                @if (state.assignClassIds().length > 0) {
+                  <!-- Search stays outside the empty check so a filter that
+                       matches nobody can still be cleared. -->
+                  <input class="input input--full" type="search"
+                         [placeholder]="'quizManagement.form.searchStudents' | translate"
+                         [ngModel]="state.assignStudentSearch()" (ngModelChange)="state.assignStudentSearch.set($event)"
+                         [disabled]="state.isSaving()" />
+                  @if (state.assignableStudents().length > 0) {
+                    <div class="student-picker">
+                      @for (student of state.assignableStudents(); track student.id) {
+                        <label class="student-picker__item" [class.is-checked]="state.isStudentAssigned(student.id ?? '')">
+                          <input type="checkbox" [checked]="state.isStudentAssigned(student.id ?? '')" (change)="state.toggleAssignedStudent(student.id ?? '')" [disabled]="state.isSaving()" />
+                          <span class="avatar avatar--sm">{{ state.studentInitial(student.displayName) }}</span>
+                          {{ student.displayName }}
+                        </label>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted">{{ 'quizManagement.form.noStudentsMatch' | translate }}</p>
+                  }
+                } @else {
+                  <p class="muted">{{ 'quizManagement.form.selectGroup' | translate }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <footer class="popup__foot">
+          <button class="btn" (click)="state.closeAssignmentForm()" [disabled]="state.isSaving()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn--primary" (click)="submitAssignment()" [appLoadingButton]="state.isSaving()">
+            @if (state.isSaving()) {
+              {{ 'quizManagement.form.saving' | translate }}
+            } @else if (state.editingAssignmentId()) {
+              {{ 'common.save' | translate }}
+            } @else {
+              {{ state.assignKind() === 'quiz' ? ('quizManagement.form.assignQuiz' | translate) : ('quizManagement.form.assignHomework' | translate) }}
+            }
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,38 @@
+<div class="question" dir="auto">
+  @if (richText()) {
+    <p class="question__text" [innerHTML]="question().name"></p>
+  } @else {
+    <p class="question__text">{{ question().name }}</p>
+  }
+
+  <div class="options" role="radiogroup" [attr.aria-label]="question().name">
+    <!-- Option ids are unique within a question, which is all `track` needs.
+         Note that a distinct key does NOT buy fresh DOM across questions:
+         Angular recycles detached views inside `@for`, so the same <button>
+         serves the next question's option at this position. Anything the node
+         owns rather than Angular therefore survives the move — which is why
+         `.option:hover` is gated on `(hover: hover)` in styles.css. -->
+    @for (option of question().options; track option.id; let i = $index) {
+      <button
+        type="button"
+        class="option"
+        [class.is-selected]="option.userSelected"
+        role="radio"
+        [attr.aria-checked]="option.userSelected"
+        (click)="onSelect(question(), option)"
+      >
+        <span class="option__marker">{{ optionLabel(i) }}</span>
+        @if (showRichText(question())) {
+          <span class="option__text" dir="auto" [innerHTML]="option.name"></span>
+        } @else {
+          <span class="option__text" dir="auto">{{ optionText(question(), option) }}</span>
+        }
+        <span class="option__check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </button>
+    }
+  </div>
+</div>

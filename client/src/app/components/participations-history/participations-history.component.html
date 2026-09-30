@@ -1,0 +1,125 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'participationsHistory.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'participationsHistory.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <button class="btn btn--sm" type="button" (click)="navigateBack()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ 'participationsHistory.back' | translate }}
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="empty"><span>{{ 'participationsHistory.loading' | translate }}</span></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+      <table class="tbl tbl--participations">
+        <thead>
+          <tr>
+            <th class="col-expand"></th>
+            <th>{{ 'participationsHistory.table.user' | translate }}</th>
+            <th>{{ 'participationsHistory.table.parent' | translate }}</th>
+            <th>{{ 'participationsHistory.table.stage' | translate }}</th>
+            <th>{{ 'participationsHistory.table.grade' | translate }}</th>
+            <th>{{ 'participationsHistory.table.group' | translate }}</th>
+            <th>{{ 'participationsHistory.table.participationsCount' | translate }}</th>
+            <th>{{ 'participationsHistory.table.teachingStaff' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.user.uid) {
+            <tr [class.has-expanded]="isExpanded(row.user.uid)">
+              <td class="col-expand">
+                <button type="button"
+                        class="expand-btn"
+                        [class.is-open]="isExpanded(row.user.uid)"
+                        (click)="toggleExpand(row.user.uid)"
+                        [attr.aria-expanded]="isExpanded(row.user.uid)"
+                        [attr.aria-label]="(isExpanded(row.user.uid) ? 'Collapse' : 'Expand') + ' ' + row.user.displayName">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </td>
+              <td>
+                <div class="cell-stack">
+                  <div class="avatar avatar--sm">{{ getInitials(row.user.displayName) }}</div>
+                  <div>
+                    <div class="cell-stack__main">{{ row.user.displayName }}</div>
+                    <div class="cell-stack__sub">{{ row.user.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ row.parentName || ('common.na' | translate) }}</td>
+              <td>{{ row.stageName || ('common.na' | translate) }}</td>
+              <td>{{ row.gradeName || ('common.na' | translate) }}</td>
+              <td>{{ row.groupName || ('common.na' | translate) }}</td>
+              <td><span class="badge badge--brand">{{ row.user.participationCount || 0 }}</span></td>
+              <td>{{ row.teachingStaffCount }}</td>
+            </tr>
+
+            @if (isExpanded(row.user.uid)) {
+              <tr class="row-child">
+                <td class="col-expand"></td>
+                <td colspan="7">
+                  @if (isLoadingRecordsFor(row.user.uid)) {
+                    <span class="muted">{{ 'participationsHistory.recordsLoading' | translate }}</span>
+                  } @else {
+                    <div class="stack stack--sm">
+                      @for (p of recordsFor(row.user.uid); track p.id) {
+                        <div class="list-row">
+                          <div class="list-row__main">
+                            <div class="cell-stack__main">{{ 'common.' + recordKindLabel(p) | translate }}: {{ p.quizName || ('Quiz #' + p.quizId) }}</div>
+                            @if (p.homeworkTitle) {
+                              <div class="cell-stack__sub">{{ p.homeworkTitle }}</div>
+                            }
+                          </div>
+                          <span class="badge badge--success">{{ 'common.score' | translate : { score: scorePercent(p) } }}</span>
+                          <span class="muted">{{ p.correctCount }}/{{ p.correctCount + p.wrongCount }}</span>
+                          <span class="muted">{{ p.endedAt | date:'short' }}</span>
+                          <button class="btn btn--sm btn--ghost" type="button" (click)="openDetails(p, row.user.displayName)">{{ 'common.details' | translate }}</button>
+                          <button class="btn btn--sm btn--danger" type="button" (click)="remove(p)">{{ 'common.delete' | translate }}</button>
+                        </div>
+                      } @empty {
+                        <span class="muted">{{ 'participationsHistory.recordsEmpty' | translate }}</span>
+                      }
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="8">
+                <div class="empty">
+                  <div class="empty__title">{{ 'participationsHistory.empty' | translate }}</div>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (hasMore()) {
+      <div class="card__body">
+        <button class="btn btn--ghost" [appLoadingButton]="isLoadingMore()" (click)="loadMoreParticipants()">
+          {{ 'common.loadMore' | translate }}
+        </button>
+      </div>
+    }
+  }
+</div>
+
+@if (detailsRecord(); as record) {
+  <app-participation-answers-popup
+    [record]="record"
+    [kind]="recordKindLabel(record)"
+    [studentName]="detailsStudentName()"
+    (closed)="closeDetails()" />
+}

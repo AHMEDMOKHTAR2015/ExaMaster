@@ -1,0 +1,64 @@
+# Build + domain tests, then the end-to-end smoke suite against a real SQL Server.
+# Runs on pull requests that touch the backend, and before every deploy (deploy.yml calls it).
+name: Backend CI
+
+on:
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend-ci.yml']
+  workflow_call:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore QuizMasterPro.sln
+      - run: dotnet build QuizMasterPro.sln --no-restore -c Release
+      - run: dotnet test QuizMasterPro.sln --no-build -c Release
+
+      # A model change without its migration builds fine and fails only when the database is migrated.
+      - run: dotnet tool restore
+      # (dotnet ef's -c is --context, not --configuration)
+      - run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
+               -p src/Services/QuizMaster/QuizMaster.Persistence -s src/Services/QuizMaster/QuizMaster.API
+
+  smoke:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: LocalDev_Passw0rd!      # a throwaway CI container, same value as docker compose
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'LocalDev_Passw0rd!' -C -Q 'SELECT 1' || exit 1"
+          --health-interval 5s --health-timeout 5s --health-retries 30 --health-start-period 20s
+    env:
+      ASPNETCORE_ENVIRONMENT: Development          # migrates; accepts dev tokens
+      SeedOptions__DemoSchool: "true"             # the smoke suite runs against the demo school (opt-in since first-run seeding)
+      ASPNETCORE_URLS: http://localhost:4401
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build src/Services/QuizMaster/QuizMaster.API
+      - name: Start the API
+        run: |
+          nohup dotnet run --no-build --no-launch-profile --project src/Services/QuizMaster/QuizMaster.API > api.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:4401/health && exit 0; sleep 2; done
+          cat api.log; exit 1
+      - run: bash tests/smoke/smoke.sh
+      - if: failure()
+        run: tail -200 api.log

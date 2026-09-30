@@ -1,0 +1,17 @@
+<div class="card">
+  <div class="empty no-access">
+    <div class="empty__icon no-access__icon">
+      <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+        <path d="M4.93 4.93l14.14 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2 class="empty__title">{{ 'noAccess.title' | translate }}</h2>
+    <p class="no-access__desc">{{ 'noAccess.desc' | translate }}</p>
+    <p class="no-access__hint">{{ 'noAccess.hint' | translate }}</p>
+    <div class="no-access__actions">
+      <button class="btn btn--primary" (click)="navigateToDashboard()">{{ 'noAccess.goToQuizzes' | translate }}</button>
+      <button class="btn" (click)="navigateToHome()">{{ 'noAccess.returnHome' | translate }}</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,254 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'regKeys.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'regKeys.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <button class="btn btn--primary" type="button" (click)="openCreateForm()">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ 'regKeys.newKey' | translate }}
+    </button>
+  </div>
+</div>
+
+<!-- KPI strip -->
+<div class="keys-kpis">
+  <div class="kpi">
+    <div class="kpi__label">{{ 'regKeys.stats.totalKeys' | translate }}</div>
+    <div class="kpi__value">{{ counts().all }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'regKeys.stats.active' | translate }}</div>
+    <div class="kpi__value kpi__value--good">{{ counts().active }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'regKeys.stats.expired' | translate }}</div>
+    <div class="kpi__value kpi__value--bad">{{ counts().expired }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">{{ 'regKeys.stats.childrenRegistered' | translate }}</div>
+    <div class="kpi__value">{{ seatsUsed() }}</div>
+  </div>
+</div>
+
+<!-- Create form (inline) -->
+@if (showCreateForm()) {
+  <div class="popup-overlay">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="key-form-title" appClickOutside (appClickOutside)="closeCreateForm()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'regKeys.form.eyebrow' | translate }}</div>
+          <h2 id="key-form-title" class="popup__title">{{ 'regKeys.form.title' | translate }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeCreateForm()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>{{ 'regKeys.form.keyRole' | translate }}</label>
+          <select class="form-input" [ngModel]="newRole()" (ngModelChange)="newRole.set($event)">
+            <option value="userAdmin">{{ 'regKeys.form.parentRole' | translate }}</option>
+            <option value="applicationAdmin">{{ 'regKeys.form.adminRole' | translate }}</option>
+          </select>
+        </div>
+        @if (!isApplicationAdmin()) {
+          <div class="form-group">
+            <label>{{ 'regKeys.form.expiresOn' | translate }}</label>
+            <input class="form-input" type="date" [ngModel]="newExpiresAt()" (ngModelChange)="newExpiresAt.set($event)" />
+          </div>
+          <div class="form-group">
+            <label>{{ 'regKeys.form.maxChildren' | translate }}</label>
+            <input class="form-input" type="number" min="1" [placeholder]="'regKeys.form.maxChildrenPlaceholder' | translate"
+                   [ngModel]="newMaxChildren()" (ngModelChange)="newMaxChildren.set($event)" />
+          </div>
+        } @else {
+          <div class="form-group">
+            <label>{{ 'regKeys.form.expiry' | translate }}</label>
+            <div class="form-static">{{ 'regKeys.form.neverExpires' | translate }}</div>
+          </div>
+          <div class="form-group"></div>
+        }
+      </div>
+      </div>
+      <footer class="popup__foot">
+        <button class="secondary-btn" type="button" (click)="closeCreateForm()">{{ 'regKeys.form.cancel' | translate }}</button>
+        <button class="primary-btn" type="button" (click)="createKey()">{{ 'regKeys.form.generate' | translate }}</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Tabs -->
+<div class="keys-tabs">
+  <button type="button" class="keys-tabs__tab" [class.is-active]="activeTab() === 'all'" (click)="setTab('all')">
+    {{ 'regKeys.tabs.all' | translate }} <span class="keys-tabs__count">{{ counts().all }}</span>
+  </button>
+  <button type="button" class="keys-tabs__tab" [class.is-active]="activeTab() === 'userAdmin'" (click)="setTab('userAdmin')">
+    {{ 'regKeys.tabs.userAdmin' | translate }} <span class="keys-tabs__count">{{ counts().userAdmin }}</span>
+  </button>
+  <button type="button" class="keys-tabs__tab" [class.is-active]="activeTab() === 'applicationAdmin'" (click)="setTab('applicationAdmin')">
+    {{ 'regKeys.tabs.applicationAdmin' | translate }} <span class="keys-tabs__count">{{ counts().applicationAdmin }}</span>
+  </button>
+</div>
+
+<div class="card keys-card">
+  <!-- Toolbar -->
+  <div class="keys-toolbar">
+    <div class="input-wrap keys-toolbar__search">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search input--full"
+        type="text"
+        [placeholder]="'regKeys.searchPlaceholder' | translate"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </div>
+    <select class="form-input form-input--sm keys-toolbar__select"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="onStatusFilterChange($event)">
+      <option value="all">{{ 'regKeys.statusFilter.all' | translate }}</option>
+      <option value="active">{{ 'regKeys.statusFilter.active' | translate }}</option>
+      <option value="used">{{ 'regKeys.statusFilter.used' | translate }}</option>
+      <option value="expired">{{ 'regKeys.statusFilter.expired' | translate }}</option>
+      <option value="inactive">{{ 'regKeys.statusFilter.inactive' | translate }}</option>
+    </select>
+    <div class="keys-toolbar__spacer"></div>
+    <span class="registration-keys-admin__muted">{{ filteredKeys().length }} of {{ counts().all }}</span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="empty"><span>{{ 'regKeys.loading' | translate }}</span></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+    <table class="tbl tbl--keys">
+      <thead>
+        <tr>
+          <th>{{ 'regKeys.table.keyId' | translate }}</th>
+          <th>{{ 'regKeys.table.role' | translate }}</th>
+          <th>{{ 'regKeys.table.status' | translate }}</th>
+          <th>{{ 'regKeys.table.expires' | translate }}</th>
+          <th>{{ 'regKeys.table.children' | translate }}</th>
+          <th class="col-actions">{{ 'regKeys.table.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (key of paginatedKeys(); track key.id) {
+            <tr>
+              <td>
+                <div class="key-cell">
+                  <code class="key-code" [title]="key.code ?? key.id">{{ shortId(key.code ?? key.id) }}</code>
+                  <button class="btn btn--ghost btn--sm btn--icon"
+                          type="button"
+                          (click)="copyKey(key)"
+                          [title]="'regKeys.copyKey' | translate">
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+                      <path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <span class="role-tag" [attr.data-role]="key.role">{{ getRoleLabel(key.role) }}</span>
+              </td>
+              <td>
+                <span class="status-pill" [attr.data-status]="getStatus(key)">
+                  <span class="status-pill__dot"></span>
+                  {{ getStatus(key) | titlecase }}
+                </span>
+              </td>
+              <td><span class="registration-keys-admin__muted">{{ formatExpiry(key) }}</span></td>
+              <td><span class="registration-keys-admin__muted">{{ formatChildrenUsage(key) }}</span></td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button class="btn btn--sm" type="button" (click)="editKey(key)">{{ 'regKeys.edit' | translate }}</button>
+                  @if (key.role !== 'applicationAdmin') {
+                    <button class="btn btn--sm" type="button" (click)="renewKey(key)" [title]="'regKeys.renewHint' | translate">{{ 'regKeys.renew' | translate }}</button>
+                  }
+                </div>
+              </td>
+            </tr>
+        } @empty {
+          <tr>
+            <td colspan="6">
+              <div class="empty">
+                <div class="empty__icon">
+                  <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="empty__title">
+                  @if (searchQuery()) { {{ 'regKeys.noKeysMatching' | translate : { query: searchQuery() } }} }
+                  @else { {{ 'regKeys.noKeysYet' | translate }} }
+                </div>
+                @if (!searchQuery()) {
+                  <p>{{ 'regKeys.noKeysYetDesc' | translate }}</p>
+                  <button class="btn btn--primary" type="button" (click)="openCreateForm()">{{ 'regKeys.createKey' | translate }}</button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="keys-footer">
+      <span class="registration-keys-admin__muted">{{ pageRangeLabel() }}</span>
+      <div class="keys-footer__nav">
+        <button class="btn btn--sm" type="button" [disabled]="currentPage() === 1" (click)="previousPage()">{{ 'regKeys.previous' | translate }}</button>
+        <button class="btn btn--sm" type="button" [disabled]="currentPage() === totalPages()" (click)="nextPage()">{{ 'regKeys.next' | translate }}</button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Edit key popup -->
+@if (editingKey(); as key) {
+  <div class="popup-overlay" (click)="cancelEdit()">
+    <div class="popup popup--sm" role="dialog" aria-modal="true" aria-labelledby="key-edit-title" (click)="$event.stopPropagation()">
+      <header class="popup__head">
+        <div>
+          <div class="popup__eyebrow">{{ 'regKeys.editPopup.eyebrow' | translate }}</div>
+          <h2 id="key-edit-title" class="popup__title">{{ 'regKeys.editPopup.title' | translate }}</h2>
+          <p class="popup__sub"><code class="key-code">{{ key.code ?? key.id }}</code> · {{ getRoleLabel(key.role) }}</p>
+        </div>
+        <button type="button" class="popup__close" (click)="cancelEdit()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="popup__body">
+        <label class="check-row">
+          <input type="checkbox" [checked]="editActive()" (change)="editActive.set($any($event.target).checked)" />
+          <span>{{ 'regKeys.editPopup.active' | translate }}</span>
+        </label>
+        @if (key.role !== 'applicationAdmin') {
+          <div class="form-row" style="margin-top: 0.875rem;">
+            <div class="form-group">
+              <label>{{ 'regKeys.editPopup.expiresOn' | translate }}</label>
+              <input class="form-input" type="date" [ngModel]="editExpiresAt()" (ngModelChange)="editExpiresAt.set($event)" />
+            </div>
+            <div class="form-group">
+              <label>{{ 'regKeys.editPopup.maxChildren' | translate }}</label>
+              <input class="form-input" type="number" min="1" [ngModel]="editMaxChildren()" (ngModelChange)="editMaxChildren.set($event)" />
+            </div>
+          </div>
+        }
+      </div>
+      <footer class="popup__foot">
+        <button class="btn btn--sm" type="button" (click)="cancelEdit()">{{ 'regKeys.editPopup.cancel' | translate }}</button>
+        <button class="btn btn--sm btn--primary" type="button" (click)="saveEdit()">{{ 'regKeys.editPopup.save' | translate }}</button>
+      </footer>
+    </div>
+  </div>
+}

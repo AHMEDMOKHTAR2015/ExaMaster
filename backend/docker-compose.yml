@@ -1,0 +1,55 @@
+# Services + infrastructure. Ports and environment live in docker-compose.override.yml.
+#   docker compose up -d sqlserver                 # infrastructure only (run the API from your IDE / dotnet run)
+#   docker compose up -d --build                   # everything
+#   docker compose --profile optional up -d        # + stores used by the optional building blocks/modules
+services:
+  quizmaster-api:
+    image: ${DOCKER_REGISTRY-}quizmasterpro-quizmaster-api
+    build:
+      context: .
+      dockerfile: src/Services/QuizMaster/QuizMaster.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  api-gateway:
+    image: ${DOCKER_REGISTRY-}quizmasterpro-api-gateway
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    depends_on:
+      - quizmaster-api
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64    # no arm64 image; Docker Desktop runs it under Rosetta on Apple silicon
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  # ---- optional: enable with --profile optional when a service needs them ----
+  rabbitmq:                  # Blocks.Messaging (integration events between services)
+    image: rabbitmq:management
+    profiles: ["optional"]
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  mongo:                     # FileStorage.MongoGridFS
+    image: mongo:7
+    profiles: ["optional"]
+    volumes:
+      - mongo_data:/data/db
+
+  redis:                     # Blocks.Redis (Redis.OM needs Redis Stack)
+    image: redis/redis-stack
+    profiles: ["optional"]
+
+volumes:
+  sqlserver_data:
+  rabbitmq_data:
+  mongo_data:

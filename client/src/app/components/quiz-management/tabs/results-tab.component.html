@@ -1,0 +1,90 @@
+@if (state.isLoadingRecords() && loadedResults().length === 0) {
+  <div class="card"><div class="card__body">
+    <div class="empty">{{ 'quizManagement.results.loading' | translate }}</div>
+  </div></div>
+} @else if (state.filteredAssignments().length === 0) {
+  <div class="card"><div class="card__body">
+    <div class="empty"><div class="empty__title">{{ 'quizManagement.results.noAssignments' | translate }}</div></div>
+  </div></div>
+} @else {
+  <!-- Overall roll-up -->
+  <div class="card">
+    <div class="card__head"><h2 class="card__title">{{ 'quizManagement.results.overall' | translate }}</h2></div>
+    <div class="card__body">
+      <div class="result-metrics">
+        <div class="metric">
+          <div class="metric__value">{{ overallResult().completionRate }}%</div>
+          <div class="metric__label">{{ 'quizManagement.results.completion' | translate }}</div>
+          <div class="metric__desc muted">{{ 'quizManagement.results.completionDesc' | translate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__value">{{ overallResult().averageScore }}%</div>
+          <div class="metric__label">{{ 'quizManagement.results.avgScore' | translate }}</div>
+          <div class="metric__desc muted">{{ 'quizManagement.results.avgScoreDesc' | translate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__value">{{ overallResult().completed }}/{{ overallResult().targeted }}</div>
+          <div class="metric__label">{{ 'quizManagement.results.completed' | translate }}</div>
+          <div class="metric__desc muted">{{ 'quizManagement.results.completedDesc' | translate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__value">{{ overallResult().overdue }}</div>
+          <div class="metric__label">{{ 'quizManagement.results.overdue' | translate }}</div>
+          <div class="metric__desc muted">{{ 'quizManagement.results.overdueDesc' | translate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__value">{{ overallResult().validated }}</div>
+          <div class="metric__label">{{ 'quizManagement.results.validated' | translate }}</div>
+          <div class="metric__desc muted">{{ 'quizManagement.results.validatedDesc' | translate }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per subject -->
+  <div class="card">
+    <div class="card__head"><h2 class="card__title">{{ 'quizManagement.results.bySubject' | translate }}</h2></div>
+    <div class="card__body">
+      <div class="teach-grid">
+        @for (group of resultsBySubject(); track group.key) {
+          <div class="teach-card">
+            <div class="teach-card__subject">
+              @if (group.color) { <span class="color-swatch" [style.background]="group.color"></span> }
+              <span class="teach-card__subject-name">{{ group.label }}</span>
+            </div>
+            <div class="result-bar"><div class="result-bar__fill" [style.width.%]="group.result.completionRate"></div></div>
+            <div class="subject-stats__row">
+              <span class="muted">{{ 'quizManagement.results.done' | translate : { completed: group.result.completed, total: group.result.targeted } }}</span>
+              <span class="badge" [ngClass]="group.result.averageScore >= 50 ? 'badge--success' : 'badge--warning'">{{ 'quizManagement.results.avg' | translate : { score: group.result.averageScore } }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty"><div class="empty__title">{{ 'quizManagement.results.noResults' | translate }}</div></div>
+        }
+      </div>
+      <p class="result-metrics__desc muted">{{ 'quizManagement.results.bySubjectDesc' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Per semester -->
+  <div class="card">
+    <div class="card__head"><h2 class="card__title">{{ 'quizManagement.results.bySemester' | translate }}</h2></div>
+    <div class="card__body">
+      <div class="teach-grid">
+        @for (group of resultsBySemester(); track group.key) {
+          <div class="teach-card">
+            <div class="teach-card__subject"><span class="teach-card__subject-name">{{ group.label }}</span></div>
+            <div class="result-bar"><div class="result-bar__fill" [style.width.%]="group.result.completionRate"></div></div>
+            <div class="subject-stats__row">
+              <span class="muted">{{ 'quizManagement.results.done' | translate : { completed: group.result.completed, total: group.result.targeted } }}</span>
+              <span class="badge" [ngClass]="group.result.averageScore >= 50 ? 'badge--success' : 'badge--warning'">{{ 'quizManagement.results.avg' | translate : { score: group.result.averageScore } }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty"><div class="empty__title">{{ 'quizManagement.results.noResults' | translate }}</div></div>
+        }
+      </div>
+      <p class="result-metrics__desc muted">{{ 'quizManagement.results.bySemesterDesc' | translate }}</p>
+    </div>
+  </div>
+}
