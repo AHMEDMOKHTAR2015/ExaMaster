@@ -18,6 +18,7 @@ global using QuizMasterPro.Abstractions.Enums;
 global using QuizMasterPro.Security;
 
 // Domain
+global using QuizMaster.Domain.AccessRequests;
 global using QuizMaster.Domain.Academic;
 global using QuizMaster.Domain.Assignments;
 global using QuizMaster.Domain.AttemptLocks;

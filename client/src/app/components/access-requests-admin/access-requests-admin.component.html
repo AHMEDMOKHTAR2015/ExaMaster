@@ -1,0 +1,318 @@
+<!-- No `.page` wrapper: the app shell already renders `<main class="page">` around the router outlet. -->
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'accessRequests.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'accessRequests.subtitle' | translate }}</p>
+  </div>
+  <div class="page__actions">
+    <a class="btn" routerLink="/platform-admin">{{ 'nav.organizations' | translate }}</a>
+    <button type="button" class="btn" (click)="refresh()" [disabled]="loading()">
+      {{ (loading() ? 'common.refreshing' : 'common.refresh') | translate }}
+    </button>
+  </div>
+</div>
+
+@if (hasError()) {
+  <div class="alert alert--danger" role="alert">{{ error() }}</div>
+}
+
+<div class="tabs" role="tablist" [attr.aria-label]="'accessRequests.title' | translate">
+  @for (status of tabs; track status) {
+    <button type="button" role="tab" [class.is-active]="tab() === status" [attr.aria-selected]="tab() === status"
+            (click)="selectTab(status)">
+      {{ 'accessRequests.tabs.' + status | translate }}
+      @if (status === 'pending' && pendingCount() > 0) {
+        <span class="tabs__count">{{ pendingCount() }}</span>
+      }
+    </button>
+  }
+</div>
+
+<div class="table-wrap">
+  <div class="table-toolbar">
+    <div class="input-wrap">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input class="input input--search" type="search"
+             [placeholder]="'accessRequests.searchPlaceholder' | translate"
+             [attr.aria-label]="'common.search' | translate"
+             [ngModel]="search()" (ngModelChange)="onSearch($event)" />
+    </div>
+    <div class="segmented" role="group" [attr.aria-label]="'accessRequests.columns.type' | translate">
+      <button type="button" [class.is-active]="kindFilter() === 'all'" [attr.aria-pressed]="kindFilter() === 'all'" (click)="selectKind('all')">
+        {{ 'accessRequests.kinds.all' | translate }}
+      </button>
+      <button type="button" [class.is-active]="kindFilter() === 'parent'" [attr.aria-pressed]="kindFilter() === 'parent'" (click)="selectKind('parent')">
+        {{ 'accessRequests.kinds.parents' | translate }}
+      </button>
+      <button type="button" [class.is-active]="kindFilter() === 'child'" [attr.aria-pressed]="kindFilter() === 'child'" (click)="selectKind('child')">
+        {{ 'accessRequests.kinds.children' | translate }}
+      </button>
+    </div>
+    <div class="table-toolbar__spacer"></div>
+    <span class="muted">{{ 'accessRequests.count' | translate: { count: totalCount() } }}</span>
+  </div>
+
+  @if (loading() && requests().length === 0) {
+    <div class="empty">
+      <div class="empty__title">{{ 'common.loading' | translate }}</div>
+    </div>
+  } @else if (requests().length === 0) {
+    <div class="empty">
+      @if (tab() === 'pending' && !search() && kindFilter() === 'all') {
+        <div class="empty__title">{{ 'accessRequests.empty.pendingTitle' | translate }}</div>
+        <p>{{ 'accessRequests.empty.pendingBody' | translate }}</p>
+      } @else {
+        <div class="empty__title">{{ 'accessRequests.empty.filteredTitle' | translate }}</div>
+      }
+    </div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+      <table class="tbl tbl--requests">
+        <thead>
+          <tr>
+            <th>{{ 'accessRequests.columns.name' | translate }}</th>
+            <th>{{ 'accessRequests.columns.type' | translate }}</th>
+            <th>{{ 'accessRequests.columns.mobile' | translate }}</th>
+            <th>{{ 'accessRequests.columns.details' | translate }}</th>
+            <th>{{ 'accessRequests.columns.submitted' | translate }}</th>
+            <th>{{ 'accessRequests.columns.status' | translate }}</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr>
+              <td><strong>{{ request.firstName }} {{ request.lastName }}</strong></td>
+              <td>
+                <span class="badge" [class.badge--info]="request.kind === 'parent'" [class.badge--brand]="request.kind === 'child'">
+                  {{ 'accessRequests.kinds.' + request.kind | translate }}
+                </span>
+              </td>
+              <td dir="ltr" class="request-mobile">{{ request.mobileNumber }}</td>
+              <td class="request-hints">
+                @if (request.schoolName) { <span>{{ request.schoolName }}</span> }
+                @if (request.gradeName) { <span>{{ request.gradeName }}</span> }
+                @if (request.parentName || request.parentMobileNumber) {
+                  <span>{{ 'accessRequests.details.parentShort' | translate }}: {{ request.parentName }} {{ request.parentMobileNumber }}</span>
+                }
+                @if (!request.schoolName && !request.gradeName && !request.parentName && !request.parentMobileNumber) {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td>{{ request.createdAt | date: 'medium' }}</td>
+              <td>
+                <span class="badge" [class.badge--warning]="request.status === 'pending'"
+                      [class.badge--success]="request.status === 'approved'" [class.badge--danger]="request.status === 'rejected'">
+                  {{ 'accessRequests.status.' + request.status | translate }}
+                </span>
+                @if (request.status === 'approved' && request.approvedTenantName) {
+                  <div class="request-decided muted">{{ request.approvedTenantName }}</div>
+                }
+              </td>
+              <td class="col-actions">
+                <button type="button" class="btn btn--sm" [class.btn--primary]="request.status === 'pending'"
+                        [class.btn--ghost]="request.status !== 'pending'" (click)="openReview(request)">
+                  {{ (request.status === 'pending' ? 'accessRequests.actions.review' : 'accessRequests.actions.view') | translate }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button type="button" class="pagination__btn" [disabled]="page() <= 1 || loading()" (click)="goToPage(page() - 1)">
+          {{ 'common.previous' | translate }}
+        </button>
+        <span class="muted">{{ 'accessRequests.pageOf' | translate: { page: page(), pages: totalPages() } }}</span>
+        <button type="button" class="pagination__btn" [disabled]="page() >= totalPages() || loading()" (click)="goToPage(page() + 1)">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    }
+  }
+</div>
+
+<!-- Review ---------------------------------------------------------------------->
+@if (reviewing(); as request) {
+  <div class="popup-overlay">
+    <div class="popup popup--lg" role="dialog" aria-modal="true" aria-labelledby="review-title">
+      <header class="popup__head">
+        <div>
+          <p class="popup__eyebrow">{{ 'accessRequests.dialog.eyebrow.' + request.kind | translate }}</p>
+          <h2 class="popup__title" id="review-title">{{ request.firstName }} {{ request.lastName }}</h2>
+        </div>
+        <button type="button" class="popup__close" (click)="closeReview()" [disabled]="isDeciding()" [attr.aria-label]="'common.close' | translate">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+
+      <div class="popup__body">
+        <section class="request-section" aria-labelledby="request-told">
+          <h3 class="request-section__title" id="request-told">{{ 'accessRequests.dialog.toldUs' | translate }}</h3>
+          <dl class="request-details">
+            <div><dt>{{ 'accessRequests.columns.mobile' | translate }}</dt><dd dir="ltr">{{ request.mobileNumber }}</dd></div>
+            @if (request.contactEmail) {
+              <div><dt>{{ 'common.email' | translate }}</dt><dd>{{ request.contactEmail }}</dd></div>
+            }
+            <div><dt>{{ 'accessRequests.details.school' | translate }}</dt><dd>{{ request.schoolName || '—' }}</dd></div>
+            @if (request.kind === 'child') {
+              <div><dt>{{ 'common.grade' | translate }}</dt><dd>{{ request.gradeName || '—' }}</dd></div>
+              <div><dt>{{ 'accessRequests.details.parent' | translate }}</dt><dd>{{ request.parentName || '—' }}</dd></div>
+              <div><dt>{{ 'accessRequests.details.parentMobile' | translate }}</dt><dd dir="ltr">{{ request.parentMobileNumber || '—' }}</dd></div>
+            }
+            <div><dt>{{ 'accessRequests.columns.submitted' | translate }}</dt><dd>{{ request.createdAt | date: 'medium' }}</dd></div>
+            @if (request.note) {
+              <div class="request-details__wide"><dt>{{ 'accessRequests.details.note' | translate }}</dt><dd class="request-note">{{ request.note }}</dd></div>
+            }
+          </dl>
+          <p class="field__hint">{{ 'accessRequests.dialog.hintsNote' | translate }}</p>
+        </section>
+
+        @if (request.status !== 'pending') {
+          <section class="request-section">
+            <h3 class="request-section__title">{{ 'accessRequests.dialog.decision' | translate }}</h3>
+            @if (request.status === 'approved') {
+              <div class="alert alert--success">
+                {{ 'accessRequests.dialog.approvedOn' | translate: { date: (request.decidedAt | date: 'medium'), tenant: request.approvedTenantName ?? '—' } }}
+              </div>
+            } @else {
+              <div class="alert alert--danger">
+                {{ 'accessRequests.dialog.rejectedOn' | translate: { date: (request.decidedAt | date: 'medium') } }}
+                @if (request.rejectionReason) {
+                  <div class="request-reason">“{{ request.rejectionReason }}”</div>
+                }
+              </div>
+            }
+          </section>
+        } @else {
+          <section class="request-section" aria-labelledby="request-decision">
+            <h3 class="request-section__title" id="request-decision">{{ 'accessRequests.dialog.decision' | translate }}</h3>
+
+            @if (decisionError(); as message) {
+              <div class="alert alert--danger" role="alert">{{ message }}</div>
+            }
+
+            @if (isRejecting()) {
+              <div class="field">
+                <label class="field__label" for="reject-reason">{{ 'accessRequests.dialog.rejectReason' | translate }}</label>
+                <textarea id="reject-reason" rows="3" maxlength="1000"
+                          [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" [disabled]="isDeciding()"></textarea>
+                <p class="field__hint">{{ 'accessRequests.dialog.rejectReasonHint' | translate }}</p>
+              </div>
+            } @else {
+              <div class="field">
+                <label class="field__label" for="approve-tenant">{{ 'accessRequests.dialog.organization' | translate }} *</label>
+                <select id="approve-tenant" class="select" [ngModel]="tenantId()" (ngModelChange)="onTenantChange($event)" [disabled]="isDeciding()">
+                  <option [ngValue]="null">{{ 'accessRequests.dialog.organizationPlaceholder' | translate }}</option>
+                  @for (tenant of tenants(); track tenant.id) {
+                    <option [ngValue]="tenant.id" [disabled]="!tenant.active">
+                      {{ tenant.name }}{{ tenant.active ? '' : ' — ' + ('accessRequests.dialog.suspended' | translate) }}
+                    </option>
+                  }
+                </select>
+                @if (request.schoolName) {
+                  <p class="field__hint">{{ 'accessRequests.dialog.theySaid' | translate: { school: request.schoolName } }}</p>
+                }
+              </div>
+
+              @if (request.kind === 'parent') {
+                <div class="field">
+                  <label class="field__label" for="approve-max-children">{{ 'accessRequests.dialog.maxChildren' | translate }}</label>
+                  <input id="approve-max-children" class="input request-number" type="number" min="0" max="50" step="1"
+                         [ngModel]="maxChildren()" (ngModelChange)="onMaxChildrenChange($event)" [disabled]="isDeciding()"
+                         aria-describedby="approve-max-children-hint" />
+                  <p class="field__hint" id="approve-max-children-hint">{{ 'accessRequests.dialog.maxChildrenHint' | translate }}</p>
+                </div>
+              } @else if (tenantId() !== null) {
+                <div class="field">
+                  <label class="field__label" for="approve-class">{{ 'accessRequests.dialog.class' | translate }} *</label>
+                  <select id="approve-class" class="select" [ngModel]="classId()" (ngModelChange)="classId.set($event)"
+                          [disabled]="isDeciding() || isLoadingOptions() || classes().length === 0">
+                    <option [ngValue]="null">{{ (isLoadingOptions() ? 'common.loading' : 'accessRequests.dialog.classPlaceholder') | translate }}</option>
+                    @for (group of classGroups(); track group.label) {
+                      <optgroup [label]="group.label">
+                        @for (option of group.classes; track option.id) {
+                          <option [ngValue]="option.id">{{ option.name }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
+                  @if (!isLoadingOptions() && classes().length === 0) {
+                    <p class="field__hint">{{ 'accessRequests.dialog.noClasses' | translate }}</p>
+                  } @else if (request.gradeName) {
+                    <p class="field__hint">{{ 'accessRequests.dialog.theySaidGrade' | translate: { grade: request.gradeName } }}</p>
+                  }
+                </div>
+
+                <fieldset class="field request-parents" [disabled]="isDeciding()">
+                  <legend class="field__label">{{ 'accessRequests.dialog.parent' | translate }} *</legend>
+                  <div class="input-wrap request-parents__search">
+                    <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                      <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input class="input input--search input--full" type="search"
+                           [placeholder]="'accessRequests.dialog.parentSearchPlaceholder' | translate"
+                           [attr.aria-label]="'accessRequests.dialog.parentSearchPlaceholder' | translate"
+                           [ngModel]="parentSearch()" (ngModelChange)="onParentSearch($event)" />
+                  </div>
+
+                  @if (isSearchingParents() && parents().length === 0) {
+                    <p class="field__hint">{{ 'common.loading' | translate }}</p>
+                  } @else if (parents().length === 0) {
+                    <p class="field__hint">{{ 'accessRequests.dialog.noParents' | translate }}</p>
+                  } @else {
+                    <div class="request-parents__list">
+                      @for (parent of parents(); track parent.id) {
+                        <label class="request-parent" [class.is-active]="parentId() === parent.id" [class.is-disabled]="!parentSelectable(parent)">
+                          <input type="radio" name="approve-parent" [value]="parent.id" [checked]="parentId() === parent.id"
+                                 [disabled]="!parentSelectable(parent)" (change)="parentId.set(parent.id)" />
+                          <span class="request-parent__name">{{ parent.displayName }}</span>
+                          <span class="request-parent__meta" dir="ltr">{{ parent.mobileNumber || '—' }}</span>
+                          <span class="request-parent__slots">
+                            @if (!parent.hasUsableKey) {
+                              {{ 'accessRequests.dialog.parentNoKey' | translate }}
+                            } @else if (parent.maxChildren === undefined) {
+                              {{ 'accessRequests.dialog.parentSlotsUnlimited' | translate: { used: parent.childCount } }}
+                            } @else {
+                              {{ 'accessRequests.dialog.parentSlots' | translate: { used: parent.childCount, max: parent.maxChildren } }}
+                            }
+                          </span>
+                        </label>
+                      }
+                    </div>
+                  }
+                  <p class="field__hint">{{ 'accessRequests.dialog.parentHint' | translate }}</p>
+                </fieldset>
+              }
+            }
+          </section>
+        }
+      </div>
+
+      <footer class="popup__foot">
+        @if (request.status !== 'pending') {
+          <button type="button" class="btn btn--primary" (click)="closeReview()">{{ 'common.close' | translate }}</button>
+        } @else if (isRejecting()) {
+          <button type="button" class="btn btn--ghost" (click)="isRejecting.set(false)" [disabled]="isDeciding()">{{ 'common.cancel' | translate }}</button>
+          <button type="button" class="btn btn--danger" (click)="reject()" [disabled]="isDeciding()">
+            {{ (isDeciding() ? 'common.working' : 'accessRequests.actions.confirmReject') | translate }}
+          </button>
+        } @else {
+          <button type="button" class="btn btn--danger" (click)="isRejecting.set(true); decisionError.set(null)" [disabled]="isDeciding()">
+            {{ 'accessRequests.actions.reject' | translate }}
+          </button>
+          <button type="button" class="btn btn--primary" (click)="approve()" [disabled]="!canApprove()">
+            {{ (isDeciding() ? 'common.working' : 'accessRequests.actions.approve') | translate }}
+          </button>
+        }
+      </footer>
+    </div>
+  </div>
+}

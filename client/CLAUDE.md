@@ -86,6 +86,14 @@ answer "what may I do inside my school") and is absent from `isAdmin()`/`isStaff
 (`/platform-admin`, `PlatformTenantService` → `/platform/tenants`) sees schools' metadata only, never data inside one;
 creating a school creates its first administrator too.
 
+**Access requests.** The login card's "Request access" button swaps it (`crossFade`) for a form where a visitor with no
+registration key asks to join as a parent or a child, choosing their own password. The platform administrator reviews
+them at `/platform-admin/access-requests` (`AccessRequestService`, which also feeds their sidebar badge) and, approving,
+picks the school — and for a child, its class and a parent of that school, whose family key gives up a slot. The
+visitor then signs in with the mobile number and password they chose; before a decision, signing in says it is waiting
+(or why it was declined). This is the one place the platform console reads inside a school, and only what placing one
+account needs.
+
 ### Role model: strategy pattern, not flags
 
 There is no boolean `isAdmin` scattered through the app. Authorization is resolved once through `AdminAccessService.getStrategy(userRoles)` (`src/app/services/admin/core/admin-access.service.ts`), which returns one of four `AdminRoleStrategy` implementations (`src/app/services/admin/strategies/`): `ApplicationAdminStrategy`, `UserAdminStrategy` (parent), `TeacherStrategy`, `NoAdminStrategy`. Each implements the same capability-check interface (`canManageQuizzes()`, `canAccessTeacherDashboard()`, `canManageChildren()`, etc.) — route guards and components call these capability checks rather than inspecting roles directly. When adding a new permission, add the method to `AdminRoleStrategy` (`src/app/interfaces/admin-role-strategy.ts`) and implement it in all four strategies.

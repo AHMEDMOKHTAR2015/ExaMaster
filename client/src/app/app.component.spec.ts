@@ -8,6 +8,7 @@ import { AuthService } from './services/auth';
 import { LanguageService } from './services/language.service';
 import { NotificationCenterService } from './services/notification-center.service';
 import { TeacherReviewQueueService } from './services/teacher-review-queue.service';
+import { AccessRequestService } from './services/access-requests/access-request.service';
 import { TenantService } from './services/tenant/tenant.service';
 import { TranslationOverridesService } from './services/i18n/translation-overrides.service';
 
@@ -71,6 +72,7 @@ describe('AppComponent', () => {
           useValue: { settled: signal(true) }
         },
         // The real one opens a live connection to the API when someone signs in.
+        { provide: AccessRequestService, useValue: { pendingCount: signal(0) } },
         { provide: RealtimeService, useValue: { connected: signal(false) } }
       ]
     }).compileComponents();

@@ -117,94 +117,306 @@
       </div>
     </aside>
 
-    <!-- Sign-in panel -->
+    <!-- Sign-in panel. Its views (sign in, request access, request sent) swap
+         in place: one fades out, then the next fades in (crossFade). -->
     <div class="auth-card">
       <button class="btn btn--ghost btn--sm auth-lang" (click)="lang.toggle()" [title]="'lang.switchTo' | translate">
         {{ 'lang.label' | translate }}
       </button>
 
-      <div class="auth-card__brand">
-        <!-- Purely decorative — `alt=""` drops it from the accessibility tree
-             rather than announcing it, same intent as the story panel's
-             `aria-hidden`. -->
-        <div class="auth-logo auth-logo--card"><img src="assets/icon.png" alt="" /></div>
-        <h1 class="auth-card__title">{{ 'app.name' | translate }}</h1>
-        <p class="auth-card__sub">{{ 'auth.signInToAccount' | translate }}</p>
-      </div>
+      <div class="auth-views" [@crossFade]="view()" [@.disabled]="reduceMotion" (@crossFade.done)="onViewShown($event)">
+        @switch (view()) {
+          @case ('signIn') {
+            <div class="auth-view">
+              <div class="auth-card__brand">
+                <!-- Purely decorative — `alt=""` drops it from the accessibility tree
+                     rather than announcing it, same intent as the story panel's
+                     `aria-hidden`. -->
+                <div class="auth-logo auth-logo--card"><img src="assets/icon.png" alt="" /></div>
+                <h1 class="auth-card__title" data-view-heading="signIn" tabindex="-1">{{ 'app.name' | translate }}</h1>
+                <p class="auth-card__sub">{{ 'auth.signInToAccount' | translate }}</p>
+              </div>
 
-      <img class="auth-card__illustration" src="assets/illustrations/login-hero.svg" alt="" />
+              <img class="auth-card__illustration" src="assets/illustrations/login-hero.svg" alt="" />
 
-      @if (error()) {
-        <div class="auth-error" [@shake]="shakeError()" (click)="dismissError()" role="alert">
-          <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-            <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
-            <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          <span>{{ error() }}</span>
-          <button type="button" class="auth-error__dismiss" [attr.aria-label]="'common.dismiss' | translate">×</button>
-        </div>
-      }
-
-      <form class="auth-form" (ngSubmit)="signInWithMobilePassword()">
-        <div class="field">
-          <label class="field__label" for="login-id">{{ 'auth.fields.mobileOrEmail' | translate }}</label>
-          <div class="input-wrap">
-            <svg class="leading" viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <input id="login-id" class="input input--full input--lg input--leading" type="text" [ngModel]="email()" (ngModelChange)="email.set($event)" name="mobileOrEmail" autocomplete="username" [disabled]="loading()" [placeholder]="'auth.placeholders.mobileOrEmail' | translate" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="login-password">{{ 'auth.fields.password' | translate }}</label>
-          <div class="input-wrap">
-            <svg class="leading" viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true">
-              <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-            <input id="login-password" class="input input--full input--lg input--leading input--trailing" [type]="showPassword() ? 'text' : 'password'" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" autocomplete="current-password" [disabled]="loading()" [placeholder]="'auth.placeholders.password' | translate" />
-            <button type="button" class="input-eye" (click)="togglePassword()" [attr.aria-label]="'auth.fields.password' | translate" [attr.aria-pressed]="showPassword()" tabindex="-1">
-              @if (showPassword()) {
-                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.6 6.1A10.9 10.9 0 0 1 12 6c6.5 0 10 6 10 6a17.6 17.6 0 0 1-3.3 3.9M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 6 10 6a10.9 10.9 0 0 0 3.2-.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              @if (error()) {
+                <div class="auth-error" [@shake]="shakeError()" (click)="dismissError()" role="alert">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ error() }}</span>
+                  <button type="button" class="auth-error__dismiss" [attr.aria-label]="'common.dismiss' | translate">×</button>
+                </div>
               }
-            </button>
-          </div>
-        </div>
 
-        <div class="auth-row">
-          <label class="auth-check">
-            <input type="checkbox" [ngModel]="rememberMe()" (ngModelChange)="rememberMe.set($event)" name="rememberMe" />
-            <span>{{ 'auth.rememberMe' | translate }}</span>
-          </label>
-          <a href="#" class="auth-link" (click)="$event.preventDefault(); showForgotHint.set(!showForgotHint())">{{ 'auth.forgotPassword' | translate }}</a>
-        </div>
-        @if (showForgotHint()) {
-          <p class="auth-forgot-hint" role="status">{{ 'auth.forgotPasswordHint' | translate }}</p>
-        }
+              <form class="auth-form" (ngSubmit)="signInWithMobilePassword()">
+                <div class="field">
+                  <label class="field__label" for="login-id">{{ 'auth.fields.mobileOrEmail' | translate }}</label>
+                  <div class="input-wrap">
+                    <svg class="leading" viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                      <path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <input id="login-id" class="input input--full input--lg input--leading" type="text" [ngModel]="email()" (ngModelChange)="email.set($event)" name="mobileOrEmail" autocomplete="username" [disabled]="loading()" [placeholder]="'auth.placeholders.mobileOrEmail' | translate" />
+                  </div>
+                </div>
 
-        <button type="submit" class="btn btn--brand auth-submit" [appLoadingButton]="loading()">
-          @if (loading()) {
-            <span>{{ 'common.working' | translate }}</span>
-          } @else {
-            <span>{{ 'auth.actions.signIn' | translate }}</span>
+                <div class="field">
+                  <label class="field__label" for="login-password">{{ 'auth.fields.password' | translate }}</label>
+                  <div class="input-wrap">
+                    <svg class="leading" viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true">
+                      <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                      <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    <input id="login-password" class="input input--full input--lg input--leading input--trailing" [type]="showPassword() ? 'text' : 'password'" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" autocomplete="current-password" [disabled]="loading()" [placeholder]="'auth.placeholders.password' | translate" />
+                    <button type="button" class="input-eye" (click)="togglePassword()" [attr.aria-label]="'auth.fields.password' | translate" [attr.aria-pressed]="showPassword()" tabindex="-1">
+                      @if (showPassword()) {
+                        <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.6 6.1A10.9 10.9 0 0 1 12 6c6.5 0 10 6 10 6a17.6 17.6 0 0 1-3.3 3.9M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 6 10 6a10.9 10.9 0 0 0 3.2-.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                <div class="auth-row">
+                  <label class="auth-check">
+                    <input type="checkbox" [ngModel]="rememberMe()" (ngModelChange)="rememberMe.set($event)" name="rememberMe" />
+                    <span>{{ 'auth.rememberMe' | translate }}</span>
+                  </label>
+                  <a href="#" class="auth-link" (click)="$event.preventDefault(); showForgotHint.set(!showForgotHint())">{{ 'auth.forgotPassword' | translate }}</a>
+                </div>
+                @if (showForgotHint()) {
+                  <p class="auth-forgot-hint" role="status">{{ 'auth.forgotPasswordHint' | translate }}</p>
+                }
+
+                <button type="submit" class="btn btn--brand auth-submit" [appLoadingButton]="loading()">
+                  @if (loading()) {
+                    <span>{{ 'common.working' | translate }}</span>
+                  } @else {
+                    <span>{{ 'auth.actions.signIn' | translate }}</span>
+                  }
+                </button>
+              </form>
+
+              <p class="auth-legal">
+                {{ 'auth.footer' | translate }}
+                <a href="#" (click)="$event.preventDefault()">{{ 'auth.termsOfService' | translate }}</a>
+                {{ 'auth.and' | translate }}
+                <a href="#" (click)="$event.preventDefault()">{{ 'auth.privacyPolicy' | translate }}</a>
+              </p>
+
+              <div class="auth-alt">
+                <span class="auth-alt__prompt">{{ 'auth.requestAccess.prompt' | translate }}</span>
+                <button type="button" class="btn btn--ghost auth-alt__btn" (click)="openRequestAccess()" [disabled]="loading()">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true">
+                    <circle cx="9" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M19 8v6M16 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                  {{ 'auth.requestAccess.open' | translate }}
+                </button>
+              </div>
+            </div>
           }
-        </button>
-      </form>
 
-      <p class="auth-legal">
-        {{ 'auth.footer' | translate }}
-        <a href="#" (click)="$event.preventDefault()">{{ 'auth.termsOfService' | translate }}</a>
-        {{ 'auth.and' | translate }}
-        <a href="#" (click)="$event.preventDefault()">{{ 'auth.privacyPolicy' | translate }}</a>
-      </p>
+          @case ('requestAccess') {
+            <div class="auth-view">
+              <div class="auth-card__brand auth-card__brand--compact">
+                <h1 class="auth-card__title" data-view-heading="requestAccess" tabindex="-1">{{ 'auth.requestAccess.title' | translate }}</h1>
+                <p class="auth-card__sub">{{ 'auth.requestAccess.subtitle' | translate }}</p>
+              </div>
 
-      <div class="auth-alt">
-        <a href="#" (click)="$event.preventDefault()">{{ 'auth.registrationKeyLink' | translate }}</a>
+              @if (requestError(); as message) {
+                <div class="auth-error" role="alert">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ message }}</span>
+                  <button type="button" class="auth-error__dismiss" (click)="requestError.set(null)" [attr.aria-label]="'common.dismiss' | translate">×</button>
+                </div>
+              }
+
+              <form class="auth-form auth-form--request" (ngSubmit)="submitRequest()" novalidate>
+                <fieldset class="auth-kind" [disabled]="isSubmittingRequest()">
+                  <legend class="field__label">{{ 'auth.requestAccess.kindLabel' | translate }}</legend>
+                  <div class="auth-kind__options">
+                    <label class="auth-kind__option" [class.is-active]="requestKind() === 'parent'">
+                      <input type="radio" name="kind" value="parent" [ngModel]="requestKind()" (ngModelChange)="requestKind.set($event)" />
+                      <span class="auth-kind__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                          <circle cx="9" cy="7" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+                          <circle cx="17" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+                          <path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6M15 20c0-2.2 1.3-4 3-4.5 1.7.5 3.5 2.3 3.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                      </span>
+                      <span class="auth-kind__text">
+                        <strong>{{ 'auth.requestAccess.kinds.parent' | translate }}</strong>
+                        <small>{{ 'auth.requestAccess.kinds.parentHint' | translate }}</small>
+                      </span>
+                    </label>
+                    <label class="auth-kind__option" [class.is-active]="requestKind() === 'child'">
+                      <input type="radio" name="kind" value="child" [ngModel]="requestKind()" (ngModelChange)="requestKind.set($event)" />
+                      <span class="auth-kind__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                          <path d="M12 4 2 9l10 5 10-5-10-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                          <path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                      </span>
+                      <span class="auth-kind__text">
+                        <strong>{{ 'auth.requestAccess.kinds.child' | translate }}</strong>
+                        <small>{{ 'auth.requestAccess.kinds.childHint' | translate }}</small>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <div class="auth-form__pair">
+                  <div class="field">
+                    <label class="field__label" for="req-first">{{ 'auth.fields.firstName' | translate }}</label>
+                    <input id="req-first" class="input input--full" name="firstName" autocomplete="given-name" required
+                           [ngModel]="request().firstName" (ngModelChange)="setRequestField('firstName', $event)" [disabled]="isSubmittingRequest()" />
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="req-last">{{ 'auth.fields.lastName' | translate }}</label>
+                    <input id="req-last" class="input input--full" name="lastName" autocomplete="family-name" required
+                           [ngModel]="request().lastName" (ngModelChange)="setRequestField('lastName', $event)" [disabled]="isSubmittingRequest()" />
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label class="field__label" for="req-mobile">{{ 'auth.fields.mobile' | translate }}</label>
+                  <input id="req-mobile" class="input input--full" type="tel" inputmode="tel" name="mobileNumber" autocomplete="tel" required
+                         [placeholder]="'auth.placeholders.mobile' | translate" aria-describedby="req-mobile-hint"
+                         [ngModel]="request().mobileNumber" (ngModelChange)="setRequestField('mobileNumber', $event)" [disabled]="isSubmittingRequest()" />
+                  <p class="field__hint" id="req-mobile-hint">{{ 'auth.requestAccess.mobileHint' | translate }}</p>
+                </div>
+
+                <div class="auth-form__pair">
+                  <div class="field">
+                    <label class="field__label" for="req-password">{{ 'auth.fields.password' | translate }}</label>
+                    <div class="input-wrap">
+                      <input id="req-password" class="input input--full input--trailing" name="password" autocomplete="new-password" required minlength="6"
+                             [type]="showRequestPassword() ? 'text' : 'password'" [placeholder]="'auth.placeholders.createPassword' | translate"
+                             [ngModel]="request().password" (ngModelChange)="setRequestField('password', $event)" [disabled]="isSubmittingRequest()" />
+                      <button type="button" class="input-eye" (click)="showRequestPassword.set(!showRequestPassword())"
+                              [attr.aria-label]="'auth.requestAccess.showPassword' | translate" [attr.aria-pressed]="showRequestPassword()">
+                        @if (showRequestPassword()) {
+                          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+                        } @else {
+                          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.6 6.1A10.9 10.9 0 0 1 12 6c6.5 0 10 6 10 6a17.6 17.6 0 0 1-3.3 3.9M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 6 10 6a10.9 10.9 0 0 0 3.2-.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="req-confirm">{{ 'auth.requestAccess.confirmPassword' | translate }}</label>
+                    <input id="req-confirm" class="input input--full" name="confirmPassword" autocomplete="new-password" required
+                           [type]="showRequestPassword() ? 'text' : 'password'"
+                           [ngModel]="request().confirmPassword" (ngModelChange)="setRequestField('confirmPassword', $event)" [disabled]="isSubmittingRequest()" />
+                  </div>
+                </div>
+                <p class="field__hint auth-form__note">{{ 'auth.requestAccess.passwordHint' | translate }}</p>
+
+                @if (requestKind() === 'parent') {
+                  <div class="field">
+                    <label class="field__label" for="req-email">
+                      {{ 'common.email' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                    </label>
+                    <input id="req-email" class="input input--full" type="email" name="email" autocomplete="email"
+                           aria-describedby="req-email-hint"
+                           [ngModel]="request().email" (ngModelChange)="setRequestField('email', $event)" [disabled]="isSubmittingRequest()" />
+                    <p class="field__hint" id="req-email-hint">{{ 'auth.requestAccess.emailHint' | translate }}</p>
+                  </div>
+                } @else {
+                  <div class="auth-form__pair">
+                    <div class="field">
+                      <label class="field__label" for="req-parent-name">
+                        {{ 'auth.requestAccess.parentName' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                      </label>
+                      <input id="req-parent-name" class="input input--full" name="parentName" autocomplete="off"
+                             [ngModel]="request().parentName" (ngModelChange)="setRequestField('parentName', $event)" [disabled]="isSubmittingRequest()" />
+                    </div>
+                    <div class="field">
+                      <label class="field__label" for="req-parent-mobile">
+                        {{ 'auth.requestAccess.parentMobile' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                      </label>
+                      <input id="req-parent-mobile" class="input input--full" type="tel" inputmode="tel" name="parentMobileNumber" autocomplete="off"
+                             [ngModel]="request().parentMobileNumber" (ngModelChange)="setRequestField('parentMobileNumber', $event)" [disabled]="isSubmittingRequest()" />
+                    </div>
+                  </div>
+                  <p class="field__hint auth-form__note">{{ 'auth.requestAccess.parentHint' | translate }}</p>
+                }
+
+                <div class="auth-form__pair">
+                  <div class="field">
+                    <label class="field__label" for="req-school">
+                      {{ 'auth.requestAccess.school' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                    </label>
+                    <input id="req-school" class="input input--full" name="schoolName" autocomplete="organization"
+                           [ngModel]="request().schoolName" (ngModelChange)="setRequestField('schoolName', $event)" [disabled]="isSubmittingRequest()" />
+                  </div>
+                  @if (requestKind() === 'child') {
+                    <div class="field">
+                      <label class="field__label" for="req-grade">
+                        {{ 'common.grade' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                      </label>
+                      <input id="req-grade" class="input input--full" name="gradeName" autocomplete="off"
+                             [placeholder]="'auth.requestAccess.gradePlaceholder' | translate"
+                             [ngModel]="request().gradeName" (ngModelChange)="setRequestField('gradeName', $event)" [disabled]="isSubmittingRequest()" />
+                    </div>
+                  }
+                </div>
+
+                <div class="field">
+                  <label class="field__label" for="req-note">
+                    {{ 'auth.requestAccess.note' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
+                  </label>
+                  <textarea id="req-note" class="auth-form__note-input" name="note" rows="3" maxlength="1000"
+                            [placeholder]="'auth.requestAccess.notePlaceholder' | translate"
+                            [ngModel]="request().note" (ngModelChange)="setRequestField('note', $event)" [disabled]="isSubmittingRequest()"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn--brand auth-submit" [appLoadingButton]="isSubmittingRequest()">
+                  @if (isSubmittingRequest()) {
+                    <span>{{ 'common.working' | translate }}</span>
+                  } @else {
+                    <span>{{ 'auth.requestAccess.submit' | translate }}</span>
+                  }
+                </button>
+              </form>
+
+              <div class="auth-alt">
+                <button type="button" class="auth-back" (click)="backToSignIn()" [disabled]="isSubmittingRequest()">
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ 'auth.requestAccess.backToSignIn' | translate }}
+                </button>
+              </div>
+            </div>
+          }
+
+          @case ('requestSent') {
+            <div class="auth-view auth-view--done">
+              <span class="auth-done__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <h1 class="auth-card__title" data-view-heading="requestSent" tabindex="-1">{{ 'auth.requestAccess.sentTitle' | translate }}</h1>
+              <p class="auth-done__text" role="status">
+                {{ 'auth.requestAccess.sentBody' | translate: { mobile: request().mobileNumber } }}
+              </p>
+              <p class="auth-done__hint">{{ 'auth.requestAccess.sentHint' | translate }}</p>
+              <button type="button" class="btn btn--brand auth-submit" (click)="backToSignIn()">
+                {{ 'auth.requestAccess.backToSignIn' | translate }}
+              </button>
+            </div>
+          }
+        }
       </div>
     </div>
   </div>

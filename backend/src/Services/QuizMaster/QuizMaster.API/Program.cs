@@ -55,6 +55,7 @@ app
     .UseClientAppFiles()                                    // the built Angular app from wwwroot (none in development)
     .UseRouting()
     .UseCors(QuizMaster.API.DependencyInjection.ClientAppCorsPolicy)
+    .UseRateLimiter()                                       // after routing: limits are per endpoint
     .UseAuthentication()
     .UseAuthorization();
 

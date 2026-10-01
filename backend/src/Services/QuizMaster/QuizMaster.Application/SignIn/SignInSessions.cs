@@ -6,11 +6,13 @@ namespace QuizMaster.Application.SignIn;
 public record SessionTokens(string AccessToken, DateTime AccessTokenExpiresOn, string RefreshToken, DateTime RefreshTokenExpiresOn);
 
 // Password sign-in and the sessions it opens.
-public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<SignInCredential> _hasher, AccessTokenIssuer _tokens)
+public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<SignInCredential> _hasher, AccessTokenIssuer _tokens, ISignInAccounts _accounts)
 {
     // One message for every way a sign-in can fail, so the answer never reveals which emails have accounts.
     public const string WrongCredentialsMessage = "The email or mobile number, or the password, is not correct.";
     public const string LockedOutMessage = "Too many attempts. Wait a few minutes, then try again.";
+    public const string AccessRequestPendingMessage = "Your request to join is waiting for approval. You can sign in as soon as it is approved.";
+    public const string AccessRequestRejectedMessage = "Your request to join was not approved.";
 
     public async Task<SessionTokens> SignInAsync(string email, string password, CancellationToken ct)
     {
@@ -18,7 +20,7 @@ public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<Sign
         var normalized = SignInCredential.Normalize(email);
         var credential = await _dbContext.SignInCredentials.FirstOrDefaultAsync(c => c.Email == normalized, ct);
         if (credential?.PasswordHash is null)
-            throw new UnauthorizedException(WrongCredentialsMessage);
+            throw new UnauthorizedException(await AccessRequestMessageAsync(normalized, password, ct) ?? WrongCredentialsMessage);
         if (credential.IsLockedOut(now))
             throw new UnauthorizedException(LockedOutMessage);
 
@@ -72,6 +74,23 @@ public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<Sign
         var credential = await _dbContext.SignInCredentials.AsNoTracking().FirstOrDefaultAsync(c => c.Uid == uid, ct);
         return credential?.PasswordHash is not null
             && _hasher.VerifyHashedPassword(credential, credential.PasswordHash, password) != PasswordVerificationResult.Failed;
+    }
+
+    //insight - someone who asked for access signs in with the password they chose before their account exists. Only that
+    // password reveals the request's state, so the answer still tells nobody else which mobile numbers have asked.
+    private async Task<string?> AccessRequestMessageAsync(string email, string password, CancellationToken ct)
+    {
+        var request = await _dbContext.AccessRequests.AsNoTracking()
+            .Where(request => request.SignInEmail == email && request.Status != AccessRequestStatus.Approved)
+            .OrderByDescending(request => request.CreatedOn)
+            .Select(request => new { request.Status, request.PasswordHash, request.RejectionReason })
+            .FirstOrDefaultAsync(ct);
+        if (request is null || !_accounts.VerifyPassword(request.PasswordHash, password))
+            return null;
+
+        return request.Status == AccessRequestStatus.Pending ? AccessRequestPendingMessage
+            : request.RejectionReason is { } reason ? $"{AccessRequestRejectedMessage} {reason}"
+            : AccessRequestRejectedMessage;
     }
 
     // A sign-in and a renewal both open a session, so both mark the person active: someone who comes back on a

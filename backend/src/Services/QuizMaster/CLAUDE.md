@@ -17,7 +17,7 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 
 - a query that forgets a WHERE cannot leak another organization's data (an id from another tenant is simply 404);
 - a row can never be created in, or moved to, another tenant (`StampTenant` throws);
-- only `UserClaimsTransformation` and `RegistrationScope` use `IgnoreQueryFilters()`, because finding the tenant is their job (the caller's, and a self-registering person's from their key); `RegistrationScope` pins every read after the key to the key's tenant;
+- only `UserClaimsTransformation`, `RegistrationScope` and `AccessRequestScope` use `IgnoreQueryFilters()` (plus `SetAdministratorPassword`'s one lookup), because finding the tenant is their job (the caller's; a self-registering person's from their key; the organization a platform administrator chose while approving an access request); each pins every read after that to the one tenant;
 - seeding runs with no caller tenant and must set `TenantId` explicitly.
 - a platform administrator (`PLATFORM_ADMIN`, `TenantId` 0) belongs to no organization: `StampTenant` leaves that one row alone, the claims transformation treats tenant 0 as never suspended, and `GET /me` returns no tenant. Their endpoints (`/platform/tenants`) read and change organization metadata only, never data inside one.
 
@@ -42,6 +42,7 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 | `HomeworkAssignment` | due date in the future (UTC); named students must be in the class; `IsAssignedTo` = named, else class OR stage (as the app) |
 | `Participation` | `Submit` grades server-side, enforces entitlement, `requiredAll`, one submission unless the last was rejected, and trusts a claimed start only within 12 h; `Review` marks Explain/Complete answers (0..round(weight)) and records the verdict in one action |
 | `RegistrationKey` | PARENT or APPLICATION_ADMIN only; the role and tenant of a self-registration come from the key; a parent key is claimed by one family; child slots are spent against the key the *parent* holds, never one named in a request (`rowversion` on the count); status is derived (`StatusAt`), never stored |
+| `AccessRequest` | platform-wide (no tenant): a visitor with no key asks to join as a parent or child; the password they chose is kept as a hash and becomes their credential on approval; one pending request per sign-in (filtered unique index); a decision is final (`rowversion`). What they typed about school, grade and parent is a hint only — the platform administrator picks the organization (and a child's class and parent) when approving |
 | `Notification` | written only by the server, from the `QuizSubmitted`/`SubmissionReviewed` domain events: the parent hears a child finished, the reviewer hears of every submission (`SubmissionNeedsReview` when an answer waits for their mark, else `SubmissionReceived`), the student hears a verdict once (`VerdictChanged`); contents are snapshotted; only the recipient reads or marks it (`/me/notifications`) |
 | `TranslationOverride` | one row per customised label per language per school (`en`/`ar` only); key shape and length checked, never blank; the client's shipped JSON stays the base and the client still sanitizes (unknown keys, `{{ token }}` changes) at merge time |
 | `QuizAttemptLock` | One Time Join: written when the attempt opens; blocking until released by a teacher or by the submission (same transaction); exits after release are ignored |
@@ -51,6 +52,10 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 ## Accounts and sign-ins
 
 New sign-ins are created on the server through `ISignInAccounts` (`QuizMasterPro.Security`, implemented by `Application/SignIn/LocalSignInAccounts`): a credential row with a new `u-…` uid. There is no reset email (a child has no mailbox): `PUT /users/{id}/password` lets an administrator set anyone's in their school and a parent their own children's, `PUT /me/password` changes your own, and `PUT /platform/tenants/{id}/administrator-password` lets the platform administrator rescue a school with no working administrator login. Setting a password revokes that account's sessions. A profile with no credential yet (the demo seed's, before `DevelopmentSignIns`) gets one from `SetPasswordAsync`. In Development, seeded `dev-…` accounts get the password `password` at start (`DevelopmentSignIns`). `CreateThenPersistAsync` creates the sign-in, saves the profile, and deletes the sign-in again if the save fails. Every key/quota check runs *before* the sign-in is created. A user's `RegistrationKeyId` is re-checked on every request: a lapsed key gives the account no roles, and `GET /me` reports `registrationKeyProblem` so the client can say why. An email that already signs in (or belongs to a profile without a credential) is never adopted (teacher logins report `ExistsUnmanaged`).
+
+## Access requests
+
+`POST /access-requests` (anonymous, rate-limited per address: 5 an hour) stores a request; nothing else is created. The platform administrator reviews them at `/platform/access-requests` and approves into an organization they choose (`AccessRequestScope` reads that organization's classes and parents for the pickers: `/platform/tenants/{id}/classes`, `/platform/tenants/{id}/parents`). Approving a parent creates the account plus a claimed PARENT key with the chosen `MaxChildren`; approving a child creates a student placed in a class, linked to a parent of that organization, and spends one slot of the parent's key. Every check runs before the sign-in is created, and nothing tracked is changed until the transaction: `ISignInAccounts.CreateAsync` saves the shared context, so a change made earlier would be committed even if the approval failed (`RegistrationKey.EnsureChildSlotAvailable` checks without spending). Signing in before a decision, with the password the visitor chose, answers "waiting for approval" or "not approved" plus the reason; with any other password the usual message, so nothing reveals which numbers have asked.
 
 ## Notifications
 
@@ -65,7 +70,7 @@ The app's browsers wrote into each other's inboxes (the student's browser notifi
 
 ## Endpoints
 
-All under `/api`; see Swagger. Areas: `me`, `users`, `stages`/`grades`/`classes`/`subjects`/`teachers`, `questions`, `quizzes`, `teacher-quizzes`, `assignments`, `attempt-locks`, `submissions`, `participations`, `reviews`, `dashboard`.
+All under `/api`; see Swagger. Areas: `me`, `users`, `access-requests`, `platform`, `stages`/`grades`/`classes`/`subjects`/`teachers`, `questions`, `quizzes`, `teacher-quizzes`, `assignments`, `attempt-locks`, `submissions`, `participations`, `reviews`, `dashboard`.
 
 ## Design choices worth knowing
 

@@ -15,9 +15,22 @@ public interface ISignInAccounts
     Task SetPasswordAsync(string uid, string email, string password, CancellationToken ct);
 
     Task DeleteAsync(string uid, CancellationToken ct);
+
+    // For a password chosen before its account exists (an access request): kept as a hash until the account is created
+    // with it (NewSignInAccount.PasswordHash), and checked with VerifyPassword meanwhile.
+    string HashPassword(string password);
+
+    bool VerifyPassword(string passwordHash, string password);
 }
 
-public sealed record NewSignInAccount(string Email, string Password, string DisplayName);
+public sealed record NewSignInAccount(string Email, string Password, string DisplayName)
+{
+    // A hash from HashPassword, used instead of Password: the person chose it earlier, and only its hash was kept.
+    public string? PasswordHash { get; init; }
+
+    public static NewSignInAccount WithPasswordHash(string email, string passwordHash, string displayName)
+        => new(email, Password: "", displayName) { PasswordHash = passwordHash };
+}
 
 public static class SignInAccountsExtensions
 {

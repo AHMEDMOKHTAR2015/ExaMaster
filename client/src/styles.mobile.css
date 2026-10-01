@@ -648,6 +648,14 @@
   }
 }
 
+/* Request access: side-by-side fields stop fitting a phone's width */
+@media (max-width: 640px) {
+  .auth-form__pair,
+  .auth-kind__options {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* The login's two-column split: the frame widens and the decorative panel
    appears together, so they belong in one block. 900px, not the 992px this
    used to carry — that was the only place in the file using a second desktop

@@ -2,6 +2,7 @@ global using Xunit;
 global using Blocks.Domain;
 global using QuizMasterPro.Abstractions.Enums;
 
+global using QuizMaster.Domain.AccessRequests;
 global using QuizMaster.Domain.Academic;
 global using QuizMaster.Domain.Assignments;
 global using QuizMaster.Domain.AttemptLocks;

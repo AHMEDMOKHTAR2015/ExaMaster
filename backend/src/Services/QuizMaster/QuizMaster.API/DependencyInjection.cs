@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using QuizMaster.API.Realtime;
 using QuizMaster.Application.Realtime;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Blocks.AspNetCore;
 using Blocks.Core;
@@ -9,6 +10,8 @@ using Blocks.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
+using QuizMaster.API.Endpoints.AccessRequests;
 
 namespace QuizMaster.API;
 
@@ -56,6 +59,28 @@ public static class DependencyInjection
             .AddScoped<HttpContextProvider>();
 
         services.AddScoped<RequestContext>();
+
+        //insight - the anonymous access-request form is the one endpoint anyone can fill a table through, so it is limited
+        // per client address. Behind a proxy the address is the proxy's unless forwarded headers are honoured
+        // (App Service sets ASPNETCORE_FORWARDEDHEADERS_ENABLED for containers).
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy(SubmitAccessRequestEndpoint.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) }));
+            // the body GlobalExceptionMiddleware writes (PascalCase), which the app reads its message from
+            options.OnRejected = async (context, ct) =>
+            {
+                context.HttpContext.Response.ContentType = "application/json";
+                await context.HttpContext.Response.WriteAsync(JsonSerializer.Serialize(new
+                {
+                    StatusCode = StatusCodes.Status429TooManyRequests,
+                    Message = "Too many requests were sent from this device. Try again in an hour.",
+                    TraceId = context.HttpContext.TraceIdentifier
+                }), ct);
+            };
+        });
 
         // authorization layer 2: role on THIS aggregate (see QuizMasterAccessChecker)
         services.AddScoped<IAuthorizationHandler, AggregateAccessAuthorizationHandler>();

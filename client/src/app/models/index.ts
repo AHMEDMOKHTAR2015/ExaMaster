@@ -18,3 +18,4 @@ export * from './quiz-lock';
 export * from './paged-result';
 export * from './notification';
 export * from './tenant';
+export * from './access-request';

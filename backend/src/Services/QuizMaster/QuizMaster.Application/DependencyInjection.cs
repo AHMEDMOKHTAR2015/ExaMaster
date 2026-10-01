@@ -9,6 +9,7 @@ using QuizMaster.Application.Features.Attempts.Shared;
 using QuizMaster.Application.Features.Quizzes.Shared;
 using QuizMaster.Application.Features.Accounts.Shared;
 using QuizMaster.Application.Features.Registration.Shared;
+using QuizMaster.Application.Features.AccessRequests.Shared;
 using QuizMaster.Application.Features.Notifications.Shared;
 using Microsoft.AspNetCore.Identity;
 using QuizMaster.Application.SignIn;
@@ -50,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<AssignmentReferences>();
         services.AddScoped<FamilyEnrolment>();
         services.AddScoped<RegistrationScope>();
+        services.AddScoped<AccessRequestScope>();
         services.AddScoped<NotificationSender>();
         services.TryAddScoped<IRealtimeNotifier, NoRealtimeNotifier>();      // the API replaces it with SignalR
 

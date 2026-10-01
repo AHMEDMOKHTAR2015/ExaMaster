@@ -13,7 +13,7 @@ public class LocalSignInAccounts(QuizMasterDbContext _dbContext, IPasswordHasher
             throw new ConflictException("An account with this email or mobile number already exists.");
 
         var credential = new SignInCredential { Uid = $"u-{Guid.NewGuid():N}", Email = email, CreatedOn = DateTime.UtcNow };
-        credential.PasswordHash = _hasher.HashPassword(credential, account.Password);
+        credential.PasswordHash = account.PasswordHash ?? _hasher.HashPassword(credential, account.Password);
         credential.PasswordChangedOn = credential.CreatedOn;
         _dbContext.SignInCredentials.Add(credential);
         await _dbContext.SaveChangesAsync(ct);
@@ -49,6 +49,14 @@ public class LocalSignInAccounts(QuizMasterDbContext _dbContext, IPasswordHasher
             .ExecuteUpdateAsync(set => set.SetProperty(t => t.RevokedOn, now), ct);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    // The hasher never reads the account it is given, so a placeholder stands in for one that does not exist yet.
+    public string HashPassword(string password) => _hasher.HashPassword(NoAccountYet, password);
+
+    public bool VerifyPassword(string passwordHash, string password)
+        => _hasher.VerifyHashedPassword(NoAccountYet, passwordHash, password) != PasswordVerificationResult.Failed;
+
+    private static readonly SignInCredential NoAccountYet = new() { Uid = "", Email = "" };
 
     public async Task DeleteAsync(string uid, CancellationToken ct)
     {

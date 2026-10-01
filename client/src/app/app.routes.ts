@@ -60,6 +60,13 @@ export const routes: Routes = [
     title: 'Organizations - QuizMaster'
   },
   {
+    path: 'platform-admin/access-requests',
+    loadComponent: () => import('./components/access-requests-admin/access-requests-admin.component')
+      .then(m => m.AccessRequestsAdminComponent),
+    canActivate: [platformAdminGuard],
+    title: 'Access Requests - QuizMaster'
+  },
+  {
     path: 'application-admin',
     loadComponent: () => import('./components/application-admin/application-admin.component')
       .then(m => m.ApplicationAdminComponent),

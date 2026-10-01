@@ -180,4 +180,17 @@ public class RegistrationKeyTests
         Assert.Throws<DomainException>(() => Parent().HoldRegistrationKey(adminKey, Action(QuizMasterActionType.CreateAccount, AdminId)));
         Admin().HoldRegistrationKey(adminKey, Action(QuizMasterActionType.Register, AdminId));      // staff may hold one
     }
+
+    [Fact]
+    public void Checking_for_a_free_slot_spends_nothing()
+    {
+        var key = ClaimedKey(maxChildren: 1);
+
+        key.EnsureChildSlotAvailable(ParentId, Now);
+        Assert.Equal(0, key.ChildCount);
+
+        key.SpendChildSlot(ParentId, Now, Action(QuizMasterActionType.AddChild, ParentId));
+        Assert.Throws<DomainException>(() => key.EnsureChildSlotAvailable(ParentId, Now));
+        Assert.Throws<DomainException>(() => ClaimedKey().EnsureChildSlotAvailable(OtherStudentId, Now));
+    }
 }

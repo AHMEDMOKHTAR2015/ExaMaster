@@ -96,6 +96,16 @@ public partial class RegistrationKey
     // makes two concurrent enrolments race on the count instead of both taking the last slot.
     public void SpendChildSlot(int parentId, DateTime now, IQuizMasterAction action)
     {
+        EnsureChildSlotAvailable(parentId, now);
+
+        ChildCount++;
+        Touch(action);
+    }
+
+    // The same checks as SpendChildSlot, changing nothing: for a caller that must refuse before it creates a sign-in,
+    // but can only spend the slot inside the transaction that saves the child.
+    public void EnsureChildSlotAvailable(int parentId, DateTime now)
+    {
         if (!IsParentKey || ParentId != parentId)
             throw new DomainException("A child can only be enrolled on their own family's registration key.");
 
@@ -103,9 +113,6 @@ public partial class RegistrationKey
 
         if (MaxChildren is { } maxChildren && ChildCount >= maxChildren)
             throw new DomainException($"This registration key allows {maxChildren} child account(s), and all are in use.");
-
-        ChildCount++;
-        Touch(action);
     }
 
     // A child who leaves the family (moved to another parent, or no longer a student) gives their slot back.

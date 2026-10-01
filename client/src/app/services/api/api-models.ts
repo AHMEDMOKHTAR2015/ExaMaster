@@ -58,6 +58,41 @@ export interface ApiRegistrationKey {
 }
 
 /** A page of a server-paged list (GET /users, /registration-keys). */
+/** /platform/access-requests */
+export interface ApiAccessRequest {
+  id: number;
+  kind: 'Parent' | 'Child';
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  contactEmail: string | null;
+  schoolName: string | null;
+  gradeName: string | null;
+  parentName: string | null;
+  parentMobileNumber: string | null;
+  note: string | null;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdOn: string;
+  decidedOn: string | null;
+  rejectionReason: string | null;
+  approvedTenantId: number | null;
+  approvedTenantName: string | null;
+  approvedUserId: number | null;
+}
+
+/** /platform/tenants/{id}/classes */
+export interface ApiTenantClassOption { id: number; name: string; gradeId: number; gradeName: string; stageId: number; stageName: string; }
+
+/** /platform/tenants/{id}/parents */
+export interface ApiTenantParentOption {
+  id: number;
+  displayName: string;
+  mobileNumber: string | null;
+  childCount: number;
+  maxChildren: number | null;
+  hasUsableKey: boolean;
+}
+
 export interface ApiPage<T> { items: T[]; page: number; pageSize: number; totalCount: number; }
 
 /** GET /me */

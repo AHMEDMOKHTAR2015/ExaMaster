@@ -34,7 +34,10 @@
     "myParticipations": "My Participations",
     "username": "Username",
     "profile": "Profile",
-    "tenant": "Tenant"
+    "tenant": "Tenant",
+    "platform": "Platform",
+    "organizations": "Organizations",
+    "accessRequests": "Access requests"
   },
   "roles": {
     "platformAdmin": "Platform Admin",
@@ -185,7 +188,45 @@
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot Password?",
     "forgotPasswordHint": "Ask your school administrator to set a new password for you. A student's parent can set one too, from their dashboard.",
-    "registrationKeyLink": "Registration key link"
+    "requestAccess": {
+      "prompt": "Don't have an account yet?",
+      "open": "Request access",
+      "title": "Request access",
+      "subtitle": "Tell us who you are. Once your request is approved, you sign in with your mobile number and the password you choose here.",
+      "kindLabel": "I am a",
+      "kinds": {
+        "parent": "Parent",
+        "parentHint": "I follow my children's progress",
+        "child": "Student",
+        "childHint": "I take quizzes and homework"
+      },
+      "mobileHint": "You will sign in with this number.",
+      "confirmPassword": "Confirm password",
+      "showPassword": "Show password",
+      "passwordHint": "At least 6 characters. Keep it safe: nobody else will see it.",
+      "optional": "(optional)",
+      "emailHint": "Only for contacting you. You still sign in with your mobile number.",
+      "parentName": "Parent's name",
+      "parentMobile": "Parent's mobile",
+      "parentHint": "Helps us link your account to your parent's.",
+      "school": "School",
+      "gradePlaceholder": "e.g. Grade 4",
+      "note": "Anything else we should know?",
+      "notePlaceholder": "e.g. the names of your children, or your class",
+      "submit": "Send request",
+      "backToSignIn": "Back to sign in",
+      "sentTitle": "Request sent",
+      "sentBody": "We will review your request. Once it is approved, sign in with {{mobile}} and the password you chose.",
+      "sentHint": "If you try to sign in before then, we will tell you that it is still waiting.",
+      "errors": {
+        "name": "Enter your first and last name.",
+        "mobile": "Enter a mobile number with at least 4 digits.",
+        "password": "Choose a password of at least 6 characters.",
+        "passwordMismatch": "The two passwords do not match.",
+        "email": "Enter a valid email address, or leave it empty.",
+        "failed": "Your request could not be sent. Please try again."
+      }
+    }
   },
   "dashboard": {
     "appAdmin": {
@@ -1329,6 +1370,97 @@
       "maxChildren": "Max children",
       "cancel": "Cancel",
       "save": "Save"
+    }
+  },
+  "accessRequests": {
+    "title": "Access requests",
+    "subtitle": "People without a registration key asking to join. Approve one into a school, or turn it down.",
+    "tabs": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "all": "All"
+    },
+    "kinds": {
+      "all": "All",
+      "parents": "Parents",
+      "children": "Students",
+      "parent": "Parent",
+      "child": "Student"
+    },
+    "searchPlaceholder": "Search by name, mobile or school…",
+    "count": "{{count}} requests",
+    "pageOf": "Page {{page}} of {{pages}}",
+    "columns": {
+      "name": "Name",
+      "type": "Type",
+      "mobile": "Mobile",
+      "details": "What they told us",
+      "submitted": "Submitted",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "details": {
+      "school": "School",
+      "parent": "Parent's name",
+      "parentMobile": "Parent's mobile",
+      "parentShort": "Parent",
+      "note": "Note"
+    },
+    "actions": {
+      "review": "Review",
+      "view": "View",
+      "approve": "Approve",
+      "reject": "Reject",
+      "confirmReject": "Reject request"
+    },
+    "empty": {
+      "pendingTitle": "No requests waiting",
+      "pendingBody": "New requests from the sign-in page appear here.",
+      "filteredTitle": "No requests match."
+    },
+    "dialog": {
+      "eyebrow": {
+        "parent": "PARENT REQUEST",
+        "child": "STUDENT REQUEST"
+      },
+      "toldUs": "What they told us",
+      "hintsNote": "Typed by the visitor and not checked. Use it to find the right school, class and parent.",
+      "decision": "Decision",
+      "organization": "School",
+      "organizationPlaceholder": "Choose a school",
+      "suspended": "suspended",
+      "theySaid": "They said: {{school}}",
+      "theySaidGrade": "They said: {{grade}}",
+      "maxChildren": "Children they can add",
+      "maxChildrenHint": "A family registration key is created for this parent with this many child slots. Leave empty for no limit.",
+      "class": "Class",
+      "classPlaceholder": "Choose a class",
+      "noClasses": "This school has no classes yet. Its administrator needs to add them first.",
+      "parent": "Parent",
+      "parentSearchPlaceholder": "Search parents by name or mobile…",
+      "noParents": "No parents in this school match.",
+      "parentNoKey": "No usable family key",
+      "parentSlots": "{{used}} of {{max}} children",
+      "parentSlotsUnlimited": "{{used}} children, no limit",
+      "parentHint": "A student must be linked to a parent of this school. Approving uses one of that parent's child slots.",
+      "rejectReason": "Reason (optional)",
+      "rejectReasonHint": "They see this when they try to sign in.",
+      "approvedOn": "Approved on {{date}} into {{tenant}}.",
+      "rejectedOn": "Rejected on {{date}}."
+    },
+    "toasts": {
+      "approved": "{{name}} can now sign in.",
+      "rejected": "Request rejected."
+    },
+    "errors": {
+      "load": "Could not load access requests.",
+      "options": "Could not load this school's classes and parents.",
+      "decide": "Could not save the decision. Please try again."
     }
   },
   "availableQuizzes": {

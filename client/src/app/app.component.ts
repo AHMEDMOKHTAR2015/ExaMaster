@@ -12,6 +12,7 @@ import { RealtimeService } from './services/realtime/realtime.service';
 import { TenantService } from './services/tenant/tenant.service';
 import { QuizLockdownService } from './services/quiz/quiz-lockdown.service';
 import { TranslationOverridesService } from './services/i18n/translation-overrides.service';
+import { AccessRequestService } from './services/access-requests/access-request.service';
 import { AppNotification } from './models';
 import { routeAnimation } from './shared/animations';
 import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
@@ -49,6 +50,9 @@ export class AppComponent {
    * cheap query for it.
    */
   readonly pendingReviewCount = inject(TeacherReviewQueueService).pendingCount;
+
+  /** Access requests waiting for the platform administrator, badged on their sidebar link. */
+  readonly pendingAccessRequestCount = inject(AccessRequestService).pendingCount;
 
   /**
    * The organization the signed-in user belongs to. Empty for the vendor's
@@ -116,6 +120,9 @@ export class AppComponent {
   readonly isParentAdminOnly = computed(() => {
     return this.adminAccessService.getStrategy(this.user()?.roles).getRoleType() === 'userAdmin';
   });
+
+  /** The vendor: their own sidebar section (organizations, access requests), and none of a school's. */
+  readonly isPlatformAdmin = computed(() => this.user()?.roles?.includes('platformAdmin') ?? false);
 
   /**
    * Check if user has any admin role (for admin dashboard access)

@@ -12,6 +12,7 @@ public class QuizMasterDbContext(DbContextOptions<QuizMasterDbContext> options, 
 {
     #region Entities
     public virtual DbSet<Tenant> Tenants { get; set; }
+    public virtual DbSet<AccessRequest> AccessRequests { get; set; }               // platform-wide: no tenant filter
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<Stage> Stages { get; set; }
     public virtual DbSet<Grade> Grades { get; set; }

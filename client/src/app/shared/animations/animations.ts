@@ -178,3 +178,21 @@ export const expandCollapse = trigger('expandCollapse', [
   })),
   transition('collapsed <=> expanded', animate('300ms cubic-bezier(0.35, 0, 0.25, 1)'))
 ]);
+
+// Swap one view for another in the same place (the login card's sign-in and
+// request-access forms): the old one fades out, then the new one fades in.
+// The entering view is kept out of layout until the leaving one is gone, so
+// the container never holds both at once and its height never doubles
+// mid-swap. The views are flex columns, which is the display restored. The
+// first render does not animate: the card has its own entrance.
+export const crossFade = trigger('crossFade', [
+  transition((from, to) => from !== 'void' && to !== 'void' && from !== to, [
+    query(':enter', style({ display: 'none' }), { optional: true }),
+    query(':leave', animate('180ms ease-in', style({ opacity: 0, transform: 'translateY(-0.5rem)' })), { optional: true }),
+    query(':leave', style({ display: 'none' }), { optional: true }),
+    query(':enter', [
+      style({ display: 'flex', opacity: 0, transform: 'translateY(0.5rem)' }),
+      animate('260ms ease-out', style({ opacity: 1, transform: 'none' }))
+    ], { optional: true })
+  ])
+]);

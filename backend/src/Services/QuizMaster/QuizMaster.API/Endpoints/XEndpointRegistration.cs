@@ -14,6 +14,7 @@ using QuizMaster.API.Endpoints.Notifications;
 using QuizMaster.API.Endpoints.Translations;
 using QuizMaster.API.Endpoints.Platform;
 using QuizMaster.API.Endpoints.Auth;
+using QuizMaster.API.Endpoints.AccessRequests;
 
 namespace QuizMaster.API.Endpoints;
 
@@ -145,6 +146,14 @@ public static class EndpointRegistration
         SuspendTenantEndpoint.Map(api);
         SetAdministratorPasswordEndpoint.Map(api);
         ReactivateTenantEndpoint.Map(api);
+
+        // Access requests (a visitor asks; the platform administrator decides, and places the account in an organization)
+        SubmitAccessRequestEndpoint.Map(api);
+        ListAccessRequestsEndpoint.Map(api);
+        ApproveAccessRequestEndpoint.Map(api);
+        RejectAccessRequestEndpoint.Map(api);
+        ListTenantClassesEndpoint.Map(api);
+        SearchTenantParentsEndpoint.Map(api);
 
         // Dashboard
         GetDashboardStatsEndpoint.Map(api);

@@ -245,6 +245,32 @@
           </a>
         }
 
+        @if (isPlatformAdmin()) {
+          <div class="sidebar__label">{{ 'nav.platform' | translate }}</div>
+          <a routerLink="/platform-admin" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 21h18M5 21V7l7-4 7 4v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 21v-6h6v6M9 10h.01M15 10h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            {{ 'nav.organizations' | translate }}
+          </a>
+          <a routerLink="/platform-admin/access-requests" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M19 8v6M16 11h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            {{ 'nav.accessRequests' | translate }}
+            @if (pendingAccessRequestCount() > 0) {
+              <span class="nav-item__count">{{ pendingAccessRequestCount() }}</span>
+            }
+          </a>
+        }
+
       </nav>
 
       <div class="sidebar__footer">
