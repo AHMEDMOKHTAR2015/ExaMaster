@@ -1005,7 +1005,7 @@
     /* 16px text does not fit the 38px field the desktop uses — the glyphs sit
        against the border. 44px is the same floor the tap targets above take. */
     --field-h: 2.75rem;
-    --select-h: 2.5rem;
+    --select-h: 2.75rem;   /* = --field-h, as on desktop */
   }
 
   /* The elements are listed as well as the token, and not redundantly:

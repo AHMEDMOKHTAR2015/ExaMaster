@@ -221,7 +221,7 @@
   --field-pad-x: 0.75rem;
   --field-bg: var(--surface);
   --field-font: var(--font-sm);
-  --select-h: 2.125rem;
+  --select-h: 2.375rem;   /* = --field-h: a select beside a text input lines up */
   --select-radius: var(--r-sm);
 
   /* Select / dropdown */
@@ -566,7 +566,7 @@ button.nav-item:disabled:hover {
 
 .sidebar__user-row dt {
   flex-shrink: 0;
-  color: var(--sidebar-ink-faint);
+  color: var(--sidebar-ink-soft);
 }
 
 .sidebar__user-row dd {
@@ -1749,11 +1749,31 @@ background: linear-gradient(to left, #1A4B6B 0%, #489BF5 100%);
 .dash-grid > :first-child { flex: 2 1 min(32.5rem, 100%); }
 .dash-grid > :last-child  { flex: 1 1 min(var(--col-min), 100%); }
 
+/* A hairline closes the KPI row off from the content below. It is painted as a
+   background in the bottom padding rather than as a border, so it can fade out
+   toward both ends with a faint brand tint at its centre. */
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(var(--col-min-sm), 100%), 1fr));
   gap: var(--gap-card);
   margin-bottom: var(--gap-card);
+  padding-bottom: var(--gap-card);
+  background: linear-gradient(
+      90deg,
+      transparent,
+      var(--border) 15%,
+      var(--brand-200) 50%,
+      var(--border) 85%,
+      transparent
+    )
+    bottom / 100% 1px no-repeat;
+}
+
+/* A KPI row inside a card (the admin dashboard's Analytics tab) already sits in
+   a bounded box; a divider there would read as a second card edge. */
+.card .kpis {
+  padding-bottom: 0;
+  background: none;
 }
 
 /* ---- Detail key-value list ---- */
@@ -4581,6 +4601,21 @@ router-outlet {
   flex-wrap: wrap;
 }
 
+/* Tabs on the start side, Refresh / Assign on the end, sitting directly on the
+   page rather than inside a card. When the row runs out of room the actions
+   wrap beneath the tabs and keep hugging the end edge. */
+.quiz-management__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem 0.75rem;
+  margin-bottom: var(--gap-card);
+}
+
+.quiz-management__toolbar > .quiz-management__row-actions {
+  margin-inline-start: auto;
+}
+
 /* ---- List rows (shared shape with the dashboard views) ------------------- */
 .list-row {
   display: flex;
@@ -6033,10 +6068,26 @@ button.list-row:hover {
   color: var(--ink-3);
 }
 
+/* The Students / Assignments tab switch sits directly on the page, not in a
+   card; it keeps the card's spacing so the panels below don't move up. */
+.teacher-dashboard-view__tabs {
+  margin-bottom: var(--gap-card);
+}
+
+/* Search + group filter. The basis is the two controls side by side
+   (2 × 13.75rem + the gap, their own `flex` basis is set further down); it is
+   a definite length on purpose, since a content-sized group gives the
+   controls' percentage basis nothing to resolve against. On a narrow card the
+   group drops below the title and shrinks to the card's width (`min-width: 0`,
+   or it spills out of the card), and the select wraps beneath the search, each
+   control then growing to the full width. */
 .teacher-dashboard-view__row-actions {
   display: inline-flex;
+  flex: 0 1 28.5rem;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .spinner-inline {

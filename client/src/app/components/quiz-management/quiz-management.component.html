@@ -134,38 +134,36 @@
     same view is reachable from the sidebar's Teaching section and is
     deep-linkable / back-button friendly.
   -->
-  <div class="card">
-    <div class="card__head">
-      <nav class="tab-switch">
-        <a class="tab-switch__btn" routerLink="assignments" routerLinkActive="is-active">
-          {{ 'quizManagement.tabs.assignments' | translate }}
-          @if (state.activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ state.activeAssignmentCount() }}</span> }
-        </a>
-        <a class="tab-switch__btn" routerLink="my-quizzes" routerLinkActive="is-active">
-          {{ 'quizManagement.tabs.myQuizzes' | translate }}
-          @if (state.myCustomQuizzes().length > 0) { <span class="badge badge--brand">{{ state.myCustomQuizzes().length }}</span> }
-        </a>
-        <a class="tab-switch__btn" routerLink="participation" routerLinkActive="is-active">
-          {{ 'quizManagement.tabs.participation' | translate }}
-        </a>
-        <a class="tab-switch__btn" routerLink="results" routerLinkActive="is-active">
-          {{ 'quizManagement.tabs.results' | translate }}
-        </a>
-        <a class="tab-switch__btn" routerLink="validation" routerLinkActive="is-active">
-          {{ 'quizManagement.tabs.validation' | translate }}
-          @if (state.pendingValidationCount() > 0) { <span class="badge badge--warning">{{ state.pendingValidationCount() }}</span> }
-        </a>
-      </nav>
-      <div class="quiz-management__row-actions">
-        <button class="btn btn--sm btn--ghost" (click)="state.refreshRecords()" [disabled]="state.isLoadingRecords()" [title]="'quizManagement.actions.refresh' | translate">
-          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          {{ 'quizManagement.actions.refresh' | translate }}
-        </button>
-        <button class="btn btn--sm btn--primary" (click)="state.openAssignmentForm('quiz')" [disabled]="state.isLoading() || state.myClasses().length === 0">
-          <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          {{ 'quizManagement.actions.assignQuiz' | translate }}
-        </button>
-      </div>
+  <div class="quiz-management__toolbar">
+    <nav class="tab-switch">
+      <a class="tab-switch__btn" routerLink="assignments" routerLinkActive="is-active">
+        {{ 'quizManagement.tabs.assignments' | translate }}
+        @if (state.activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ state.activeAssignmentCount() }}</span> }
+      </a>
+      <a class="tab-switch__btn" routerLink="my-quizzes" routerLinkActive="is-active">
+        {{ 'quizManagement.tabs.myQuizzes' | translate }}
+        @if (state.myCustomQuizzes().length > 0) { <span class="badge badge--brand">{{ state.myCustomQuizzes().length }}</span> }
+      </a>
+      <a class="tab-switch__btn" routerLink="participation" routerLinkActive="is-active">
+        {{ 'quizManagement.tabs.participation' | translate }}
+      </a>
+      <a class="tab-switch__btn" routerLink="results" routerLinkActive="is-active">
+        {{ 'quizManagement.tabs.results' | translate }}
+      </a>
+      <a class="tab-switch__btn" routerLink="validation" routerLinkActive="is-active">
+        {{ 'quizManagement.tabs.validation' | translate }}
+        @if (state.pendingValidationCount() > 0) { <span class="badge badge--warning">{{ state.pendingValidationCount() }}</span> }
+      </a>
+    </nav>
+    <div class="quiz-management__row-actions">
+      <button class="btn btn--sm btn--ghost" (click)="state.refreshRecords()" [disabled]="state.isLoadingRecords()" [title]="'quizManagement.actions.refresh' | translate">
+        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        {{ 'quizManagement.actions.refresh' | translate }}
+      </button>
+      <button class="btn btn--sm btn--primary" (click)="state.openAssignmentForm('quiz')" [disabled]="state.isLoading() || state.myClasses().length === 0">
+        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        {{ 'quizManagement.actions.assignQuiz' | translate }}
+      </button>
     </div>
   </div>
 

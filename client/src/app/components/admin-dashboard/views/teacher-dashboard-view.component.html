@@ -78,17 +78,15 @@
   }
 
   <!-- Tab switch -->
-  <div class="card">
-    <div class="card__head">
-      <div class="tab-switch" role="tablist">
-        <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'students'" (click)="activeTab.set('students')">
-          {{ 'teacherDashboard.tabs.students' | translate }}
-        </button>
-        <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'assignments'" (click)="activeTab.set('assignments')">
-          {{ 'teacherDashboard.tabs.assignments' | translate }}
-          @if (activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ activeAssignmentCount() }}</span> }
-        </button>
-      </div>
+  <div class="teacher-dashboard-view__tabs">
+    <div class="tab-switch" role="tablist">
+      <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'students'" (click)="activeTab.set('students')">
+        {{ 'teacherDashboard.tabs.students' | translate }}
+      </button>
+      <button class="tab-switch__btn" role="tab" [class.is-active]="activeTab() === 'assignments'" (click)="activeTab.set('assignments')">
+        {{ 'teacherDashboard.tabs.assignments' | translate }}
+        @if (activeAssignmentCount() > 0) { <span class="badge badge--brand">{{ activeAssignmentCount() }}</span> }
+      </button>
     </div>
   </div>
 
