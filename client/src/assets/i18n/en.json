@@ -31,9 +31,13 @@
       "alerts": "Alerts",
       "profile": "Profile"
     },
-    "myParticipations": "My Participations"
+    "myParticipations": "My Participations",
+    "username": "Username",
+    "profile": "Profile",
+    "tenant": "Tenant"
   },
   "roles": {
+    "platformAdmin": "Platform Admin",
     "applicationAdmin": "Application Admin",
     "userAdmin": "Parent Admin",
     "teacher": "Teacher",

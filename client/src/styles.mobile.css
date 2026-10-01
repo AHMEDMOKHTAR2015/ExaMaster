@@ -600,7 +600,7 @@
     min-height: 100dvh;
     padding: 2rem var(--pad-page-inline) 1.5rem;
     background-image: none;
-    background-color: var(--bg);
+  
   }
 
   .auth-frame {

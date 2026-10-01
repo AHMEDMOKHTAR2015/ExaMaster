@@ -532,22 +532,60 @@ button.nav-item:disabled:hover {
   border-top: 1px solid var(--sidebar-border);
 }
 
-.sidebar__user {
+/* Who is signed in: the avatar beside "Label: value" lines, then the account
+   actions in a centered row beneath them. */
+.sidebar__profile {
   display: flex;
   gap: 0.625rem;
   align-items: center;
-  border-radius: var(--r-md);
-  cursor: pointer;
+  margin-bottom: 0.625rem;
 }
 
 /* The avatar's own gradient is the same blue family as the sidebar now
    sits on — a thin translucent ring keeps it from blending in. */
-.sidebar__user .avatar {
+.sidebar__profile .avatar {
+  flex-shrink: 0;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
-.sidebar__user:hover {
-  background: var(--sidebar-hover-bg);
+.sidebar__user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.sidebar__user-row {
+  display: flex;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.sidebar__user-row dt {
+  flex-shrink: 0;
+  color: var(--sidebar-ink-faint);
+}
+
+.sidebar__user-row dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--sidebar-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .sidebar .btn--ghost {
@@ -2087,9 +2125,9 @@ router-outlet {
   max-width: 27.5rem;
   display: grid;
   grid-template-columns: 1fr;
-  background: var(--surface-3);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xs);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
@@ -2106,6 +2144,7 @@ router-outlet {
   padding: 2.5rem 2.5rem 2.25rem;
   color: var(--ink-on-accent);
   overflow: hidden;
+  background: var(--surface-2);
   background: repeating-linear-gradient(to top, var(--brand-700) 0%, var(--brand-200) 100%);
   clip-path: polygon(0% 0%, 88% 0%, 100% 50%, 88% 100%, 0% 100%);
 }
@@ -2318,7 +2357,7 @@ router-outlet {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background:var(--surface-3);
+  background:var(--surface-2);
   animation-name: LoginPanelFadeIn;
   animation-duration: 1s;
   animation-timing-function: cubic-bezier(0.12,0,0.39,0);
@@ -10207,6 +10246,13 @@ button.list-row:hover {
 .tbl--keys .col-actions {
   width: 10rem;
   text-align: end;
+}
+
+/* Organizations: the shared `.tbl tbody td` rule has no inline padding, so
+   body cells sat against the table's edge. Give them the headers' 1.125rem
+   so each value lines up under its column title. Actions keep their own. */
+.tbl--tenants tbody td:not(.col-actions) {
+  padding-inline: 1.125rem;
 }
 
 .key-cell {

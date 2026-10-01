@@ -176,11 +176,15 @@ export class AppComponent {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   });
 
+  /** Translation key for the sidebar's "Profile:" line. `platformAdmin` is
+   *  checked first: the vendor holds none of the school roles, so falling
+   *  through would label them a student. */
   readonly roleLabel = computed(() => {
-    if (this.isApplicationAdmin()) return 'Application Admin';
-    if (this.isUserAdmin()) return 'User Admin';
-    if (this.isTeacher()) return 'Teacher';
-    return 'Student';
+    if (this.user()?.roles?.includes('platformAdmin')) return 'roles.platformAdmin';
+    if (this.isApplicationAdmin()) return 'roles.applicationAdmin';
+    if (this.isUserAdmin()) return 'roles.userAdmin';
+    if (this.isTeacher()) return 'roles.teacher';
+    return 'roles.student';
   });
 
   async signOut(): Promise<void> {

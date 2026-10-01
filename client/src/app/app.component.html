@@ -248,22 +248,28 @@
       </nav>
 
       <div class="sidebar__footer">
-        <div class="sidebar__user">
+        <div class="sidebar__profile">
           <div class="avatar avatar--sm">{{ userInitials() }}</div>
-          <div style="min-width:0; flex:1;">
-            <div style="font-weight:600; font-size:0.8125rem; color: var(--sidebar-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ user()?.displayName }}</div>
-            <div style="font-size:0.6875rem; color: var(--sidebar-ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ roleLabel() }}</div>
+          <dl class="sidebar__user">
+            <div class="sidebar__user-row">
+              <dt>{{ 'nav.username' | translate }}:</dt>
+              <dd [title]="user()?.displayName ?? ''">{{ user()?.displayName }}</dd>
+            </div>
+            <div class="sidebar__user-row">
+              <dt>{{ 'nav.profile' | translate }}:</dt>
+              <dd [title]="roleLabel() | translate">{{ roleLabel() | translate }}</dd>
+            </div>
             <!-- Which organization this account belongs to. Hidden rather than
                  blank for the vendor's platformAdmin, who belongs to none. -->
             @if (tenantName()) {
-              <div style="display:flex; align-items:center; gap:0.25rem; margin-top:0.125rem; font-size:0.6875rem; color: var(--sidebar-ink-faint); opacity:.75; overflow:hidden;">
-                <svg viewBox="0 0 24 24" fill="none" width="11" height="11" style="flex-shrink:0;" aria-hidden="true">
-                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1M9 13h1m4 0h1M9 17h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ tenantName() }}</span>
+              <div class="sidebar__user-row">
+                <dt>{{ 'nav.tenant' | translate }}:</dt>
+                <dd [title]="tenantName()">{{ tenantName() }}</dd>
               </div>
             }
-          </div>
+          </dl>
+        </div>
+        <div class="sidebar__actions">
           <button class="btn btn--ghost btn--icon btn--sm lang-btn" (click)="lang.toggle()" [title]="'lang.switchTo' | translate" [attr.aria-label]="'lang.switchTo' | translate">
             {{ 'lang.label' | translate }}
           </button>
