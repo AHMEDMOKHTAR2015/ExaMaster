@@ -16,7 +16,9 @@ export interface AccessRequest {
   lastName: string;
   mobileNumber: string;
   contactEmail?: string;
+  /** Always asked for; absent only on a request stored before it was required. */
   schoolName?: string;
+  /** A student's request only. */
   gradeName?: string;
   parentName?: string;
   parentMobileNumber?: string;
@@ -39,8 +41,9 @@ export interface AccessRequestInput {
   lastName: string;
   mobileNumber: string;
   password: string;
+  schoolName: string;
   email?: string;
-  schoolName?: string;
+  /** Required for a student. */
   gradeName?: string;
   parentName?: string;
   parentMobileNumber?: string;

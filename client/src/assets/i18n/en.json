@@ -210,6 +210,7 @@
       "parentMobile": "Parent's mobile",
       "parentHint": "Helps us link your account to your parent's.",
       "school": "School",
+      "schoolPlaceholder": "e.g. Al Noor Language School",
       "gradePlaceholder": "e.g. Grade 4",
       "note": "Anything else we should know?",
       "notePlaceholder": "e.g. the names of your children, or your class",
@@ -221,6 +222,8 @@
       "errors": {
         "name": "Enter your first and last name.",
         "mobile": "Enter a mobile number with at least 4 digits.",
+        "school": "Enter the name of your school.",
+        "grade": "Enter the grade you are in.",
         "password": "Choose a password of at least 6 characters.",
         "passwordMismatch": "The two passwords do not match.",
         "email": "Enter a valid email address, or leave it empty.",

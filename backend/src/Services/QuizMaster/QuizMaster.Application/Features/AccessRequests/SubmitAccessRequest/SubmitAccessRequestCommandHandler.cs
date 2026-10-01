@@ -17,7 +17,7 @@ public class SubmitAccessRequestCommandHandler(Repository<AccessRequest> _reques
         if (await _requestRepository.ExistsAsync(request => request.SignInEmail == signInEmail && request.Status == AccessRequestStatus.Pending, ct))
             throw new ConflictException("A request for this mobile number is already waiting for approval.");
 
-        var hints = new AccessRequestHints(command.Email, command.SchoolName, command.GradeName, command.ParentName, command.ParentMobileNumber, command.Note);
+        var hints = new AccessRequestHints(command.SchoolName, command.Email, command.GradeName, command.ParentName, command.ParentMobileNumber, command.Note);
 
         var request = AccessRequest.Submit(command.Kind, command.FirstName, command.LastName, command.MobileNumber, signInEmail,
             _signInAccounts.HashPassword(command.Password), hints, command);

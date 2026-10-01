@@ -36,14 +36,14 @@ describe('AccessRequestService', () => {
   it("sends a parent's request without a child's hints", async () => {
     const sent = service.submit({
       kind: 'parent', firstName: ' Mona ', lastName: 'Adel', mobileNumber: '0100 123', password: 'secret1',
-      email: ' mona@example.com ', schoolName: '', gradeName: 'Grade 3', parentName: 'Someone', note: '  '
+      email: ' mona@example.com ', schoolName: ' Acme School ', gradeName: 'Grade 3', parentName: 'Someone', note: '  '
     });
 
     const request = http.expectOne(`${environment.apiUrl}/access-requests`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       kind: 'Parent', firstName: 'Mona', lastName: 'Adel', mobileNumber: '0100 123', password: 'secret1',
-      email: 'mona@example.com', schoolName: null, gradeName: null, parentName: null, parentMobileNumber: null, note: null
+      email: 'mona@example.com', schoolName: 'Acme School', gradeName: null, parentName: null, parentMobileNumber: null, note: null
     });
     request.flush({ id: 1 });
     await sent;
@@ -52,7 +52,7 @@ describe('AccessRequestService', () => {
   it("sends a child's request without a contact email", async () => {
     const sent = service.submit({
       kind: 'child', firstName: 'Omar', lastName: 'Adel', mobileNumber: '0111', password: 'secret1',
-      email: 'kid@example.com', gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100'
+      email: 'kid@example.com', schoolName: 'Acme School', gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100'
     });
 
     const request = http.expectOne(`${environment.apiUrl}/access-requests`);

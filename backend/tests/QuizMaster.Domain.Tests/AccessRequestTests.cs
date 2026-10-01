@@ -8,34 +8,50 @@ public class AccessRequestTests
     private static readonly TestAction Visitor = Action(QuizMasterActionType.SubmitAccessRequest, byUserId: 0);
 
     private static AccessRequest Parent(AccessRequestHints? hints = null)
-        => AccessRequest.Submit(AccessRequestKind.Parent, " Mona ", " Adel ", "0100 123 4567", "01001234567@MOBILE.local", "hash", hints ?? new(), Visitor);
+        => AccessRequest.Submit(AccessRequestKind.Parent, " Mona ", " Adel ", "0100 123 4567", "01001234567@MOBILE.local", "hash",
+            hints ?? new(SchoolName: "Acme School"), Visitor);
 
     private static AccessRequest Child(AccessRequestHints? hints = null)
-        => AccessRequest.Submit(AccessRequestKind.Child, "Omar", "Adel", "0111", "0111@mobile.local", "hash", hints ?? new(), Visitor);
+        => AccessRequest.Submit(AccessRequestKind.Child, "Omar", "Adel", "0111", "0111@mobile.local", "hash",
+            hints ?? new(SchoolName: "Acme School", GradeName: "Grade 3"), Visitor);
 
     [Fact]
     public void A_new_request_waits_for_a_decision()
     {
-        var request = Parent(new AccessRequestHints(ContactEmail: " Mona@Example.com ", SchoolName: "  ", Note: " Two kids "));
+        var request = Parent(new AccessRequestHints(ContactEmail: " Mona@Example.com ", SchoolName: " Acme School ", Note: " Two kids "));
 
         Assert.Equal(AccessRequestStatus.Pending, request.Status);
         Assert.Equal(("Mona", "Adel", "01001234567@mobile.local"), (request.FirstName, request.LastName, request.SignInEmail));
-        Assert.Equal(("mona@example.com", null, "Two kids"), (request.ContactEmail, request.SchoolName, request.Note));
+        Assert.Equal(("mona@example.com", "Acme School", "Two kids"), (request.ContactEmail, request.SchoolName, request.Note));
     }
 
     [Fact]
     public void Only_a_child_names_a_grade_or_a_parent()
     {
-        Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(GradeName: "Grade 3")));
-        Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(ParentMobileNumber: "0100")));
+        Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(SchoolName: "Acme", GradeName: "Grade 3")));
+        Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(SchoolName: "Acme", ParentMobileNumber: "0100")));
 
-        var child = Child(new AccessRequestHints(GradeName: "Grade 3", ParentName: "Mona Adel", ParentMobileNumber: "0100"));
+        var child = Child(new AccessRequestHints(SchoolName: "Acme", GradeName: "Grade 3", ParentName: "Mona Adel", ParentMobileNumber: "0100"));
         Assert.Equal(("Grade 3", "Mona Adel", "0100"), (child.GradeName, child.ParentName, child.ParentMobileNumber));
     }
 
     [Fact]
     public void A_child_has_no_contact_email()
-        => Assert.Throws<DomainException>(() => Child(new AccessRequestHints(ContactEmail: "kid@example.com")));
+        => Assert.Throws<DomainException>(() => Child(new AccessRequestHints(ContactEmail: "kid@example.com", SchoolName: "Acme", GradeName: "Grade 3")));
+
+    [Fact]
+    public void Everyone_names_a_school()
+    {
+        Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(SchoolName: " ")));
+        Assert.Throws<DomainException>(() => Child(new AccessRequestHints(SchoolName: "", GradeName: "Grade 3")));
+    }
+
+    [Fact]
+    public void A_student_names_a_grade()
+    {
+        Assert.Throws<DomainException>(() => Child(new AccessRequestHints(SchoolName: "Acme")));
+        Assert.Null(Parent().GradeName);                         // a parent has none to give
+    }
 
     [Fact]
     public void Approving_records_the_organization_the_account_and_who_decided()

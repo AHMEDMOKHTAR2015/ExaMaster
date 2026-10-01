@@ -23,7 +23,7 @@ public class AccessRequestEntityConfiguration : AuditedEntityConfiguration<Acces
         builder.Property(e => e.SignInEmail).HasMaxLength(MaxLength.C256).IsRequired();
         builder.Property(e => e.PasswordHash).HasMaxLength(MaxLength.C256).IsRequired();
         builder.Property(e => e.ContactEmail).HasMaxLength(MaxLength.C256);
-        builder.Property(e => e.SchoolName).HasMaxLength(MaxLength.C128);
+        builder.Property(e => e.SchoolName).HasMaxLength(MaxLength.C128).IsRequired();
         builder.Property(e => e.GradeName).HasMaxLength(MaxLength.C128);
         builder.Property(e => e.ParentName).HasMaxLength(MaxLength.C256);
         builder.Property(e => e.ParentMobileNumber).HasMaxLength(MaxLength.C32);

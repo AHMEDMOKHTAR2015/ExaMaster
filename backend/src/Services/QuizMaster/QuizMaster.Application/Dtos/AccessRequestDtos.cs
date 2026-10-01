@@ -8,7 +8,7 @@ public record AccessRequestDto(
     string LastName,
     string MobileNumber,
     string? ContactEmail,
-    string? SchoolName,
+    string SchoolName,
     string? GradeName,
     string? ParentName,
     string? ParentMobileNumber,

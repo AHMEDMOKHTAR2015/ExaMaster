@@ -2,6 +2,9 @@ namespace QuizMaster.Domain.AccessRequests;
 
 public partial class AccessRequest
 {
+    public const string SchoolRequiredMessage = "Enter the name of your school.";
+    public const string GradeRequiredMessage = "Enter the grade you are in.";
+
     public static AccessRequest Submit(
         AccessRequestKind kind, string firstName, string lastName, string mobileNumber, string signInEmail, string passwordHash,
         AccessRequestHints hints, IQuizMasterAction action)
@@ -21,6 +24,13 @@ public partial class AccessRequest
         if (isChild && hints.ContactEmail is not null)
             throw new DomainException("A child's request carries no contact email.");
 
+        //insight - required although never matched against anything: without them the reviewer has no way to tell which
+        // organization (and, for a student, which class) the request belongs in
+        if (string.IsNullOrWhiteSpace(hints.SchoolName))
+            throw new DomainException(SchoolRequiredMessage);
+        if (isChild && string.IsNullOrWhiteSpace(hints.GradeName))
+            throw new DomainException(GradeRequiredMessage);
+
         return new AccessRequest
         {
             Kind = kind,
@@ -30,7 +40,7 @@ public partial class AccessRequest
             SignInEmail = signInEmail.Trim().ToLowerInvariant(),
             PasswordHash = passwordHash,
             ContactEmail = Clean(hints.ContactEmail)?.ToLowerInvariant(),
-            SchoolName = Clean(hints.SchoolName),
+            SchoolName = hints.SchoolName.Trim(),
             GradeName = Clean(hints.GradeName),
             ParentName = Clean(hints.ParentName),
             ParentMobileNumber = Clean(hints.ParentMobileNumber),
@@ -83,5 +93,5 @@ public partial class AccessRequest
 
 // What the visitor said about themselves that only a person can act on.
 public sealed record AccessRequestHints(
-    string? ContactEmail = null, string? SchoolName = null, string? GradeName = null,
+    string SchoolName, string? ContactEmail = null, string? GradeName = null,
     string? ParentName = null, string? ParentMobileNumber = null, string? Note = null);

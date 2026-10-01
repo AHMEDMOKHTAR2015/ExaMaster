@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuizMaster.Persistence;
 
@@ -12,9 +13,11 @@ using QuizMaster.Persistence;
 namespace QuizMaster.Persistence.Migrations
 {
     [DbContext(typeof(QuizMasterDbContext))]
-    partial class QuizMasterDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261001125442_AccessRequestSchoolRequired")]
+    partial class AccessRequestSchoolRequired
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

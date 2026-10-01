@@ -11,8 +11,8 @@ public record SubmitAccessRequestCommand(
     string LastName,
     string MobileNumber,
     string Password,
+    string SchoolName,
     string? Email = null,
-    string? SchoolName = null,
     string? GradeName = null,
     string? ParentName = null,
     string? ParentMobileNumber = null,
@@ -35,10 +35,14 @@ public class SubmitAccessRequestCommandValidator : AbstractValidator<SubmitAcces
             .When(c => !string.IsNullOrWhiteSpace(c.Email));
         RuleFor(c => c.Email).Empty().WithMessage("A child's request carries no email.")
             .When(c => c.Kind == AccessRequestKind.Child);
-        RuleFor(c => c.SchoolName).MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.SchoolName));
+        // free text, never matched against an organization: it tells the reviewer where to look
+        RuleFor(c => c.SchoolName).Must(name => !string.IsNullOrWhiteSpace(name)).WithMessage(AccessRequest.SchoolRequiredMessage)
+            .MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.SchoolName));
         RuleFor(c => c.Note).MaximumLengthWithMessage(MaxLength.C1024, nameof(SubmitAccessRequestCommand.Note));
 
         RuleFor(c => c.GradeName).MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.GradeName));
+        RuleFor(c => c.GradeName).Must(grade => !string.IsNullOrWhiteSpace(grade)).WithMessage(AccessRequest.GradeRequiredMessage)
+            .When(c => c.Kind == AccessRequestKind.Child);
         RuleFor(c => c.ParentName).MaximumLengthWithMessage(MaxLength.C256, nameof(SubmitAccessRequestCommand.ParentName));
         RuleFor(c => c.ParentMobileNumber).MaximumLengthWithMessage(MaxLength.C32, nameof(SubmitAccessRequestCommand.ParentMobileNumber));
         RuleFor(c => new { c.GradeName, c.ParentName, c.ParentMobileNumber })

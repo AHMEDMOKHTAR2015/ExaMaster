@@ -2719,6 +2719,7 @@ router-outlet {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
+      padding: 0.6rem;
 }
 
 .auth-kind__option {

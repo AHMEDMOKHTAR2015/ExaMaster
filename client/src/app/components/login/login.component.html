@@ -298,6 +298,23 @@
 
                 <div class="auth-form__pair">
                   <div class="field">
+                    <label class="field__label" for="req-school">{{ 'auth.requestAccess.school' | translate }}</label>
+                    <input id="req-school" class="input input--full" name="schoolName" autocomplete="organization" required
+                           [placeholder]="'auth.requestAccess.schoolPlaceholder' | translate"
+                           [ngModel]="request().schoolName" (ngModelChange)="setRequestField('schoolName', $event)" [disabled]="isSubmittingRequest()" />
+                  </div>
+                  @if (requestKind() === 'child') {
+                    <div class="field">
+                      <label class="field__label" for="req-grade">{{ 'common.grade' | translate }}</label>
+                      <input id="req-grade" class="input input--full" name="gradeName" autocomplete="off" required
+                             [placeholder]="'auth.requestAccess.gradePlaceholder' | translate"
+                             [ngModel]="request().gradeName" (ngModelChange)="setRequestField('gradeName', $event)" [disabled]="isSubmittingRequest()" />
+                    </div>
+                  }
+                </div>
+
+                <div class="auth-form__pair">
+                  <div class="field">
                     <label class="field__label" for="req-password">{{ 'auth.fields.password' | translate }}</label>
                     <div class="input-wrap">
                       <input id="req-password" class="input input--full input--trailing" name="password" autocomplete="new-password" required minlength="6"
@@ -351,26 +368,6 @@
                   </div>
                   <p class="field__hint auth-form__note">{{ 'auth.requestAccess.parentHint' | translate }}</p>
                 }
-
-                <div class="auth-form__pair">
-                  <div class="field">
-                    <label class="field__label" for="req-school">
-                      {{ 'auth.requestAccess.school' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
-                    </label>
-                    <input id="req-school" class="input input--full" name="schoolName" autocomplete="organization"
-                           [ngModel]="request().schoolName" (ngModelChange)="setRequestField('schoolName', $event)" [disabled]="isSubmittingRequest()" />
-                  </div>
-                  @if (requestKind() === 'child') {
-                    <div class="field">
-                      <label class="field__label" for="req-grade">
-                        {{ 'common.grade' | translate }} <span class="field__optional">{{ 'auth.requestAccess.optional' | translate }}</span>
-                      </label>
-                      <input id="req-grade" class="input input--full" name="gradeName" autocomplete="off"
-                             [placeholder]="'auth.requestAccess.gradePlaceholder' | translate"
-                             [ngModel]="request().gradeName" (ngModelChange)="setRequestField('gradeName', $event)" [disabled]="isSubmittingRequest()" />
-                    </div>
-                  }
-                </div>
 
                 <div class="field">
                   <label class="field__label" for="req-note">

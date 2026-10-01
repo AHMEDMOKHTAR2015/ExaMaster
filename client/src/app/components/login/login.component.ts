@@ -180,6 +180,8 @@ export class LoginComponent extends BaseComponent {
     const form = this.request();
     if (!form.firstName.trim() || !form.lastName.trim()) return 'auth.requestAccess.errors.name';
     if (form.mobileNumber.replace(/\D/g, '').length < MIN_MOBILE_DIGITS) return 'auth.requestAccess.errors.mobile';
+    if (!form.schoolName?.trim()) return 'auth.requestAccess.errors.school';
+    if (this.requestKind() === 'child' && !form.gradeName?.trim()) return 'auth.requestAccess.errors.grade';
     if (form.password.length < MIN_PASSWORD_LENGTH) return 'auth.requestAccess.errors.password';
     if (form.password !== form.confirmPassword) return 'auth.requestAccess.errors.passwordMismatch';
     if (this.requestKind() === 'parent' && form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {

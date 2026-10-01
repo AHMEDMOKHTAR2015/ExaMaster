@@ -22,10 +22,12 @@ public partial class AccessRequest : AggregateRoot
     // the password they picked and nobody else ever learns it.
     public string PasswordHash { get; private set; } = null!;
 
-    // Hints for the reviewer: free text, never checked against anything.
+    // Hints for the reviewer: free text, never checked against anything. Every request names a school; a child's also
+    // names a grade, which is why GradeName stays nullable (a parent's request has none). Requests stored before the
+    // school was required carry an empty one.
     public string? ContactEmail { get; private set; }            // a parent's
-    public string? SchoolName { get; private set; }
-    public string? GradeName { get; private set; }               // a child's
+    public string SchoolName { get; private set; } = null!;
+    public string? GradeName { get; private set; }               // a child's; required for one
     public string? ParentName { get; private set; }              // a child's
     public string? ParentMobileNumber { get; private set; }      // a child's
     public string? Note { get; private set; }
