@@ -393,6 +393,10 @@
                   <button class="btn btn--sm btn--ghost" (click)="addBuilderOption(q.id)" [disabled]="isSavingQuiz() || q.options.length >= 6">{{ 'quizManagement.builder.addOption' | translate }}</button>
                 }
               }
+              @if (builderSubjectTags().length > 0) {
+                <app-tag-toggle-list [tags]="builderSubjectTags()" [selected]="q.tagIds" [label]="'tags.label' | translate"
+                                     (selectedChange)="updateBuilderQuestionTags(q.id, $event)" />
+              }
             </div>
           } @empty {
             <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.noQuestions' | translate }}</div></div>

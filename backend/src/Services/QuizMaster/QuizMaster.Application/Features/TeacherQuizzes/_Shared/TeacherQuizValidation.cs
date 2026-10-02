@@ -27,12 +27,29 @@ public static class TeacherQuizValidation
         validator.RuleForEach(c => c.Questions).SetValidator(new QuestionDraftDtoValidator());
     }
 
-    public static IReadOnlyList<AuthoredQuestion> AuthorQuestions(this ITeacherQuizInput input)
-        => AuthoredQuestion.FromAll(input.Questions.Select(question => question.ToDraft()).ToList());
+    // Each question with the tags of the quiz's subject it was given (none when TagIds is null).
+    public static IReadOnlyList<TaggedQuestion> AuthorQuestions(this ITeacherQuizInput input, Subject subject)
+    {
+        var authored = AuthoredQuestion.FromAll(input.Questions.Select(question => question.ToDraft()).ToList());
+        return authored.Select((question, i) =>
+        {
+            try
+            {
+                return new TaggedQuestion(question, subject.TagsFor(input.Questions[i].TagIds ?? []));
+            }
+            catch (DomainException ex)
+            {
+                throw new DomainException($"Question {i + 1}: {ex.Message}", ex);
+            }
+        }).ToList();
+    }
 }
 
 public class QuestionDraftDtoValidator : AbstractValidator<QuestionDraftDto>
 {
     public QuestionDraftDtoValidator()
-        => this.AddQuestionContentRules(q => q.Type, q => q.Text, q => q.Options, q => q.SubjectHtml, q => q.ReferenceAnswer);
+    {
+        this.AddQuestionContentRules(q => q.Type, q => q.Text, q => q.Options, q => q.SubjectHtml, q => q.ReferenceAnswer);
+        this.AddQuestionTagRules(q => q.TagIds);
+    }
 }

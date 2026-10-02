@@ -17,6 +17,8 @@ public class SearchQuestionsQueryHandler(Repository<Question> _questionRepositor
             questions = questions.Where(question => question.GradeId == gradeId);
         if (query.Semester is { } semester)
             questions = questions.Where(question => question.Semester == semester);
+        if (query.TagId is { } tagId)
+            questions = questions.Where(question => question.TagIds.Contains(tagId));
         if (!string.IsNullOrWhiteSpace(query.Search))
             questions = questions.Where(question => EF.Functions.Like(question.Name, $"%{query.Search.Trim()}%"));
 

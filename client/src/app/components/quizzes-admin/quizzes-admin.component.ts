@@ -25,10 +25,11 @@ import {
   plainTextFromHtml, validateExplainAuthoring
 } from '../../shared/explain-question';
 import { RichTextEditorComponent } from '../../shared/rich-text-editor/rich-text-editor.component';
+import { TagToggleListComponent } from '../../shared/tag-toggle-list/tag-toggle-list.component';
 import { HomeworkService } from '../../services/homework.service';
 import { TeacherQuizService } from '../../services/teacher-quiz.service';
 import { NotificationService } from '../../services/notification.service';
-import { Stage, ClassGroup, Subject, Grade, QuizConfig, HomeworkAssignment, AssignmentKind, ParticipationRecord, DEFAULT_QUESTION_DURATION_SECONDS } from '../../models';
+import { Stage, ClassGroup, Subject, SubjectTag, Grade, QuizConfig, HomeworkAssignment, AssignmentKind, ParticipationRecord, DEFAULT_QUESTION_DURATION_SECONDS } from '../../models';
 import { QuizIllustrationComponent } from './quiz-illustration.component';
 import { parseBulkQuestionsJson, BulkUploadQuestionInput, BULK_UPLOAD_SAMPLE } from '../../shared/bulk-question-upload';
 import { PagedList } from '../../shared/paged-list';
@@ -51,7 +52,7 @@ interface QuestionRow {
   selector: 'app-quizzes-admin',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, QuizIllustrationComponent, RichTextEditorComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, QuizIllustrationComponent, RichTextEditorComponent, TagToggleListComponent],
   templateUrl: './quizzes-admin.component.html',
 })
 export class QuizzesAdminComponent {
@@ -259,6 +260,11 @@ export class QuizzesAdminComponent {
   readonly questionFilterSubjectId = signal<string>('');
   readonly questionFilterStageId = signal<string>('');
   readonly questionFilterGradeId = signal<string>('');
+  /** A tag of the filtered subject; offered only once a subject is chosen. */
+  readonly questionFilterTagId = signal<string>('');
+
+  /** Tags of the subject the bank is filtered by. */
+  readonly questionFilterTags = computed(() => this.subjectTags(this.questionFilterSubjectId()));
 
   /** Free text, matched against the loaded page only — see `visibleQuestionRows`. */
   readonly questionSearchQuery = signal<string>('');
@@ -288,7 +294,7 @@ export class QuizzesAdminComponent {
   );
 
   readonly hasQuestionFilters = computed(() =>
-    !!this.questionFilterSubjectId() || !!this.questionFilterStageId() || !!this.questionFilterGradeId()
+    !!this.questionFilterSubjectId() || !!this.questionFilterStageId() || !!this.questionFilterGradeId() || !!this.questionFilterTagId()
   );
 
   /** Grades belonging to the selected stage, so the two filters can't contradict. */
@@ -414,6 +420,9 @@ export class QuizzesAdminComponent {
   readonly questionFormStageId = signal<string>('');
   readonly questionFormGradeId = signal<string>('');
   readonly questionFormSemester = signal<QuestionSemester | ''>('');
+  /** Tags of the chosen subject; cleared when the subject changes. */
+  readonly questionFormTagIds = signal<string[]>([]);
+  readonly questionFormSubjectTags = computed(() => this.subjectTags(this.questionFormSubjectId()));
   readonly showQuestionForm = signal<boolean>(false);
 
   /** Grades belonging to the question form's currently-selected stage. */
@@ -433,9 +442,21 @@ export class QuizzesAdminComponent {
   readonly bulkEditSemester = signal<QuestionSemester | ''>('');
   readonly isBulkUpdating = signal<boolean>(false);
 
+  /**
+   * Tags to add to / remove from every selected question, all of one subject: the new subject when the edit moves
+   * the questions, otherwise the one picked here (preset to the selection's own subject when they share one).
+   */
+  readonly bulkEditTagSubjectId = signal<string>('');
+  /** Opened from "Edit Tags": the dialog shows the tags section alone. */
+  readonly bulkEditTagsOnly = signal<boolean>(false);
+  readonly bulkEditAddTagIds = signal<string[]>([]);
+  readonly bulkEditRemoveTagIds = signal<string[]>([]);
+  readonly bulkEditTags = computed(() => this.subjectTags(this.bulkEditSubjectId() || this.bulkEditTagSubjectId()));
+
   /** At least one field must be armed before the edit can be applied. */
   readonly bulkEditHasChanges = computed<boolean>(() =>
     !!this.bulkEditStageId() || !!this.bulkEditSubjectId() || !!this.bulkEditSemester()
+    || this.bulkEditAddTagIds().length > 0 || this.bulkEditRemoveTagIds().length > 0
   );
 
   /** Human-readable preview of exactly what "Apply" will change. */
@@ -444,6 +465,9 @@ export class QuizzesAdminComponent {
     if (this.bulkEditStageId()) parts.push(`Stage → ${this.getStageName(this.bulkEditStageId())}`);
     if (this.bulkEditSubjectId()) parts.push(`Subject → ${this.getSubjectName(this.bulkEditSubjectId())}`);
     if (this.bulkEditSemester()) parts.push(`Semester → ${this.getSemesterLabel(this.bulkEditSemester())}`);
+    const tagNames = (ids: string[]) => ids.map(id => this.bulkEditTags().find(tag => tag.id === id)?.name ?? id).join(', ');
+    if (this.bulkEditAddTagIds().length) parts.push(`+ ${tagNames(this.bulkEditAddTagIds())}`);
+    if (this.bulkEditRemoveTagIds().length) parts.push(`− ${tagNames(this.bulkEditRemoveTagIds())}`);
     return parts.join('  ·  ');
   });
 
@@ -972,7 +996,8 @@ export class QuizzesAdminComponent {
     return {
       subjectId: this.questionFilterSubjectId() || undefined,
       stageId: this.questionFilterStageId() || undefined,
-      gradeId: this.questionFilterGradeId() || undefined
+      gradeId: this.questionFilterGradeId() || undefined,
+      tagId: this.questionFilterTagId() || undefined
     };
   }
 
@@ -1019,8 +1044,12 @@ export class QuizzesAdminComponent {
     await this.loadQuestionsPage(1);
   }
 
-  onQuestionFilterChange(field: 'subject' | 'stage' | 'grade', value: string): void {
-    if (field === 'subject') this.questionFilterSubjectId.set(value);
+  onQuestionFilterChange(field: 'subject' | 'stage' | 'grade' | 'tag', value: string): void {
+    if (field === 'subject') {
+      this.questionFilterSubjectId.set(value);
+      this.questionFilterTagId.set('');                    // tags belong to one subject
+    }
+    if (field === 'tag') this.questionFilterTagId.set(value);
     if (field === 'stage') {
       this.questionFilterStageId.set(value);
       // A grade belongs to exactly one stage, so a stale grade would filter to
@@ -1038,6 +1067,7 @@ export class QuizzesAdminComponent {
     this.questionFilterSubjectId.set('');
     this.questionFilterStageId.set('');
     this.questionFilterGradeId.set('');
+    this.questionFilterTagId.set('');
     this.questionSearchQuery.set('');
     void this.reloadQuestionsBank();
   }
@@ -1322,6 +1352,7 @@ export class QuizzesAdminComponent {
     this.questionFormStageId.set('');
     this.questionFormGradeId.set('');
     this.questionFormSemester.set('');
+    this.questionFormTagIds.set([]);
     this.showQuestionForm.set(true);
   }
 
@@ -1395,6 +1426,7 @@ export class QuizzesAdminComponent {
     this.questionFormStageId.set(question.stageId ?? '');
     this.questionFormGradeId.set(question.gradeId ?? '');
     this.questionFormSemester.set(question.semester ?? '');
+    this.questionFormTagIds.set([...(question.tagIds ?? [])]);
     this.questionFormCompleteText.set('');
     this.questionFormCompleteError.set('');
     this.resetTypeSpecificFields();
@@ -1439,6 +1471,24 @@ export class QuizzesAdminComponent {
     this.questionFormStageId.set('');
     this.questionFormGradeId.set('');
     this.questionFormSemester.set('');
+    this.questionFormTagIds.set([]);
+  }
+
+  /** Subject select in the question form. Tags belong to one subject, so a new subject starts untagged. */
+  onQuestionFormSubjectChange(subjectId: string): void {
+    if (subjectId !== this.questionFormSubjectId()) this.questionFormTagIds.set([]);
+    this.questionFormSubjectId.set(subjectId);
+  }
+
+  /** A subject's tags (none for no subject). */
+  subjectTags(subjectId: string | undefined): SubjectTag[] {
+    return (subjectId && this.subjects().find(s => s.id === subjectId)?.tags) || [];
+  }
+
+  /** The names of a question's tags, for the bank's rows. */
+  questionTagNames(question: QuestionAdminItem): string[] {
+    const tags = this.subjectTags(question.subjectId);
+    return (question.tagIds ?? []).map(id => tags.find(tag => tag.id === id)?.name).filter((name): name is string => !!name);
   }
 
   addOption(): void {
@@ -1489,7 +1539,8 @@ export class QuizzesAdminComponent {
       ...(subjectId ? { subjectId } : {}),
       ...(stageId ? { stageId } : {}),
       ...(gradeId ? { gradeId } : {}),
-      ...(semester ? { semester: semester as QuestionSemester } : {})
+      ...(semester ? { semester: semester as QuestionSemester } : {}),
+      tagIds: subjectId ? this.questionFormTagIds() : []
     };
 
     if (typeId === QUESTION_TYPE.COMPLETE) {
@@ -1649,11 +1700,45 @@ export class QuizzesAdminComponent {
 
   // ---- Bulk edit Stage / Subject / Semester ------------------------------
 
-  /** Open the bulk-edit dialog for the current selection (no-op if empty). */
-  openBulkEdit(): void {
+  /** Open the bulk-edit dialog for the current selection (no-op if empty); `tagsOnly` shows just the tags. */
+  openBulkEdit(tagsOnly = false): void {
     if (this.selectedQuestionIds().length === 0) return;
     this.resetBulkEditFields();
+    this.bulkEditTagsOnly.set(tagsOnly);
+    this.bulkEditTagSubjectId.set(this.selectionSubjectId() || this.questionFilterSubjectId());
     this.showBulkEditForm.set(true);
+  }
+
+  /** The subject every selected question shares, as far as the loaded rows tell; '' when they differ or are unknown. */
+  private selectionSubjectId(): string {
+    const known = new Map([...this.allQuestions(), ...this.questionPageItems()].map(q => [q.id, q.subjectId ?? '']));
+    const subjects = new Set(this.selectedQuestionIds().map(id => known.get(id)));
+    const [only] = [...subjects];
+    return subjects.size === 1 && only ? only : '';
+  }
+
+  /** A different subject offers different tags, so the tag choices start over. */
+  onBulkEditSubjectChange(subjectId: string): void {
+    this.bulkEditSubjectId.set(subjectId);
+    this.bulkEditAddTagIds.set([]);
+    this.bulkEditRemoveTagIds.set([]);
+  }
+
+  onBulkEditTagSubjectChange(subjectId: string): void {
+    this.bulkEditTagSubjectId.set(subjectId);
+    this.bulkEditAddTagIds.set([]);
+    this.bulkEditRemoveTagIds.set([]);
+  }
+
+  /** A tag is either added or removed, never both. */
+  setBulkEditAddTags(ids: string[]): void {
+    this.bulkEditAddTagIds.set(ids);
+    this.bulkEditRemoveTagIds.update(removed => removed.filter(id => !ids.includes(id)));
+  }
+
+  setBulkEditRemoveTags(ids: string[]): void {
+    this.bulkEditRemoveTagIds.set(ids);
+    this.bulkEditAddTagIds.update(added => added.filter(id => !ids.includes(id)));
   }
 
   cancelBulkEdit(): void {
@@ -1665,6 +1750,9 @@ export class QuizzesAdminComponent {
     this.bulkEditStageId.set('');
     this.bulkEditSubjectId.set('');
     this.bulkEditSemester.set('');
+    this.bulkEditTagSubjectId.set('');
+    this.bulkEditAddTagIds.set([]);
+    this.bulkEditRemoveTagIds.set([]);
   }
 
   /**
@@ -1682,16 +1770,21 @@ export class QuizzesAdminComponent {
     const semester = this.bulkEditSemester();
     if (semester) patch.semester = semester;
 
+    const [addTagIds, removeTagIds] = [this.bulkEditAddTagIds(), this.bulkEditRemoveTagIds()];
+
     this.isBulkUpdating.set(true);
     try {
-      const count = await this.quizAdminService.bulkUpdateQuestionFields(ids, patch);
+      // Reclassify first: moving to another subject drops the old subject's tags, and the new ones are then added.
+      let count = Object.keys(patch).length > 0 ? await this.quizAdminService.bulkUpdateQuestionFields(ids, patch) : 0;
+      if (addTagIds.length > 0 || removeTagIds.length > 0)
+        count = await this.quizAdminService.retagQuestions(ids, addTagIds, removeTagIds);
       this.notification.success(`Updated ${count} question${count === 1 ? '' : 's'}.`);
       this.showBulkEditForm.set(false);
       this.resetBulkEditFields();
       this.selectedQuestionIds.set([]);
       await this.refreshQuestions();
     } catch (error) {
-      this.notification.error('Failed to update questions. Please try again.');
+      this.notification.error(error instanceof ServiceError ? error.message : 'Failed to update questions. Please try again.');
       console.error(error);
     } finally {
       this.isBulkUpdating.set(false);

@@ -1,5 +1,5 @@
 import { ServiceError } from '../../services/shared/service-error';
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -12,8 +12,10 @@ import {
   AppUserService
 } from '../../services/admin';
 import { NotificationService } from '../../services/notification.service';
+import { QuizAdminService } from '../../services/admin/quizzes/quiz-admin.service';
+import { TeacherQuizService } from '../../services/teacher-quiz.service';
 import { PagedList } from '../../shared/paged-list';
-import { Subject, ClassGroup, Teacher, Stage, User } from '../../models';
+import { Subject, SubjectTag, ClassGroup, Teacher, Stage, User } from '../../models';
 import { parseSubjectsJson, SUBJECT_IMPORT_SAMPLE, ParsedSubjectInput } from '../../shared/subject-import';
 
 @Component({
@@ -30,6 +32,8 @@ export class SubjectsAdminComponent {
   private readonly stageService = inject(StageService);
   private readonly userService = inject(AppUserService);
   private readonly notification = inject(NotificationService);
+  private readonly quizAdminService = inject(QuizAdminService);
+  private readonly teacherQuizService = inject(TeacherQuizService);
 
   /**
    * Every subject — the source for id allocation and the JSON import, both of
@@ -64,8 +68,14 @@ export class SubjectsAdminComponent {
 
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
-  readonly form = signal<{ id: string; name: string; color: string }>({ id: '', name: '', color: '' });
+  readonly form = signal<{ id: string; name: string; color: string; tags: SubjectTag[] }>({ id: '', name: '', color: '', tags: [] });
+  /** The "add a tag" box under the tag list. */
+  readonly newTagName = signal('');
   readonly detailsSubject = signal<Subject | null>(null);
+  /** Bank questions in the subject shown in Details; null while it loads (or if it could not be read). */
+  readonly detailQuestionCount = signal<number | null>(null);
+  /** Questions inside teachers' own quizzes in that subject; null while it loads (or if it could not be read). */
+  readonly detailTeacherQuizQuestionCount = signal<number | null>(null);
 
   // ---- Import JSON ------------------------------------------------------
   readonly showImportForm = signal(false);
@@ -238,14 +248,16 @@ export class SubjectsAdminComponent {
    */
   async openForm(): Promise<void> {
     this.editingId.set(null);
-    this.form.set({ id: '', name: '', color: '' });
+    this.form.set({ id: '', name: '', color: '', tags: [] });
+    this.newTagName.set('');
     this.showForm.set(true);
     await this.ensureAllSubjectsLoaded();
     this.form.update(f => ({ ...f, id: this.getNextId() }));
   }
   edit(s: Subject): void {
     this.editingId.set(s.id);
-    this.form.set({ id: s.id, name: s.name, color: s.color ?? '' });
+    this.form.set({ id: s.id, name: s.name, color: s.color ?? '', tags: (s.tags ?? []).map(tag => ({ ...tag })) });
+    this.newTagName.set('');
     this.showForm.set(true);
   }
   closeForm(): void {
@@ -254,6 +266,23 @@ export class SubjectsAdminComponent {
   }
   openDetails(s: Subject): void {
     this.detailsSubject.set(s);
+    void this.loadDetailCount(s.id, this.detailQuestionCount, () => this.quizAdminService.countQuestions({ subjectId: s.id }));
+    void this.loadDetailCount(s.id, this.detailTeacherQuizQuestionCount, () => this.teacherQuizService.countQuestionsInSubject(s.id));
+  }
+
+  /**
+   * One of the popup's question counts, both counted by the API (the bank's total; every teacher quiz's question
+   * count), so neither depends on what a page holds. A failed count stays "…" rather than showing a wrong 0.
+   */
+  private async loadDetailCount(subjectId: string, target: WritableSignal<number | null>, count: () => Promise<number>): Promise<void> {
+    target.set(null);
+    try {
+      const value = await count();
+      // the popup may have moved on to another subject while this was loading
+      if (this.detailsSubject()?.id === subjectId) target.set(value);
+    } catch (e) {
+      console.error(e);
+    }
   }
   closeDetails(): void {
     this.detailsSubject.set(null);
@@ -262,12 +291,36 @@ export class SubjectsAdminComponent {
     this.form.update(f => ({ ...f, [key]: value }));
   }
 
+  // ---- Tags: renaming keeps a tag's id, so the questions tagged with it stay tagged --------------------
+
+  /** Adds the typed tag, unless the subject already has one by that name (in any case). */
+  addTag(): void {
+    const name = this.newTagName().trim();
+    if (!name) return;
+    if (this.form().tags.some(tag => tag.name.trim().toLowerCase() === name.toLowerCase())) {
+      this.notification.warning('This subject already has that tag.');
+      return;
+    }
+    this.form.update(f => ({ ...f, tags: [...f.tags, { id: '', name }] }));
+    this.newTagName.set('');
+  }
+
+  renameTag(index: number, name: string): void {
+    this.form.update(f => ({ ...f, tags: f.tags.map((tag, i) => i === index ? { ...tag, name } : tag) }));
+  }
+
+  /** Removing a saved tag also takes it off every question carrying it, once the subject is saved. */
+  removeTag(index: number): void {
+    this.form.update(f => ({ ...f, tags: f.tags.filter((_, i) => i !== index) }));
+  }
+
   async save(): Promise<void> {
     const f = this.form();
     const subject: Subject = {
       id: f.id.trim(),
       name: f.name.trim(),
-      color: f.color.trim() || undefined
+      color: f.color.trim() || undefined,
+      tags: f.tags.map(tag => ({ id: tag.id, name: tag.name.trim() })).filter(tag => tag.name)
     };
     if (!subject.id || !subject.name) {
       this.notification.warning('Subject name is required.');
@@ -280,7 +333,7 @@ export class SubjectsAdminComponent {
       this.closeForm();
       await this.loadAll();
     } catch (e) {
-      this.notification.error('Failed to save subject.');
+      this.notification.error(e instanceof ServiceError ? e.message : 'Failed to save subject.');
       console.error(e);
     }
   }

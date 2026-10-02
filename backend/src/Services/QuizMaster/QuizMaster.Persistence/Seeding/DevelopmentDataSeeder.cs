@@ -43,8 +43,9 @@ public static class DevelopmentDataSeeder
         db.Users.AddRange(admin, teacher, parent, student, classmate);
 
         // ---- school structure ----
-        var science = InTenant(Subject.Create("Science", "#2E7D32", system));
-        var math = InTenant(Subject.Create("Math", "#1565C0", system));
+        var science = InTenant(Subject.Create("Science", "#2E7D32",
+            [new(null, "Space"), new(null, "Matter"), new(null, "Living things")], system));
+        var math = InTenant(Subject.Create("Math", "#1565C0", [new(null, "Fractions"), new(null, "Geometry")], system));
         var primary = InTenant(Stage.Create("Primary", 1, system));
         db.AddRange(science, math, primary);
         await db.SaveChangesAsync(ct);
@@ -63,17 +64,18 @@ public static class DevelopmentDataSeeder
         student.LinkToParent(parent, system);
         classmate.PlaceInClass(class4A, system);
 
-        // ---- question bank: one question of each type ----
+        // ---- question bank: one question of each type, each tagged with a topic of its subject ----
         var classification = new QuestionClassification(science.Id, primary.Id, grade4.Id, Semester.First);
+        QuestionTags ScienceTag(string name) => science.TagsFor([science.Tags.Single(tag => tag.Name == name).Id]);
         var questions = new[]
         {
-            new QuestionDraft(QuestionType.Choose, "Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"], CorrectOption: 1),
-            new QuestionDraft(QuestionType.RightWrong, "Water boils at 100 °C at sea level.", IsRight: true),
-            new QuestionDraft(QuestionType.Complete, "Plants make their food by photosynthesis(Complete) using the energy of light(Complete)."),
-            new QuestionDraft(QuestionType.Explain, SubjectHtml: "<p>Explain why the Earth has <b>seasons</b>.</p>",
+            (new QuestionDraft(QuestionType.Choose, "Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"], CorrectOption: 1), "Space"),
+            (new QuestionDraft(QuestionType.RightWrong, "Water boils at 100 °C at sea level.", IsRight: true), "Matter"),
+            (new QuestionDraft(QuestionType.Complete, "Plants make their food by photosynthesis(Complete) using the energy of light(Complete)."), "Living things"),
+            (new QuestionDraft(QuestionType.Explain, SubjectHtml: "<p>Explain why the Earth has <b>seasons</b>.</p>",
                 ReferenceAnswer: "<p>The Earth's axis is tilted, so each hemisphere receives more direct sunlight for part of the year.</p>",
-                WeightPercent: 20)
-        }.Select(draft => InTenant(Question.Create(AuthoredQuestion.From(draft), classification, system))).ToList();
+                WeightPercent: 20), "Space")
+        }.Select(seed => InTenant(Question.Create(AuthoredQuestion.From(seed.Item1), classification, ScienceTag(seed.Item2), system))).ToList();
         db.Questions.AddRange(questions);
         await db.SaveChangesAsync(ct);
 
@@ -91,7 +93,7 @@ public static class DevelopmentDataSeeder
             [
                 new QuestionDraft(QuestionType.Choose, "What gas do plants take in?", ["Oxygen", "Carbon dioxide", "Nitrogen"], CorrectOption: 2),
                 new QuestionDraft(QuestionType.RightWrong, "The Moon makes its own light.", IsRight: false)
-            ]), asTeacher));
+            ]).Zip([ScienceTag("Living things"), ScienceTag("Space")], (question, tags) => new TaggedQuestion(question, tags)).ToList(), asTeacher));
         db.TeacherQuizzes.Add(teacherQuiz);
         await db.SaveChangesAsync(ct);
 

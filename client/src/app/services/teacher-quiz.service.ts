@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { TeacherQuiz, TeacherQuizQuestion, PagedResult, QUESTION_TYPE } from '../models';
 import { ApiClient } from './api/api-client.service';
-import { ApiTeacherQuiz, ApiTeacherQuizQuestion, ApiTeacherQuizSummary, idNumber, idString } from './api/api-models';
+import { ApiTeacherQuiz, ApiTeacherQuizQuestion, ApiTeacherQuizSummary, idNumber, idNumbers, idString } from './api/api-models';
 import { questionTypeId, toApiSemester, toDraft, toQuizConfig, toQuizSettings, toSegments, toSemester } from './api/question-mapping';
 import { onePage } from './api/list-paging';
 import { ServiceError } from './shared/service-error';
@@ -67,6 +67,12 @@ export class TeacherQuizService {
     return quizzes.filter((quiz): quiz is TeacherQuiz => quiz !== null).sort((a, b) => b.createdAt - a.createdAt);
   }
 
+  /** How many questions every teacher's quizzes in this subject hold together (each quiz owns its own questions). */
+  async countQuestionsInSubject(subjectId: string): Promise<number> {
+    const { quizzes } = await this.api.get<{ quizzes: ApiTeacherQuizSummary[] }>('/teacher-quizzes', { subjectId });
+    return quizzes.reduce((total, quiz) => total + quiz.questionCount, 0);
+  }
+
   private async summaries(mine: boolean): Promise<ApiTeacherQuizSummary[]> {
     return (await this.api.get<{ quizzes: ApiTeacherQuizSummary[] }>('/teacher-quizzes', mine ? { mine: true } : {})).quizzes;
   }
@@ -119,7 +125,8 @@ function toQuestion(question: ApiTeacherQuizQuestion): TeacherQuizQuestion {
     subjectHtml: question.subjectHtml ?? undefined,
     referenceAnswer: key.referenceAnswer ?? undefined,
     weightPercent: question.weightPercent ?? undefined,
-    duration: question.durationSeconds ?? undefined
+    duration: question.durationSeconds ?? undefined,
+    tagIds: (question.tagIds ?? []).map(String)
   };
 }
 
@@ -131,7 +138,7 @@ function body(quiz: NewTeacherQuiz) {
     subjectId: idNumber(quiz.subjectId),
     stageId: idNumber(quiz.stageId),
     semester: toApiSemester(quiz.semester),
-    questions: (quiz.questions ?? []).map(question => toDraft({
+    questions: (quiz.questions ?? []).map(question => ({ ...toDraft({
       questionTypeId: question.questionTypeId,
       name: question.name,
       options: question.options ?? [],
@@ -142,6 +149,6 @@ function body(quiz: NewTeacherQuiz) {
       correctOptionId: question.questionTypeId === QUESTION_TYPE.COMPLETE ? null : (question.options ?? []).find(option => option.isAnswer)?.id ?? null,
       correctBlanks: [...(question.blanks ?? [])].sort((a, b) => a.index - b.index).map(blank => blank.answer),
       referenceAnswer: question.referenceAnswer ?? null
-    }))
+    }), tagIds: idNumbers(question.tagIds) }))
   };
 }

@@ -7,6 +7,9 @@ public class RestEndpointMappings : IRegister
         // Value objects and the small JSON records (options, segments, blanks) are immutable: pass them through as-is.
         config.Default.ShallowCopyForSameType(true);
 
+        config.NewConfig<Subject, SubjectDto>()
+            .Map(dest => dest.Tags, src => src.Tags.OrderBy(tag => tag.Name));
+
         config.NewConfig<Question, QuestionDto>()
             .Map(dest => dest.Text, src => AuthoringText(src))
             .Map(dest => dest.Key, src => new AnswerKeyDto(src.Id, src.CorrectOptionId, src.CorrectBlanks, src.ReferenceAnswer));

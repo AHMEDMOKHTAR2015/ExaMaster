@@ -50,6 +50,8 @@ export interface TeacherQuizQuestion {
   weightPercent?: number;
   /** Seconds on the clock for this question; unset means the runtime default applies. */
   duration?: number;
+  /** Tags of the quiz's subject (SubjectTag ids), for reading results per topic. */
+  tagIds?: string[];
 }
 
 /**

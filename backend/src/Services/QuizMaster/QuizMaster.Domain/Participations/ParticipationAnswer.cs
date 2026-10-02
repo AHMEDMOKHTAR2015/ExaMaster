@@ -24,6 +24,9 @@ public class ParticipationAnswer : Entity
     public double? EarnedPercent { get; private set; }            // null until a teacher marks a reviewed answer
     public bool RequiresReview { get; private set; }
 
+    // The question's subject tags when it was sat (a snapshot: retagging the question later does not rewrite history).
+    public IReadOnlyList<int> TagIds { get; private set; } = [];
+
     // The teacher's mark (Explain, Complete), once recorded.
     public double? AwardedPercent { get; private set; }
     public string? GradeComment { get; private set; }
@@ -35,9 +38,10 @@ public class ParticipationAnswer : Entity
     // Whole-percent cap for a teacher's mark: the answer's share of the quiz.
     public int MaxAward => QuizScoring.RoundPercent(WeightPercent);
 
-    internal static ParticipationAnswer From(GradedAnswer answer, int position) => new()
+    internal static ParticipationAnswer From(GradedAnswer answer, int position, IReadOnlyList<int> tagIds) => new()
     {
         Position = position,
+        TagIds = tagIds,
         QuestionId = answer.QuestionId,
         QuestionName = answer.QuestionName,
         SelectedOptionId = answer.SelectedOptionId,

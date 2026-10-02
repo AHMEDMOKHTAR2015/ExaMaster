@@ -26,6 +26,7 @@ public partial class Question : AggregateRoot, IMultitenancy, IQuestionDefinitio
     public int? StageId { get; private set; }
     public int? GradeId { get; private set; }
     public Semester? Semester { get; private set; }
+    public IReadOnlyList<int> TagIds { get; private set; } = [];  // tags of its subject (SubjectTag ids)
 
     public int QuestionId => Id;
     public AnswerKey Key => new(CorrectOptionId, CorrectBlanks, ReferenceAnswer);

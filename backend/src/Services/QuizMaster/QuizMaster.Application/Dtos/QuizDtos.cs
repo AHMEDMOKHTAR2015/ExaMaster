@@ -52,7 +52,8 @@ public record TeacherQuizQuestionDto(
     string? SubjectHtml,
     double? WeightPercent,
     int? DurationSeconds,
-    AnswerKeyDto Key);
+    AnswerKeyDto Key,
+    IReadOnlyList<int> TagIds);
 
 public record TeacherQuizSummaryDto(
     int Id,

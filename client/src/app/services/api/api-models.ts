@@ -111,7 +111,8 @@ export const idString = (id: number | null | undefined): string | undefined => (
 export interface ApiStage { id: number; name: string; order: number; }
 export interface ApiGrade { id: number; stageId: number; name: string; order: number; }
 export interface ApiClassGroup { id: number; stageId: number; gradeId: number; name: string; teacherIds: number[]; subjectIds: number[]; }
-export interface ApiSubject { id: number; name: string; color: string | null; }
+export interface ApiSubjectTag { id: number; name: string; }
+export interface ApiSubject { id: number; name: string; color: string | null; tags: ApiSubjectTag[]; }
 export interface ApiTeacher { id: number; firstName: string; lastName: string; email: string | null; photoUrl: string | null; subjectIds: number[]; }
 
 /** What a create returns. */
@@ -145,6 +146,7 @@ export interface ApiQuestion {
   subjectHtml: string | null; weightPercent: number | null; durationSeconds: number | null;
   key: ApiAnswerKey;
   subjectId: number | null; stageId: number | null; gradeId: number | null; semester: ApiSemester | null;
+  tagIds: number[];                                      // tags of its subject
 }
 
 /** What authoring sends: the question as typed (the server parses and validates it). */
@@ -170,6 +172,7 @@ export interface ApiTeacherQuizQuestion {
   number: number; type: ApiQuestionType; name: string; text: string | null;
   options: { id: number; name: string }[]; segments: ApiSegment[];
   subjectHtml: string | null; weightPercent: number | null; durationSeconds: number | null; key: ApiAnswerKey;
+  tagIds: number[];                                      // tags of the quiz's subject
 }
 export interface ApiTeacherQuiz {
   id: number; name: string; description: string; settings: ApiQuizSettings; subjectId: number; stageId: number | null;

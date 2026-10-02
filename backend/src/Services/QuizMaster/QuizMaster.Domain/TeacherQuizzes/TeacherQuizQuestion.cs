@@ -23,11 +23,14 @@ public class TeacherQuizQuestion : Entity, IQuestionDefinition
     public IReadOnlyList<string>? CorrectBlanks { get; private set; }
     public string? ReferenceAnswer { get; private set; }
 
+    public IReadOnlyList<int> TagIds { get; private set; } = [];  // tags of the quiz's subject
+
     public int QuestionId => Number;
     public AnswerKey Key => new(CorrectOptionId, CorrectBlanks, ReferenceAnswer);
 
-    internal static TeacherQuizQuestion Create(AuthoredQuestion authored, int number) => new()
+    internal static TeacherQuizQuestion Create(AuthoredQuestion authored, QuestionTags tags, int number) => new()
     {
+        TagIds = tags.TagIds,
         Number = number,
         Type = authored.Type,
         Name = authored.Name,
@@ -40,4 +43,12 @@ public class TeacherQuizQuestion : Entity, IQuestionDefinition
         CorrectBlanks = authored.Key.CorrectBlanks,
         ReferenceAnswer = authored.Key.ReferenceAnswer
     };
+
+    internal bool Untag(IReadOnlyCollection<int> tagIds)
+    {
+        if (!TagIds.Intersect(tagIds).Any())
+            return false;
+        TagIds = TagIds.Except(tagIds).ToList();
+        return true;
+    }
 }

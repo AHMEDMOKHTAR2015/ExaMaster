@@ -15,4 +15,6 @@ public interface IQuestionDefinition
     double? WeightPercent { get; }
     int? DurationSeconds { get; }
     AnswerKey Key { get; }
+    // Its subject's tags (topics), snapshotted with every answer so results can be read per topic.
+    IReadOnlyList<int> TagIds { get; }
 }

@@ -1,6 +1,7 @@
 namespace QuizMaster.Application.Features.Academic.DeleteSubject;
 
-public class DeleteSubjectCommandHandler(Repository<Subject> _subjectRepository, Repository<ClassGroup> _classRepository, Repository<Teacher> _teacherRepository)
+public class DeleteSubjectCommandHandler(
+    SubjectRepository _subjectRepository, Repository<ClassGroup> _classRepository, Repository<Teacher> _teacherRepository, Repository<Question> _questionRepository)
     : IRequestHandler<DeleteSubjectCommand, IdResponse>
 {
     public async Task<IdResponse> Handle(DeleteSubjectCommand command, CancellationToken ct)
@@ -12,6 +13,10 @@ public class DeleteSubjectCommandHandler(Repository<Subject> _subjectRepository,
             classGroup.Drop(subject, command);
         foreach (var teacher in await _teacherRepository.Query().Where(e => e.SubjectIds.Contains(subject.Id)).ToListAsync(ct))
             teacher.Drop(subject, command);
+        // its bank questions lose their subject (QuizMasterDbContext) and so its tags, which are deleted with it
+        var tagIds = subject.Tags.Select(tag => tag.Id).ToList();
+        foreach (var question in await _questionRepository.Query().Where(e => e.SubjectId == subject.Id && e.TagIds.Any()).ToListAsync(ct))
+            question.Untag(tagIds, command);
 
         _subjectRepository.Remove(subject);
         await _subjectRepository.SaveChangesAsync(ct);

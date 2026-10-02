@@ -22,6 +22,7 @@ import {
 } from '../../../shared/explain-question';
 import { validateExplainWeights } from '../../../shared/question-scoring';
 import { RichTextEditorComponent } from '../../../shared/rich-text-editor/rich-text-editor.component';
+import { TagToggleListComponent } from '../../../shared/tag-toggle-list/tag-toggle-list.component';
 import { QuizManagementStateService } from '../quiz-management-state.service';
 
 /** Working state for one question in the custom-quiz builder. */
@@ -47,6 +48,8 @@ interface BuilderQuestion {
   weightPercent: number;
   /** Seconds this question gets on the clock during quiz-taking. */
   duration: number;
+  /** Tags of the quiz's subject; any of another subject (a copied question) are dropped when the quiz is saved. */
+  tagIds: string[];
   /**
    * Id of the question-bank item this was copied from, when it came from the
    * bank picker. Purely provenance for the picker's Add/Remove toggle — the
@@ -85,7 +88,7 @@ const EXPLAIN_AUTHORING_MESSAGES: Record<string, string> = {
   selector: 'app-my-quizzes-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent],
+  imports: [FormsModule, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent, TagToggleListComponent],
   templateUrl: './my-quizzes-tab.component.html',
 })
 export class MyQuizzesTabComponent implements OnInit {
@@ -328,14 +331,15 @@ export class MyQuizzesTabComponent implements OnInit {
       subjectHtml: '',
       referenceAnswer: '',
       weightPercent: DEFAULT_EXPLAIN_WEIGHT_PERCENT,
-      duration
+      duration,
+      tagIds: []
     };
   }
 
   /** Map a stored {@link TeacherQuizQuestion} back into editable builder state, per type. */
   private toBuilderQuestion(q: TeacherQuizQuestion): BuilderQuestion {
     const duration = q.duration ?? DEFAULT_QUESTION_DURATION_SECONDS;
-    const base = this.emptyBuilderQuestion(q.id, q.questionTypeId, duration);
+    const base = { ...this.emptyBuilderQuestion(q.id, q.questionTypeId, duration), tagIds: [...(q.tagIds ?? [])] };
 
     if (q.questionTypeId === QUESTION_TYPE.COMPLETE) {
       return {
@@ -413,7 +417,7 @@ export class MyQuizzesTabComponent implements OnInit {
     // answer field this question's type uses.
     const answer = await this.quizAdminService.getAnswer(bankQuestion.id);
     const duration = bankQuestion.duration ?? DEFAULT_QUESTION_DURATION_SECONDS;
-    const base = this.emptyBuilderQuestion(this.nextQuestionId(), bankQuestion.questionTypeId, duration);
+    const base = { ...this.emptyBuilderQuestion(this.nextQuestionId(), bankQuestion.questionTypeId, duration), tagIds: [...(bankQuestion.tagIds ?? [])] };
     let question: BuilderQuestion;
 
     if (bankQuestion.questionTypeId === QUESTION_TYPE.COMPLETE) {
@@ -526,6 +530,15 @@ export class MyQuizzesTabComponent implements OnInit {
     this.builderQuestions.update(qs => [...qs, question]);
   }
 
+  /** The tags a question of this quiz can carry: its subject's. */
+  readonly builderSubjectTags = computed(() =>
+    this.state.subjects().find(subject => subject.id === this.builderSubjectId())?.tags ?? []
+  );
+
+  updateBuilderQuestionTags(questionId: number, tagIds: string[]): void {
+    this.builderQuestions.update(qs => qs.map(q => q.id === questionId ? { ...q, tagIds } : q));
+  }
+
   updateBuilderQuestionDuration(questionId: number, value: number): void {
     this.builderQuestions.update(qs => qs.map(q => q.id === questionId ? { ...q, duration: value } : q));
   }
@@ -537,7 +550,7 @@ export class MyQuizzesTabComponent implements OnInit {
   setBuilderQuestionType(questionId: number, typeId: number): void {
     this.builderQuestions.update(qs => qs.map(q => {
       if (q.id !== questionId) return q;
-      const cleared = this.emptyBuilderQuestion(q.id, typeId, q.duration);
+      const cleared = { ...this.emptyBuilderQuestion(q.id, typeId, q.duration), tagIds: q.tagIds };
       if (typeId === QUESTION_TYPE.COMPLETE) {
         return { ...cleared, rawText: q.rawText };
       }
@@ -719,6 +732,11 @@ export class MyQuizzesTabComponent implements OnInit {
         duration: q.duration
       });
     }
+
+    // Each built question matches its builder question by position. Tags of another subject (a question copied from
+    // a quiz in another subject, or the subject changed since) are dropped rather than refused.
+    const subjectTagIds = new Set(this.builderSubjectTags().map(tag => tag.id));
+    builtQuestions.forEach((built, i) => built.tagIds = questions[i].tagIds.filter(id => subjectTagIds.has(id)));
 
     // Explain weights are authored per question but only make sense against the
     // whole quiz, so this check can only run once every question is built.

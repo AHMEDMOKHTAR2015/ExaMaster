@@ -8169,7 +8169,7 @@ button.list-row:hover {
    `minmax(0, …)` lets each tile shrink rather than overflow the card. */
 .subject-card__stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -8185,15 +8185,21 @@ button.list-row:hover {
 }
 
 .subjects-admin__stat__value {
+  display: flex;
+  justify-content: center;
   font-size: var(--font-body);
   font-weight: 700;
   color: var(--ink-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  
+    
 }
 
 .subjects-admin__stat__label {
+  display: flex;
+  justify-content: center;
   font-size: var(--font-2xs);
   font-weight: 600;
   text-transform: uppercase;
@@ -8313,6 +8319,70 @@ button.list-row:hover {
   border-radius: var(--r-2xs);
   border: 1px solid var(--border);
   vertical-align: middle;
+}
+
+/* ---- Subject tags: toggle chips (tag-toggle-list), read-only chips, and the subject form's tag editor ---- */
+.tag-toggle-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tag-toggle {
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tag-toggle:hover {
+  border-color: var(--border-strong);
+}
+
+.tag-toggle.is-on {
+  background: var(--brand-50);
+  border-color: var(--brand-100);
+  color: var(--brand-700);
+}
+
+.tag-toggle:focus-visible {
+  outline: 2px solid var(--brand-300);
+  outline-offset: 1px;
+}
+
+.tag-toggle-list__empty {
+  color: var(--ink-4);
+  font-size: var(--font-sm);
+}
+
+.tag-chip {
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--neutral-bg);
+  color: var(--ink-2);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.tag-editor__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.tag-editor__row .form-input {
+  flex: 1;
 }
 
 .chips-picker {
@@ -12041,6 +12111,14 @@ select:focus-visible,
   grid-column: 1 / -1;
   padding-top: 0.75rem;
   border-top: 1px dashed var(--border);
+}
+
+/* Tags sit below the grid, so they take the grid's row spacing themselves. */
+.question-meta-card__tags {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
 }
 
 .question-body-section {

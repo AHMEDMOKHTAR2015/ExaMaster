@@ -8,7 +8,7 @@ public partial class TeacherQuiz
 
     public static TeacherQuiz Create(
         string name, string? description, QuizSettings settings, Subject subject, int? stageId, Semester? semester,
-        IReadOnlyList<AuthoredQuestion> questions, IQuizMasterAction action)
+        IReadOnlyList<TaggedQuestion> questions, IQuizMasterAction action)
     {
         var quiz = new TeacherQuiz { CreatedById = action.CreatedById, CreatedOn = action.CreatedOn };
         quiz.Apply(name, description, settings, subject, stageId, semester, questions);
@@ -17,13 +17,21 @@ public partial class TeacherQuiz
 
     public void Update(
         string name, string? description, QuizSettings settings, Subject subject, int? stageId, Semester? semester,
-        IReadOnlyList<AuthoredQuestion> questions, IQuizMasterAction action)
+        IReadOnlyList<TaggedQuestion> questions, IQuizMasterAction action)
     {
         Apply(name, description, settings, subject, stageId, semester, questions);
         (LastModifiedById, LastModifiedOn) = (action.CreatedById, action.CreatedOn);
     }
 
     public bool IsOwnedBy(int userId) => CreatedById == userId;
+
+    // Its subject deleted these tags: nothing in the database removes them from the questions' JSON lists.
+    public void Untag(IReadOnlyCollection<int> tagIds, IQuizMasterAction action)
+    {
+        var changed = _questions.Count(question => question.Untag(tagIds));
+        if (changed > 0)
+            (LastModifiedById, LastModifiedOn) = (action.CreatedById, action.CreatedOn);
+    }
 
     // A teacher quiz reaches students through an assignment, whose author reviews it: it names no reviewer of its own.
     public AttemptedQuiz ForAttempt()
@@ -32,7 +40,7 @@ public partial class TeacherQuiz
 
     private void Apply(
         string name, string? description, QuizSettings settings, Subject subject, int? stageId, Semester? semester,
-        IReadOnlyList<AuthoredQuestion> questions)
+        IReadOnlyList<TaggedQuestion> questions)
     {
         var trimmedName = name?.Trim();
         if (string.IsNullOrEmpty(trimmedName) || trimmedName.Length > MaxNameLength)
@@ -49,7 +57,16 @@ public partial class TeacherQuiz
 
         // Numbers are 1..n in authored order; they are also the ids the weighting is keyed by.
         QuizScoring.EnsureValidExplainWeights(
-            questions.Select((question, i) => new WeightableQuestion(i + 1, question.Type, question.WeightPercent)).ToList());
+            questions.Select((tagged, i) => new WeightableQuestion(i + 1, tagged.Question.Type, tagged.Question.WeightPercent)).ToList());
+
+        for (var i = 0; i < questions.Count; i++)
+        {
+            var tags = questions[i].Tags;
+            if (!tags.IsEmpty && tags.SubjectId != subject.Id)
+                throw new DomainException($"Question {i + 1}: a question can only be tagged with the quiz subject's tags.");
+            if (tags.TagIds.Count > Question.MaxTags)
+                throw new DomainException($"Question {i + 1}: a question cannot have more than {Question.MaxTags} tags.");
+        }
 
         Name = trimmedName;
         Description = description?.Trim() ?? string.Empty;
@@ -57,6 +74,6 @@ public partial class TeacherQuiz
         (SubjectId, StageId, Semester) = (subject.Id, stageId, semester);
 
         _questions.Clear();
-        _questions.AddRange(questions.Select((question, i) => TeacherQuizQuestion.Create(question, i + 1)));
+        _questions.AddRange(questions.Select((tagged, i) => TeacherQuizQuestion.Create(tagged.Question, tagged.Tags, i + 1)));
     }
 }

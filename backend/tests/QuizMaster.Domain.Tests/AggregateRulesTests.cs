@@ -46,7 +46,7 @@ public class AggregateRulesTests
     }
 
     private static Question BankQuestion(int id, QuestionDraft draft)
-        => Question.Create(AuthoredQuestion.From(draft), QuestionClassification.None, Action(QuizMasterActionType.CreateQuestion, AdminId)).WithId(id);
+        => Question.Create(AuthoredQuestion.From(draft), QuestionClassification.None, QuestionTags.None, Action(QuizMasterActionType.CreateQuestion, AdminId)).WithId(id);
 
     private static readonly QuestionDraft ChooseDraft = new(QuestionType.Choose, "Pick", ["A", "B"], CorrectOption: 1);
     private static QuestionDraft ExplainDraft(double weight) => new(QuestionType.Explain, SubjectHtml: "<p>Why?</p>", ReferenceAnswer: "<p>x</p>", WeightPercent: weight);

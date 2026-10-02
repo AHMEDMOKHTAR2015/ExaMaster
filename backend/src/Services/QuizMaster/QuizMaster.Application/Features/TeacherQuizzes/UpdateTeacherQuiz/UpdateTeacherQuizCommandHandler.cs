@@ -2,7 +2,7 @@ using QuizMaster.Application.Features.TeacherQuizzes.Shared;
 
 namespace QuizMaster.Application.Features.TeacherQuizzes.UpdateTeacherQuiz;
 
-public class UpdateTeacherQuizCommandHandler(TeacherQuizRepository _teacherQuizRepository, Repository<Subject> _subjectRepository, Repository<Stage> _stageRepository)
+public class UpdateTeacherQuizCommandHandler(TeacherQuizRepository _teacherQuizRepository, SubjectRepository _subjectRepository, Repository<Stage> _stageRepository)
     : IRequestHandler<UpdateTeacherQuizCommand, IdResponse>
 {
     public async Task<IdResponse> Handle(UpdateTeacherQuizCommand command, CancellationToken ct)
@@ -13,7 +13,7 @@ public class UpdateTeacherQuizCommandHandler(TeacherQuizRepository _teacherQuizR
 
         quiz.Update(
             command.Name, command.Description, command.Settings ?? QuizSettings.Default, subject, command.StageId, command.Semester,
-            command.AuthorQuestions(), command);
+            command.AuthorQuestions(subject), command);
 
         await _teacherQuizRepository.SaveChangesAsync(ct);
 

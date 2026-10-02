@@ -208,6 +208,31 @@ namespace QuizMaster.Persistence.Migrations
                     b.ToTable("Subject", (string)null);
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.Academic.SubjectTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("SubjectTag", (string)null);
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.Academic.Teacher", b =>
                 {
                     b.Property<int>("Id")
@@ -867,6 +892,10 @@ namespace QuizMaster.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.PrimitiveCollection<string>("TagIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("WeightPercent")
                         .HasColumnType("float");
 
@@ -940,6 +969,10 @@ namespace QuizMaster.Persistence.Migrations
 
                     b.Property<int?>("SubjectId")
                         .HasColumnType("int");
+
+                    b.PrimitiveCollection<string>("TagIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
@@ -1330,6 +1363,10 @@ namespace QuizMaster.Persistence.Migrations
                     b.Property<string>("SubjectHtml")
                         .HasColumnType("nvarchar(max)");
 
+                    b.PrimitiveCollection<string>("TagIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("TeacherQuizId")
                         .HasColumnType("int");
 
@@ -1682,6 +1719,15 @@ namespace QuizMaster.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.Academic.SubjectTag", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.Academic.Subject", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.AccessRequests.AccessRequest", b =>
                 {
                     b.HasOne("QuizMaster.Domain.Tenants.Tenant", null)
@@ -1922,6 +1968,11 @@ namespace QuizMaster.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.Academic.Subject", b =>
+                {
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("QuizMaster.Domain.Participations.Participation", b =>

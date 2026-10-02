@@ -62,7 +62,18 @@ describe('school structure on the API', () => {
     const result = TestBed.inject(SubjectService).updateSubject({ id: '9', name: 'Science', color: '#2E7D32' });
     const request = http.expectOne(api('/subjects/9'));
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ name: 'Science', color: '#2E7D32' });
+    // no tag list: the API keeps the subject's tags (the JSON import updates subjects this way)
+    expect(request.request.body).toEqual({ name: 'Science', color: '#2E7D32', tags: null });
+    request.flush({ id: 9 });
+    await result;
+  });
+
+  it('sends a subject\'s tags, a kept one by its id and a new one without', async () => {
+    const result = TestBed.inject(SubjectService).updateSubject({
+      id: '9', name: 'Science', tags: [{ id: '4', name: 'Space' }, { id: '', name: 'Energy' }]
+    });
+    const request = http.expectOne(api('/subjects/9'));
+    expect(request.request.body.tags).toEqual([{ id: 4, name: 'Space' }, { id: null, name: 'Energy' }]);
     request.flush({ id: 9 });
     await result;
   });

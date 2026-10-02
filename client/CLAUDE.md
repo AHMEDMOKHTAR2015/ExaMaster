@@ -163,6 +163,16 @@ popup load an attempt whole (`ParticipationService.getById`). Marks and verdict 
 (`HomeworkParticipationService.review` → `POST /participations/{id}:review`); the server recomputes the score and tells
 the student.
 
+### Subject tags
+
+A subject has tags (topics), edited in the subject form (Subjects admin): a kept tag keeps its id when renamed, so
+its questions stay tagged; a removed one is taken off every question by the API. `SubjectService.updateSubject` sends
+`tags: null` when the subject carries none (the JSON import), which the API reads as "leave the tags alone". A
+question carries tags of **its own subject only** (`tagIds`): the bank form and the teacher quiz builder offer the
+chosen subject's tags (`shared/tag-toggle-list`), the bank filters by tag once a subject is chosen, and Edit selected
+adds/removes tags across many questions (`POST /questions:retag`, after any reclassify). Each submitted answer
+snapshots its question's tags on the server, for reading a student's results per topic later.
+
 ### One Time Join
 
 `QuizConfig.oneTimeJoin` gives a quiz one uninterrupted sitting: the app shell

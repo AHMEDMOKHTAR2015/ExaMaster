@@ -7,6 +7,7 @@ public record SearchQuestionsQuery(
     int? StageId = null,
     int? GradeId = null,
     Semester? Semester = null,
+    int? TagId = null,
     string? Search = null,
     int Page = 1,
     int PageSize = Paging.DefaultPageSize) : IQuery<PagedResponse<QuestionDto>>, IPagedQuery;

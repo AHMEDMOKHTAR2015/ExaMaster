@@ -85,6 +85,8 @@ public static class EndpointRegistration
         CreateQuestionEndpoint.Map(api);
         CreateQuestionsEndpoint.Map(api);
         ReclassifyQuestionsEndpoint.Map(api);
+        TagQuestionEndpoint.Map(api);
+        RetagQuestionsEndpoint.Map(api);
         UpdateQuestionEndpoint.Map(api);
         DeleteQuestionEndpoint.Map(api);
 

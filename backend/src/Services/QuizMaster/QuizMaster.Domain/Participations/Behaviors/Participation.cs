@@ -62,7 +62,10 @@ public partial class Participation
             CreatedById = action.CreatedById,
             CreatedOn = action.CreatedOn
         };
-        participation._answers.AddRange(grade.Answers.Select(ParticipationAnswer.From));
+        // each answer keeps the question's tags as they were when it was sat, for reading results per topic later
+        var tagIds = quiz.Questions.ToDictionary(question => question.QuestionId, question => question.TagIds);
+        participation._answers.AddRange(grade.Answers.Select((answer, position) =>
+            ParticipationAnswer.From(answer, position, tagIds.GetValueOrDefault(answer.QuestionId) ?? [])));
 
         participation.AddDomainEvent(new QuizSubmitted(participation, action));
         return participation;

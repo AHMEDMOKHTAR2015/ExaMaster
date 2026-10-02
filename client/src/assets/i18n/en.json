@@ -904,6 +904,7 @@
   "questionsBank": {
     "title": "Manage Questions",
     "editSelected": "Edit Selected ({{ count }})",
+    "editTagsSelected": "Edit Tags ({{ count }})",
     "deleteSelected": "Delete Selected ({{ count }})",
     "newQuestion": "+ New Question",
     "loading": "Loading questions...",
@@ -961,7 +962,8 @@
       "keepCurrent": "-- Keep current --",
       "willSet": "Will set:",
       "apply": "Apply to {{ count }} question(s)",
-      "applying": "Applying…"
+      "applying": "Applying…",
+      "tagsTitle": "Tag {{ count }} selected question(s)"
     },
     "bulkUpload": {
       "button": "Upload JSON",
@@ -1277,7 +1279,13 @@
       "color": "Color (hex, optional)",
       "cancel": "Cancel",
       "save": "Save changes",
-      "add": "Add subject"
+      "add": "Add subject",
+      "tags": "Tags (topics)",
+      "tagsHint": "Questions of this subject are tagged with these topics, so results can show where each student is strong or weak. Renaming a tag keeps it on its questions; removing one takes it off them.",
+      "tagName": "Tag name",
+      "removeTag": "Remove tag {{name}}",
+      "newTagPlaceholder": "New tag, e.g. Fractions",
+      "addTag": "Add tag"
     },
     "details": {
       "eyebrow": "Subject Profile",
@@ -1289,7 +1297,11 @@
       "noGroupsYet": "Not assigned to any group yet",
       "noStudentsYet": "No students study this subject yet.",
       "student": "student",
-      "studentsPlural": "students"
+      "studentsPlural": "students",
+      "tags": "Tags",
+      "noTagsYet": "No tags yet. Add them with Edit.",
+      "questions": "Bank questions",
+      "teacherQuizQuestions": "Teacher quiz questions"
     },
     "table": {
       "student": "Student",
@@ -1307,7 +1319,9 @@
     "student": "Student",
     "students": "Students",
     "noSubjectsYet": "No subjects yet",
-    "noSubjectsYetDesc": "Add subjects so you can assign them to groups."
+    "noSubjectsYetDesc": "Add subjects so you can assign them to groups.",
+    "tag": "Tag",
+    "tags": "Tags"
   },
   "regKeys": {
     "title": "Registration Keys",
@@ -1687,5 +1701,15 @@
     "withheld": "The correct answers are shown after the due date.",
     "noDetails": "No answer details for this attempt.",
     "expected": "expected: {{ answer }}"
+  },
+  "tags": {
+    "label": "Tags",
+    "noneInSubject": "This subject has no tags yet. Add them under Subjects.",
+    "chooseSubjectFirst": "Choose a subject to tag this question with its topics.",
+    "all": "All tags",
+    "bulkHint": "Add or remove tags on every selected question. They must all be in the tags' subject.",
+    "subjectOfTags": "Subject of the tags",
+    "add": "Add",
+    "remove": "Remove"
   }
 }

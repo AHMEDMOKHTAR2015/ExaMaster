@@ -63,10 +63,12 @@ describe('TeacherQuizService', () => {
     settings: toQuizSettings({}),
     questions: [
       { number: 2, type: 'RightWrong', name: 'Ice is cold.', text: 'Ice is cold.', options: [{ id: 1, name: 'Right' }, { id: 2, name: 'Wrong' }], segments: [],
-        subjectHtml: null, weightPercent: null, durationSeconds: null, key: { questionId: 2, correctOptionId: 1, correctBlanks: null, referenceAnswer: null } },
+        subjectHtml: null, weightPercent: null, durationSeconds: null, key: { questionId: 2, correctOptionId: 1, correctBlanks: null, referenceAnswer: null },
+        tagIds: [7] },
       { number: 1, type: 'Complete', name: 'Plants use _____.', text: 'Plants use light(Complete).', options: [],
         segments: [{ kind: 'Text', text: 'Plants use ' }, { kind: 'Blank', index: 0, expectedLength: 5 }, { kind: 'Text', text: '.' }],
-        subjectHtml: null, weightPercent: null, durationSeconds: 60, key: { questionId: 1, correctOptionId: null, correctBlanks: ['light'], referenceAnswer: null } }
+        subjectHtml: null, weightPercent: null, durationSeconds: 60, key: { questionId: 1, correctOptionId: null, correctBlanks: ['light'], referenceAnswer: null },
+        tagIds: [] }
     ]
   };
 
@@ -81,6 +83,35 @@ describe('TeacherQuizService', () => {
     expect(quiz.questions[0].blanks).toEqual([{ index: 0, answer: 'light' }]);
     expect(quiz.questions[1].options.find(o => o.isAnswer)?.name).toBe('Right');
     expect([quiz.createdBy, quiz.semester]).toEqual(['9', 'first']);
+    expect(quiz.questions.map(q => q.tagIds)).toEqual([[], ['7']]);
+    http.verify();
+  });
+
+  it('counts a subject\'s teacher-quiz questions by adding up every quiz in it', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const counted = TestBed.inject(TeacherQuizService).countQuestionsInSubject('2');
+    const summary = { name: 'Q', description: '', subjectId: 2, stageId: null, semester: null, createdById: 9, createdOn: '2026-09-01T00:00:00Z' };
+    http.expectOne(request => request.url === `${environment.apiUrl}/teacher-quizzes` && request.params.get('subjectId') === '2')
+      .flush({ quizzes: [{ ...summary, id: 1, questionCount: 3 }, { ...summary, id: 2, questionCount: 4 }] });
+
+    expect(await counted).toBe(7);
+    http.verify();
+  });
+
+  it('sends each question\'s tags back as the API\'s ids when the quiz is saved', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const service = TestBed.inject(TeacherQuizService);
+    const loaded = service.getById('5');
+    http.expectOne(`${environment.apiUrl}/teacher-quizzes/5`).flush({ quiz: stored });
+    const quiz = (await loaded)!;
+
+    const created = service.create(quiz);
+    const request = http.expectOne(`${environment.apiUrl}/teacher-quizzes`);
+    expect(request.request.body.questions.map((q: { tagIds: number[] }) => q.tagIds)).toEqual([[], [7]]);
+    request.flush({ id: 6 });
+    expect(await created).toBe('6');
     http.verify();
   });
 });

@@ -19,7 +19,8 @@ public record QuestionDto(
     int? SubjectId,
     int? StageId,
     int? GradeId,
-    Semester? Semester);
+    Semester? Semester,
+    IReadOnlyList<int> TagIds);
 
 // The authoring input shared by bank questions and teacher-quiz questions; see QuestionDraft for which members apply.
 public record QuestionDraftDto(
@@ -31,7 +32,8 @@ public record QuestionDraftDto(
     string? SubjectHtml,
     string? ReferenceAnswer,
     double? WeightPercent,
-    int? DurationSeconds)
+    int? DurationSeconds,
+    List<int>? TagIds = null)                                     // tags of the quiz's subject
 {
     public QuestionDraft ToDraft() => new(Type, Text, Options, CorrectOption, IsRight, SubjectHtml, ReferenceAnswer, WeightPercent, DurationSeconds);
 }

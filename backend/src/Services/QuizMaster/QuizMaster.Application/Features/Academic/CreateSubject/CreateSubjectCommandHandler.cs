@@ -5,7 +5,7 @@ public class CreateSubjectCommandHandler(Repository<Subject> _subjectRepository)
 {
     public async Task<IdResponse> Handle(CreateSubjectCommand command, CancellationToken ct)
     {
-        var subject = Subject.Create(command.Name, command.Color, command);
+        var subject = Subject.Create(command.Name, command.Color, command.Tags ?? [], command);
 
         await _subjectRepository.AddAsync(subject, ct);
         await _subjectRepository.SaveChangesAsync(ct);

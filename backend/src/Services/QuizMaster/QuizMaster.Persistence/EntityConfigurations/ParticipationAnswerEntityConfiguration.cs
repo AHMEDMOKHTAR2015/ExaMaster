@@ -13,5 +13,6 @@ public class ParticipationAnswerEntityConfiguration : EntityConfiguration<Partic
         builder.Property(e => e.CorrectOptionText).HasMaxLength(MaxLength.C512);
         builder.Property(e => e.Blanks).HasJsonConversion();
         builder.Property(e => e.GradeComment).HasMaxLength(MaxLength.C2048);
+        builder.PrimitiveCollection(e => e.TagIds);                            // snapshot: no foreign key, survives the tag
     }
 }

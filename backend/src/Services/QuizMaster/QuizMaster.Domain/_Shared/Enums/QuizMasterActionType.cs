@@ -53,6 +53,8 @@ public enum QuizMasterActionType
     UpdateQuestion,
     DeleteQuestion,
     ReclassifyQuestions,
+    TagQuestion,
+    RetagQuestions,
     CreateQuiz,
     UpdateQuiz,
     DeleteQuiz,

@@ -44,6 +44,25 @@
             <input class="form-input" [ngModel]="form().color" (ngModelChange)="updateField('color', $event)" placeholder="#6366f1" />
           </div>
         </div>
+        <div class="form-group">
+          <label for="subject-new-tag">{{ 'subjectsAdmin.form.tags' | translate }}</label>
+          <p class="hint">{{ 'subjectsAdmin.form.tagsHint' | translate }}</p>
+          <div class="tag-editor">
+            @for (tag of form().tags; track $index) {
+              <div class="tag-editor__row">
+                <input class="form-input" [ngModel]="tag.name" (ngModelChange)="renameTag($index, $event)"
+                       [attr.aria-label]="'subjectsAdmin.form.tagName' | translate" maxlength="64" />
+                <button type="button" class="btn btn--sm btn--danger" (click)="removeTag($index)"
+                        [attr.aria-label]="'subjectsAdmin.form.removeTag' | translate : { name: tag.name }">×</button>
+              </div>
+            }
+            <div class="tag-editor__row">
+              <input id="subject-new-tag" class="form-input" [ngModel]="newTagName()" (ngModelChange)="newTagName.set($event)"
+                     (keydown.enter)="addTag()" [placeholder]="'subjectsAdmin.form.newTagPlaceholder' | translate" maxlength="64" />
+              <button type="button" class="btn btn--sm" (click)="addTag()" [disabled]="!newTagName().trim()">{{ 'subjectsAdmin.form.addTag' | translate }}</button>
+            </div>
+          </div>
+        </div>
       </div>
       <footer class="popup__foot">
         <button class="secondary-btn" (click)="closeForm()">{{ 'subjectsAdmin.form.cancel' | translate }}</button>
@@ -148,6 +167,33 @@
           <div class="detail-stat">
             <div class="detail-stat__value">{{ detailStudents().length }}</div>
             <div class="detail-stat__label">{{ 'subjectsAdmin.details.students' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailQuestionCount() ?? '…' }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.questions' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ detailTeacherQuizQuestionCount() ?? '…' }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.teacherQuizQuestions' | translate }}</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat__value">{{ ds.tags?.length ?? 0 }}</div>
+            <div class="detail-stat__label">{{ 'subjectsAdmin.details.tags' | translate }}</div>
+          </div>
+        </div>
+
+        <!-- Tags: the topics this subject's questions are tagged with -->
+        <div class="detail-section">
+          <h3 class="detail-section__title">
+            {{ 'subjectsAdmin.details.tags' | translate }}
+            <span class="detail-section__count">{{ ds.tags?.length ?? 0 }}</span>
+          </h3>
+          <div class="class-chips">
+            @for (tag of ds.tags ?? []; track tag.id) {
+              <span class="subjects-admin__chip chip--static">{{ tag.name }}</span>
+            } @empty {
+              <span class="subjects-admin__muted">{{ 'subjectsAdmin.details.noTagsYet' | translate }}</span>
+            }
           </div>
         </div>
 
@@ -278,6 +324,10 @@
             <div class="subjects-admin__stat">
               <div class="subjects-admin__stat__value">{{ getStudentCountForSubject(s.id) }}</div>
               <div class="subjects-admin__stat__label">{{ getStudentCountForSubject(s.id) === 1 ? ('subjectsAdmin.student' | translate) : ('subjectsAdmin.students' | translate) }}</div>
+            </div>
+            <div class="subjects-admin__stat">
+              <div class="subjects-admin__stat__value">{{ s.tags?.length ?? 0 }}</div>
+              <div class="subjects-admin__stat__label">{{ s.tags?.length === 1 ? ('subjectsAdmin.tag' | translate) : ('subjectsAdmin.tags' | translate) }}</div>
             </div>
           </div>
         </article>

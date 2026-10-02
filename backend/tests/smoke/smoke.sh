@@ -152,6 +152,33 @@ call dev-admin GET /questions/$Q2 >/dev/null
 check "only the subject changed" "$MATH First Ice is cold." "$(json '"\(.question.subjectId) \(.question.semester) \(.question.name)"')"
 check "a teacher cannot reclassify" 403 "$(call dev-teacher POST /questions:reclassify "$(jq -nc --argjson a "$Q1" '{questionIds:[$a], subjectId:1}')")"
 
+echo "== subject tags: a question carries its own subject's topics"
+call dev-admin GET /subjects >/dev/null
+check "a subject lists its tags" "Fractions,Geometry" "$(json '.subjects[] | select(.name=="Math") | [.tags[].name] | join(",")')"
+FRACTIONS=$(json '.subjects[] | select(.name=="Math") | .tags[] | select(.name=="Fractions") | .id')
+GEOMETRY=$(json '.subjects[] | select(.name=="Math") | .tags[] | select(.name=="Geometry") | .id')
+SPACE=$(json '.subjects[] | select(.name=="Science") | .tags[] | select(.name=="Space") | .id')
+check "tag one question" 200 "$(call dev-admin PUT /questions/$Q1/tags "$(jq -nc --argjson t "$FRACTIONS" '{tagIds:[$t]}')")"
+check "another subject's tag is refused" 400 "$(call dev-admin PUT /questions/$Q1/tags "$(jq -nc --argjson t "$SPACE" '{tagIds:[$t]}')")"
+check "a teacher cannot tag bank questions" 403 "$(call dev-teacher PUT /questions/$Q1/tags '{"tagIds":[]}')"
+check "bulk: add Geometry to both" 2 "$(call dev-admin POST /questions:retag "$(jq -nc --argjson a "$Q1" --argjson b "$Q2" --argjson g "$GEOMETRY" '{questionIds:[$a,$b], addTagIds:[$g]}')" >/dev/null; json .updatedCount)"
+call dev-admin GET /questions/$Q1 >/dev/null
+check "the other tags are kept" "$(jq -nc --argjson f "$FRACTIONS" --argjson g "$GEOMETRY" '[$f,$g] | sort')" "$(jq -c '.question.tagIds | sort' "$WORK/out.json")"
+call dev-admin GET "/questions?tagId=$GEOMETRY&pageSize=50" >/dev/null
+check "the bank filters by tag" "true" "$(json "[.items[].id] | (index($Q1) != null and index($Q2) != null)")"
+TQ=$(jq -nc --argjson s "$SCIENCE" --argjson t "$SPACE" '{name:"Tagged", subjectId:$s, questions:[{type:"RightWrong", text:"The Sun is a star.", isRight:true, tagIds:[$t]}]}')
+check "a teacher tags their own quiz's questions" 201 "$(call dev-teacher POST /teacher-quizzes "$TQ")"; TQ_ID=$(json .id)
+call dev-teacher GET /teacher-quizzes/$TQ_ID >/dev/null
+check "with the quiz subject's tags" "$SPACE" "$(json '.quiz.questions[0].tagIds[0]')"
+call dev-admin GET "/teacher-quizzes?subjectId=$SCIENCE" >/dev/null
+check "a teacher quiz's summary counts its questions" 1 "$(json ".quizzes[] | select(.id == $TQ_ID) | .questionCount")"
+TQ_BAD=$(echo "$TQ" | jq -c --argjson g "$GEOMETRY" '.questions[0].tagIds = [$g]')
+check "but not another subject's" 400 "$(call dev-teacher POST /teacher-quizzes "$TQ_BAD")"
+RENAME=$(jq -nc --argjson f "$FRACTIONS" '{name:"Math", color:"#1565C0", tags:[{id:$f, name:"Fractions and decimals"}, {name:"Algebra"}]}')
+check "rename one tag, add one, drop Geometry" 200 "$(call dev-admin PUT /subjects/$MATH "$RENAME")"
+call dev-admin GET /questions/$Q1 >/dev/null
+check "a renamed tag stays on its questions, a dropped one leaves them" "[$FRACTIONS]" "$(jq -c '.question.tagIds' "$WORK/out.json")"
+
 echo "== deleting a teacher or subject leaves no id behind"
 check "a subject" 201 "$(call dev-admin POST /subjects '{"name":"Geography"}')"; GEO=$(json .id)
 check "a teacher of it" 201 "$(call dev-admin POST /teachers "$(jq -nc --argjson geo "$GEO" '{firstName:"Gina",lastName:"Geo",subjectIds:[$geo]}')")"; GINA=$(json .id)

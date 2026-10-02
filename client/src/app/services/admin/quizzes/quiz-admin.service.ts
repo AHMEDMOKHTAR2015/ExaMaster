@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { PagedResult } from '../../../models';
 import { QuizAdminItem, QuizAdminPayload, QuestionAdminItem, AnswerItem, QuestionAnswerInput } from '../../../interfaces';
 import { ApiClient } from '../../api/api-client.service';
-import { ApiBankQuiz, ApiBankQuizSummary, ApiPage, ApiQuestion, idNumber, idString } from '../../api/api-models';
+import { ApiBankQuiz, ApiBankQuizSummary, ApiPage, ApiQuestion, idNumber, idNumbers, idString } from '../../api/api-models';
 import { questionTypeId, toApiSemester, toDraft, toQuizConfig, toQuizSettings, toSegments, toSemester } from '../../api/question-mapping';
 import { onePage } from '../../api/list-paging';
 import { ServiceError } from '../../shared/service-error';
@@ -14,6 +14,7 @@ export interface QuestionBankFilters {
   subjectId?: string;
   stageId?: string;
   gradeId?: string;
+  tagId?: string;
 }
 
 const MAX_PAGE = 100;                                    // the API's page-size limit
@@ -133,6 +134,20 @@ export class QuizAdminService {
     return updatedCount;
   }
 
+  /**
+   * Add and remove tags across many questions, keeping each one's other tags. The tags to add must all be of one
+   * subject, and every question must be in it (the API refuses otherwise, saying which). Returns how many.
+   */
+  async retagQuestions(ids: number[], addTagIds: string[], removeTagIds: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const { updatedCount } = await this.api.post<{ updatedCount: number }>('/questions:retag', {
+      questionIds: [...new Set(ids)],
+      addTagIds: idNumbers(addTagIds),
+      removeTagIds: idNumbers(removeTagIds)
+    });
+    return updatedCount;
+  }
+
   async deleteQuestion(questionId: number): Promise<void> {
     await this.api.delete(`/questions/${questionId}`);
   }
@@ -153,7 +168,7 @@ export class QuizAdminService {
 
   private searchQuestions(filters: QuestionBankFilters, page: number, pageSize: number): Promise<ApiPage<ApiQuestion>> {
     return this.api.get<ApiPage<ApiQuestion>>('/questions', {
-      subjectId: filters.subjectId, stageId: filters.stageId, gradeId: filters.gradeId, page, pageSize: Math.min(pageSize, MAX_PAGE)
+      subjectId: filters.subjectId, stageId: filters.stageId, gradeId: filters.gradeId, tagId: filters.tagId, page, pageSize: Math.min(pageSize, MAX_PAGE)
     });
   }
 
@@ -209,7 +224,8 @@ function toQuestionItem(question: ApiQuestion): QuestionAdminItem {
     subjectId: idString(question.subjectId),
     stageId: idString(question.stageId),
     gradeId: idString(question.gradeId),
-    semester: toSemester(question.semester)
+    semester: toSemester(question.semester),
+    tagIds: (question.tagIds ?? []).map(String)
   };
 }
 
@@ -219,6 +235,7 @@ function questionBody(question: QuestionAdminItem, answer: QuestionAnswerInput) 
     subjectId: idNumber(question.subjectId),
     stageId: idNumber(question.stageId),
     gradeId: idNumber(question.gradeId),
-    semester: toApiSemester(question.semester)
+    semester: toApiSemester(question.semester),
+    tagIds: question.tagIds ? idNumbers(question.tagIds) : null
   };
 }

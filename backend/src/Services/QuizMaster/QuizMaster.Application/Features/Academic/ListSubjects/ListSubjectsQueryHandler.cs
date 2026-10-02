@@ -1,6 +1,6 @@
 namespace QuizMaster.Application.Features.Academic.ListSubjects;
 
-public class ListSubjectsQueryHandler(Repository<Subject> _subjectRepository)
+public class ListSubjectsQueryHandler(SubjectRepository _subjectRepository)
     : IRequestHandler<ListSubjectsQuery, ListSubjectsResponse>
 {
     public async Task<ListSubjectsResponse> Handle(ListSubjectsQuery query, CancellationToken ct)

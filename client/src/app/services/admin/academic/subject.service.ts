@@ -1,11 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { Subject, PagedResult } from '../../../models';
 import { ApiClient } from '../../api/api-client.service';
-import { ApiId, ApiSubject } from '../../api/api-models';
+import { ApiId, ApiSubject, idNumber } from '../../api/api-models';
 import { onePage, pagedList } from '../../api/list-paging';
 import { PagedSource } from '../../shared/query-spec';
 
-const toSubject = (subject: ApiSubject): Subject => ({ id: String(subject.id), name: subject.name, color: subject.color ?? undefined });
+const toSubject = (subject: ApiSubject): Subject => ({
+  id: String(subject.id),
+  name: subject.name,
+  color: subject.color ?? undefined,
+  tags: (subject.tags ?? []).map(tag => ({ id: String(tag.id), name: tag.name }))
+});
+
+/** The tag list as the API takes it (a kept tag by its id, a new one without), or null to leave the tags alone. */
+const tagsBody = (subject: Omit<Subject, 'id'>) =>
+  subject.tags ? subject.tags.map(tag => ({ id: idNumber(tag.id), name: tag.name })) : null;
 
 @Injectable({ providedIn: 'root' })
 export class SubjectService {
@@ -31,11 +40,12 @@ export class SubjectService {
 
   /** Returns the new subject's id, which the API assigns. */
   async createSubject(subject: Omit<Subject, 'id'>): Promise<string> {
-    return String((await this.api.post<ApiId>('/subjects', { name: subject.name, color: subject.color ?? null })).id);
+    return String((await this.api.post<ApiId>('/subjects', { name: subject.name, color: subject.color ?? null, tags: tagsBody(subject) })).id);
   }
 
+  /** A tag left out of `tags` is removed from the subject and from every question carrying it; no `tags` keeps them. */
   async updateSubject(subject: Subject): Promise<void> {
-    await this.api.put(`/subjects/${subject.id}`, { name: subject.name, color: subject.color ?? null });
+    await this.api.put(`/subjects/${subject.id}`, { name: subject.name, color: subject.color ?? null, tags: tagsBody(subject) });
   }
 
   /** Classes and teachers drop it too; refused (409) while a teacher quiz is still written in it. */

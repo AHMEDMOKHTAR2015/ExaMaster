@@ -70,6 +70,11 @@ export interface QuestionAdminItem {
   /** Grade this question targets (Grade.id), nested within the stage. */
   gradeId?: string;
   semester?: QuestionSemester;
+  /**
+   * Tags of its subject (SubjectTag ids). Left undefined on an update, the API keeps the question's tags; an empty
+   * list clears them.
+   */
+  tagIds?: string[];
 }
 
 /**

@@ -17,8 +17,13 @@ public class ListTeacherQuizzesQueryHandler(TeacherQuizRepository _teacherQuizRe
         if (query.StageId is { } stageId)
             quizzes = quizzes.Where(quiz => quiz.StageId == stageId);
 
-        var list = await quizzes.OrderByDescending(quiz => quiz.CreatedOn).ToListAsync(ct);
+        // the question count is computed by the database: a list never loads the questions themselves
+        var rows = await quizzes.OrderByDescending(quiz => quiz.CreatedOn)
+            .Select(quiz => new { Quiz = quiz, QuestionCount = quiz.Questions.Count })
+            .ToListAsync(ct);
 
-        return new ListTeacherQuizzesResponse(list.Adapt<List<TeacherQuizSummaryDto>>());
+        return new ListTeacherQuizzesResponse(rows
+            .Select(row => row.Quiz.Adapt<TeacherQuizSummaryDto>() with { QuestionCount = row.QuestionCount })
+            .ToList());
     }
 }

@@ -3,7 +3,7 @@ using QuizMaster.Application.Features.Questions.Shared;
 namespace QuizMaster.Application.Features.Questions.CreateQuestion;
 
 // Adds a question to the organization's bank. The question and its answer are one write, so they can never diverge.
-// Which members apply depends on Type: see QuestionDraft.
+// Which members apply depends on Type: see QuestionDraft. TagIds are tags of the chosen subject.
 public record CreateQuestionCommand(
     QuestionType Type,
     string? Text,
@@ -17,7 +17,8 @@ public record CreateQuestionCommand(
     int? SubjectId,
     int? StageId,
     int? GradeId,
-    Semester? Semester) : QuizMasterCommand
+    Semester? Semester,
+    List<int>? TagIds) : QuizMasterCommand
 {
     public override QuizMasterActionType ActionType => QuizMasterActionType.CreateQuestion;
 
@@ -27,5 +28,8 @@ public record CreateQuestionCommand(
 public class CreateQuestionCommandValidator : AbstractValidator<CreateQuestionCommand>
 {
     public CreateQuestionCommandValidator()
-        => this.AddQuestionContentRules(c => c.Type, c => c.Text, c => c.Options, c => c.SubjectHtml, c => c.ReferenceAnswer);
+    {
+        this.AddQuestionContentRules(c => c.Type, c => c.Text, c => c.Options, c => c.SubjectHtml, c => c.ReferenceAnswer);
+        this.AddQuestionTagRules(c => c.TagIds);
+    }
 }

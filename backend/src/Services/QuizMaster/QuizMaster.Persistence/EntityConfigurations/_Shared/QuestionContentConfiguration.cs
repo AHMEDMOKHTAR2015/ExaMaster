@@ -15,6 +15,8 @@ public static class QuestionContentConfiguration
         builder.Property<IReadOnlyList<string>?>(nameof(Question.CorrectBlanks)).HasJsonConversion();
         builder.Property<string?>(nameof(Question.ReferenceAnswer));
 
+        builder.PrimitiveCollection(e => e.TagIds);                            // SubjectTag ids; no foreign key (JSON)
+
         builder.Ignore(e => e.Key);
         builder.Ignore(e => e.QuestionId);
     }

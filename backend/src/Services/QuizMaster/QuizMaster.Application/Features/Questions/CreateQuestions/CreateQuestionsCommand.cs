@@ -22,7 +22,8 @@ public record NewBankQuestion(
     int? SubjectId,
     int? StageId,
     int? GradeId,
-    Semester? Semester)
+    Semester? Semester,
+    List<int>? TagIds)
 {
     public QuestionDraft ToDraft() => new(Type, Text, Options, CorrectOption, IsRight, SubjectHtml, ReferenceAnswer, WeightPercent, DurationSeconds);
 }
@@ -38,6 +39,9 @@ public class CreateQuestionsCommandValidator : AbstractValidator<CreateQuestions
         RuleFor(c => c.Questions).NotEmpty().Must(list => list.Count <= MaxQuestions)
             .WithMessage($"Upload at most {MaxQuestions} questions at a time.");
         RuleForEach(c => c.Questions).ChildRules(question =>
-            question.AddQuestionContentRules(q => q.Type, q => q.Text, q => q.Options, q => q.SubjectHtml, q => q.ReferenceAnswer));
+        {
+            question.AddQuestionContentRules(q => q.Type, q => q.Text, q => q.Options, q => q.SubjectHtml, q => q.ReferenceAnswer);
+            question.AddQuestionTagRules(q => q.TagIds);
+        });
     }
 }

@@ -21,7 +21,10 @@ public sealed record TestQuestion(
     AnswerKey Key,
     string? SubjectHtml = null,
     double? WeightPercent = null,
-    int? DurationSeconds = null) : IQuestionDefinition;
+    int? DurationSeconds = null) : IQuestionDefinition
+{
+    public IReadOnlyList<int> TagIds { get; init; } = [];
+}
 
 public static class TestData
 {
@@ -106,10 +109,10 @@ public static class TestData
 
     public static TeacherQuiz TeacherQuiz(int id = 200)
     {
-        var subject = Subject.Create("Science", null, Action(QuizMasterActionType.CreateSubject, AdminId)).WithId(40);
+        var subject = Subject.Create("Science", null, [], Action(QuizMasterActionType.CreateSubject, AdminId)).WithId(40);
         var question = AuthoredQuestion.From(new QuestionDraft(QuestionType.Choose, "Pick one", ["A", "B"], CorrectOption: 2));
         return QuizMaster.Domain.TeacherQuizzes.TeacherQuiz.Create(
-            "Unit 4", null, QuizSettings.Default, subject, null, null, [question], Action(QuizMasterActionType.CreateTeacherQuiz)).WithId(id);
+            "Unit 4", null, QuizSettings.Default, subject, null, null, [new TaggedQuestion(question, QuestionTags.None)], Action(QuizMasterActionType.CreateTeacherQuiz)).WithId(id);
     }
 
     public static HomeworkAssignment Homework(ClassGroup classGroup, DateTime? dueAt = null, IReadOnlyCollection<User>? namedStudents = null, int id = 300)

@@ -7,7 +7,7 @@ public class AcademicCleanupTests
 {
     private static readonly TestAction ByAdmin = Action(QuizMasterActionType.DeleteTeacher, AdminId);
 
-    private static Subject Subject(int id, string name) => QuizMaster.Domain.Academic.Subject.Create(name, null, ByAdmin).WithId(id);
+    private static Subject Subject(int id, string name) => QuizMaster.Domain.Academic.Subject.Create(name, null, [], ByAdmin).WithId(id);
 
     private static QuizMaster.Domain.Academic.Teacher RosterTeacher(int id, params Subject[] subjects) => QuizMaster.Domain.Academic.Teacher.Create("T", $"{id}", null, null, subjects, ByAdmin).WithId(id);
 

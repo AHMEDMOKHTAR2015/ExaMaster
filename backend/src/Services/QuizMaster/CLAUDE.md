@@ -24,6 +24,7 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 ## SQL Server specifics
 
 - SQL Server rejects a table reachable by two ON DELETE paths. Aggregate children cascade, and `participation`/attempt-lock links to quizzes and assignments are `SET NULL` in the database. The optional links from quizzes, questions and assignments to `Subject`/`Stage`/`Grade`/`ClassGroup` are `NO ACTION` in the database; `QuizMasterDbContext` clears them in the delete's own transaction (`SaveClearingReferencesAsync`). Add a new optional reference to reference data there, not as `SetNull`.
+- Tags are reached only through their `Subject` (`SubjectRepository` includes them): `SubjectTag` has no tenant filter of its own, so never query it directly.
 - `datetime2` has no time zone: every `DateTime` is stored as UTC and read back as `Kind=Utc` (`UtcDateTimeConverter`).
 - The default collation is case-insensitive (search uses `LIKE`); `SignInUid` is binary (`Latin1_General_100_BIN2`): an identifier is compared exactly, never case-folded.
 - Optimistic concurrency on `Participation` and `QuizAttemptLock` is a `rowversion` column (`HasConcurrencyToken`).
@@ -36,6 +37,7 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 | `Tenant` | slug is the app's tenant id (`^[a-z0-9][a-z0-9_-]*$`), permanent and unique; `Suspend` removes every member's roles on their next request and deletes nothing; created only with its first administrator (`CreateTenant`, platform administrators only) |
 | `User` | role combinations (a STUDENT holds no other role; PLATFORM_ADMIN is never tenant-assignable; you cannot remove your own admin role or deactivate yourself); placement comes from the class; `LastActiveOn` is stamped by every sign-in and session renewal (`SignInSessions`, straight to the column, so it is never an audited edit) |
 | `Stage`, `Grade`, `ClassGroup`, `Subject`, `Teacher` | reference data; class stage/grade derived from its grade |
+| `Subject` tags | a subject owns its `SubjectTag`s (topics; unique name per subject, case-insensitive; a kept tag keeps its id when renamed). Questions (bank and teacher-quiz) carry `TagIds` of **their own subject only** (`Subject.TagsFor` builds the only non-empty `QuestionTags`); moving a question to another subject drops its tags; a removed tag (or deleted subject) is dropped from questions by the handler in the same commit (JSON lists, no FK). Every `ParticipationAnswer` snapshots the question's `TagIds` at submission, for per-topic strength/weakness reads |
 | `Question` (bank) | authored through `AuthoredQuestion.From(QuestionDraft)`: the single place the four question types are validated; the Complete passage is parsed server-side and stored MASKED |
 | `BankQuiz` | active teacher as reviewer; 1–200 unique questions; Explain weights validated (`QuizScoring.ValidateExplainWeights`) |
 | `TeacherQuiz` | owns its questions (numbered 1..n; responses refer to the number); same authoring rules |

@@ -431,6 +431,9 @@
       <button class="btn btn--lg btn--ghost edit-selected-btn" (click)="openBulkEdit()">
         {{ 'questionsBank.editSelected' | translate : { count: selectedQuestionIds().length } }}
       </button>
+      <button class="btn btn--lg btn--ghost" type="button" (click)="openBulkEdit(true)">
+        {{ 'questionsBank.editTagsSelected' | translate : { count: selectedQuestionIds().length } }}
+      </button>
       <button class="danger-btn delete-selected-btn" (click)="deleteSelectedQuestions()">
         {{ 'questionsBank.deleteSelected' | translate : { count: selectedQuestionIds().length } }}
       </button>
@@ -492,7 +495,7 @@
 
             <div class="form-group">
               <label for="qf-subject">{{ 'quizBuilder.subject' | translate }}</label>
-              <select id="qf-subject" class="quizzes-admin__form-input" [ngModel]="questionFormSubjectId()" (ngModelChange)="questionFormSubjectId.set($event)">
+              <select id="qf-subject" class="quizzes-admin__form-input" [ngModel]="questionFormSubjectId()" (ngModelChange)="onQuestionFormSubjectChange($event)">
                 <option value="">{{ 'semester.select' | translate }}</option>
                 @for (subject of subjects(); track subject.id) {
                   <option [value]="subject.id">{{ subject.name }}</option>
@@ -547,6 +550,17 @@
                 <option [ngValue]="QUESTION_TYPE.EXPLAIN">{{ 'questionsBank.form.typeExplain' | translate }}</option>
               </select>
             </div>
+          </div>
+
+          <!-- Tags come from the chosen subject: they say which topic a student's answer to this question tells us about. -->
+          <div class="form-group question-meta-card__tags">
+            <span class="field__label">{{ 'tags.label' | translate }}</span>
+            @if (questionFormSubjectId()) {
+              <app-tag-toggle-list [tags]="questionFormSubjectTags()" [selected]="questionFormTagIds()"
+                                   [label]="'tags.label' | translate" (selectedChange)="questionFormTagIds.set($event)" />
+            } @else {
+              <p class="hint">{{ 'tags.chooseSubjectFirst' | translate }}</p>
+            }
           </div>
         </section>
 
@@ -667,40 +681,64 @@
   <div class="quizzes-admin__modal-overlay" (click)="cancelBulkEdit()">
     <div class="modal-content question-form" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h4>{{ 'questionsBank.bulkEdit.title' | translate : { count: selectedQuestionIds().length } }}</h4>
+        <h4>{{ (bulkEditTagsOnly() ? 'questionsBank.bulkEdit.tagsTitle' : 'questionsBank.bulkEdit.title') | translate : { count: selectedQuestionIds().length } }}</h4>
         <button class="modal-close-btn" (click)="cancelBulkEdit()">×</button>
       </div>
       <div class="modal-body">
-        <p class="hint">{{ 'questionsBank.bulkEdit.hint' | translate }}</p>
+        @if (!bulkEditTagsOnly()) {
+          <p class="hint">{{ 'questionsBank.bulkEdit.hint' | translate }}</p>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.stage' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkEditStageId()" (ngModelChange)="bulkEditStageId.set($event)">
+              <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+              @for (stage of stages(); track stage.id) {
+                <option [value]="stage.id">{{ stage.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.subject' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkEditSubjectId()" (ngModelChange)="onBulkEditSubjectChange($event)">
+              <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+              @for (subject of subjects(); track subject.id) {
+                <option [value]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'quizBuilder.semester' | translate }}</label>
+            <select class="quizzes-admin__form-input" [ngModel]="bulkEditSemester()" (ngModelChange)="bulkEditSemester.set($event)">
+              <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
+              @for (opt of semesterOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label | translate }}</option>
+              }
+            </select>
+          </div>
+        }
 
         <div class="form-group">
-          <label>{{ 'quizBuilder.stage' | translate }}</label>
-          <select class="quizzes-admin__form-input" [ngModel]="bulkEditStageId()" (ngModelChange)="bulkEditStageId.set($event)">
-            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
-            @for (stage of stages(); track stage.id) {
-              <option [value]="stage.id">{{ stage.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>{{ 'quizBuilder.subject' | translate }}</label>
-          <select class="quizzes-admin__form-input" [ngModel]="bulkEditSubjectId()" (ngModelChange)="bulkEditSubjectId.set($event)">
-            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
-            @for (subject of subjects(); track subject.id) {
-              <option [value]="subject.id">{{ subject.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>{{ 'quizBuilder.semester' | translate }}</label>
-          <select class="quizzes-admin__form-input" [ngModel]="bulkEditSemester()" (ngModelChange)="bulkEditSemester.set($event)">
-            <option value="">{{ 'questionsBank.bulkEdit.keepCurrent' | translate }}</option>
-            @for (opt of semesterOptions; track opt.value) {
-              <option [value]="opt.value">{{ opt.label | translate }}</option>
-            }
-          </select>
+          <span class="field__label">{{ 'tags.label' | translate }}</span>
+          <p class="hint">{{ 'tags.bulkHint' | translate }}</p>
+          @if (!bulkEditSubjectId()) {
+            <select class="quizzes-admin__form-input" [ngModel]="bulkEditTagSubjectId()" (ngModelChange)="onBulkEditTagSubjectChange($event)"
+                    [attr.aria-label]="'tags.subjectOfTags' | translate">
+              <option value="">{{ 'tags.subjectOfTags' | translate }}</option>
+              @for (subject of subjects(); track subject.id) {
+                <option [value]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          }
+          @if (bulkEditSubjectId() || bulkEditTagSubjectId()) {
+            <span class="field__label">{{ 'tags.add' | translate }}</span>
+            <app-tag-toggle-list [tags]="bulkEditTags()" [selected]="bulkEditAddTagIds()"
+                                 [label]="'tags.add' | translate" (selectedChange)="setBulkEditAddTags($event)" />
+            <span class="field__label">{{ 'tags.remove' | translate }}</span>
+            <app-tag-toggle-list [tags]="bulkEditTags()" [selected]="bulkEditRemoveTagIds()"
+                                 [label]="'tags.remove' | translate" (selectedChange)="setBulkEditRemoveTags($event)" />
+          }
         </div>
 
         @if (bulkEditHasChanges()) {
@@ -845,6 +883,20 @@
       </select>
     </div>
 
+    @if (questionFilterTags().length > 0) {
+      <div class="bank-filters__field">
+        <label for="bank-filter-tag">{{ 'tags.label' | translate }}</label>
+        <select id="bank-filter-tag" class="quizzes-admin__form-input"
+                [ngModel]="questionFilterTagId()"
+                (ngModelChange)="onQuestionFilterChange('tag', $event)">
+          <option value="">{{ 'tags.all' | translate }}</option>
+          @for (tag of questionFilterTags(); track tag.id) {
+            <option [value]="tag.id">{{ tag.name }}</option>
+          }
+        </select>
+      </div>
+    }
+
     @if (isQuestionViewNarrowed()) {
       <button type="button" class="btn btn--lg btn--ghost small" (click)="clearQuestionFilters()">
         {{ isQuestionIdLookup() ? ('questionsBank.table.backToAll' | translate) : ('questionsBank.table.clearFilters' | translate) }}
@@ -915,6 +967,9 @@
                   <span class="quizzes-admin__muted">{{ badge.key | translate : badge.params }}</span>
                   @if (row.semesterLabel) {
                     <span class="semester-tag semester-tag--{{ row.question.semester }}">{{ row.semesterLabel }}</span>
+                  }
+                  @for (tagName of questionTagNames(row.question); track tagName) {
+                    <span class="tag-chip">{{ tagName }}</span>
                   }
                 </div>
               </td>

@@ -19,4 +19,8 @@ public static class QuestionCommandValidation
         validator.RuleFor(subjectHtml).MaximumLengthWithMessage(MaxHtmlLength, "SubjectHtml");
         validator.RuleFor(referenceAnswer).MaximumLengthWithMessage(MaxHtmlLength, "ReferenceAnswer");
     }
+
+    public static void AddQuestionTagRules<T>(this AbstractValidator<T> validator, System.Linq.Expressions.Expression<Func<T, List<int>?>> tagIds)
+        => validator.RuleFor(tagIds).Must(list => list is null || list.Count <= Question.MaxTags)
+            .WithMessage($"A question cannot have more than {Question.MaxTags} tags.");
 }
