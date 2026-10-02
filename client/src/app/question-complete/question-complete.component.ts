@@ -2,6 +2,7 @@ import { Component, inject, input, output, ChangeDetectionStrategy } from '@angu
 import { Question } from '../models';
 import { QuizService } from '../services/quiz.service';
 import { isQuestionAnswered } from '../shared/quiz-runner';
+import { AutoWidthInputDirective } from '../directives';
 
 /**
  * Renders a Complete (fill-in-the-blank) question: the parsed passage with each
@@ -17,6 +18,7 @@ import { isQuestionAnswered } from '../shared/quiz-runner';
   selector: 'question-complete',
   templateUrl: './question-complete.component.html',
   standalone: true,
+  imports: [AutoWidthInputDirective],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class QuestionCompleteComponent {
@@ -25,7 +27,7 @@ export class QuestionCompleteComponent {
 
   private readonly quizService = inject(QuizService);
 
-  /** Textbox width in `ch`, scaled to the expected answer length within a sane range. */
+  /** The blank's starting (minimum) width in `ch`, scaled to the expected answer length; it grows as the student types. */
   blankWidthCh(expectedLength: number): number {
     return Math.min(30, Math.max(5, expectedLength + 2));
   }

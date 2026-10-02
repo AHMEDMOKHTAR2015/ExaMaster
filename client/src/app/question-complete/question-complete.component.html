@@ -9,7 +9,8 @@
             type="text"
             class="passage__blank"
             [attr.aria-label]="'Blank ' + (segment.index + 1)"
-            [style.width.ch]="blankWidthCh(segment.expectedLength)"
+            appAutoWidth
+            [style.min-width.ch]="blankWidthCh(segment.expectedLength)"
             [value]="question().blanks?.[segment.index]?.userAnswer ?? ''"
             (input)="onBlankInput(question(), segment.index, $any($event.target).value)"
             (keydown.enter)="onBlankEnter(question())"
