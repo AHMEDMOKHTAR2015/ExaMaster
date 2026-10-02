@@ -789,7 +789,7 @@
 
           <div class="form-group">
             <label>{{ 'quizBuilder.subject' | translate }}</label>
-            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadSubjectId()" (ngModelChange)="bulkUploadSubjectId.set($event)">
+            <select class="quizzes-admin__form-input" [ngModel]="bulkUploadSubjectId()" (ngModelChange)="onBulkUploadSubjectChange($event)">
               <option value="">{{ 'common.selectSubject' | translate }}</option>
               @for (subject of subjects(); track subject.id) {
                 <option [value]="subject.id">{{ subject.name }}</option>
@@ -825,6 +825,17 @@
                 <option [value]="opt.value">{{ opt.label | translate }}</option>
               }
             </select>
+          </div>
+
+          <!-- Optional: every question in the file gets these tags (of the chosen subject). -->
+          <div class="form-group">
+            <span class="field__label">{{ 'tags.label' | translate }}</span>
+            @if (bulkUploadSubjectId()) {
+              <app-tag-toggle-list [tags]="bulkUploadSubjectTags()" [selected]="bulkUploadTagIds()"
+                                   [label]="'tags.label' | translate" (selectedChange)="bulkUploadTagIds.set($event)" />
+            } @else {
+              <p class="hint">{{ 'tags.chooseSubjectForUpload' | translate }}</p>
+            }
           </div>
         }
 

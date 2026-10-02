@@ -487,6 +487,9 @@ export class QuizzesAdminComponent {
   readonly bulkUploadStageId = signal<string>('');
   readonly bulkUploadGradeId = signal<string>('');
   readonly bulkUploadSemester = signal<QuestionSemester | ''>('');
+  /** Optional: tags of the chosen subject, given to every uploaded question; cleared when the subject changes. */
+  readonly bulkUploadTagIds = signal<string[]>([]);
+  readonly bulkUploadSubjectTags = computed(() => this.subjectTags(this.bulkUploadSubjectId()));
   readonly isBulkUploading = signal<boolean>(false);
 
   /** Grades belonging to the upload popup's currently-selected stage, in display order. */
@@ -1822,6 +1825,7 @@ export class QuizzesAdminComponent {
       this.bulkUploadStageId.set('');
       this.bulkUploadGradeId.set('');
       this.bulkUploadSemester.set('');
+      this.bulkUploadTagIds.set([]);
       this.showBulkUploadForm.set(true);
     };
     reader.onerror = () => this.notification.error('Could not read that file.');
@@ -1846,6 +1850,13 @@ export class QuizzesAdminComponent {
     this.bulkUploadStageId.set('');
     this.bulkUploadGradeId.set('');
     this.bulkUploadSemester.set('');
+    this.bulkUploadTagIds.set([]);
+  }
+
+  /** Subject select in the upload popup. Tags belong to one subject, so a new subject starts with none chosen. */
+  onBulkUploadSubjectChange(subjectId: string): void {
+    if (subjectId !== this.bulkUploadSubjectId()) this.bulkUploadTagIds.set([]);
+    this.bulkUploadSubjectId.set(subjectId);
   }
 
   /** Lets the admin grab a starting point matching the expected schema. */
@@ -1868,7 +1879,7 @@ export class QuizzesAdminComponent {
 
   /**
    * Stamps every parsed question with the popup's Subject/Stage/Grade/Semester
-   * and sends them in one request.
+   * (and any chosen tags) and sends them in one request.
    */
   async confirmBulkUpload(): Promise<void> {
     if (!this.bulkUploadCanConfirm()) return;
@@ -1877,6 +1888,7 @@ export class QuizzesAdminComponent {
     const stageId = this.bulkUploadStageId();
     const gradeId = this.bulkUploadGradeId();
     const semester = this.bulkUploadSemester() as QuestionSemester;
+    const tagIds = this.bulkUploadTagIds();
 
     // The server assigns every id, and saves the whole file or (reporting the first bad question) none of it.
     const rows = this.bulkUploadParsedQuestions().map(parsed => {
@@ -1892,7 +1904,8 @@ export class QuizzesAdminComponent {
         subjectId,
         stageId,
         gradeId,
-        semester
+        semester,
+        tagIds
       };
       return {
         question,

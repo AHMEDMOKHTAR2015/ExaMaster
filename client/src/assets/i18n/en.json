@@ -1710,6 +1710,7 @@
     "bulkHint": "Add or remove tags on every selected question. They must all be in the tags' subject.",
     "subjectOfTags": "Subject of the tags",
     "add": "Add",
-    "remove": "Remove"
+    "remove": "Remove",
+    "chooseSubjectForUpload": "Choose a subject to tag the uploaded questions with its topics (optional)."
   }
 }
