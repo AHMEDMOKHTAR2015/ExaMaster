@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using QuizMaster.Persistence.Accounts;
 
 namespace QuizMaster.Application.SignIn;
@@ -6,8 +7,15 @@ namespace QuizMaster.Application.SignIn;
 public record SessionTokens(string AccessToken, DateTime AccessTokenExpiresOn, string RefreshToken, DateTime RefreshTokenExpiresOn);
 
 // Password sign-in and the sessions it opens.
-public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<SignInCredential> _hasher, AccessTokenIssuer _tokens, ISignInAccounts _accounts)
+public class SignInSessions(
+    QuizMasterDbContext _dbContext, IPasswordHasher<SignInCredential> _hasher, AccessTokenIssuer _tokens, ISignInAccounts _accounts,
+    ILogger<SignInSessions> _logger)
 {
+    //insight - an unknown email is answered only after the same password hashing a known one costs. Answering it at
+    // once would let anyone tell, by timing alone, which emails have accounts (the message is already the same).
+    private static readonly SignInCredential TimingDummy = new() { Uid = string.Empty, Email = string.Empty };
+    private static string? _timingDummyHash;
+
     // One message for every way a sign-in can fail, so the answer never reveals which emails have accounts.
     public const string WrongCredentialsMessage = "The email or mobile number, or the password, is not correct.";
     public const string LockedOutMessage = "Too many attempts. Wait a few minutes, then try again.";
@@ -20,16 +28,33 @@ public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<Sign
         var normalized = SignInCredential.Normalize(email);
         var credential = await _dbContext.SignInCredentials.FirstOrDefaultAsync(c => c.Email == normalized, ct);
         if (credential?.PasswordHash is null)
-            throw new UnauthorizedException(await AccessRequestMessageAsync(normalized, password, ct) ?? WrongCredentialsMessage);
+        {
+            var accessRequestMessage = await AccessRequestMessageAsync(normalized, password, ct);
+            if (accessRequestMessage is null)
+            {
+                _hasher.VerifyHashedPassword(TimingDummy, _timingDummyHash ??= _hasher.HashPassword(TimingDummy, "not-a-password"), password);
+                _logger.LogWarning("Sign-in refused: no account for the email given.");
+            }
+            throw new UnauthorizedException(accessRequestMessage ?? WrongCredentialsMessage);
+        }
         if (credential.IsLockedOut(now))
+        {
+            _logger.LogWarning("Sign-in refused: account {Uid} is locked out until {LockedUntil:o}.", credential.Uid, credential.LockedUntil);
             throw new UnauthorizedException(LockedOutMessage);
+        }
 
         var result = _hasher.VerifyHashedPassword(credential, credential.PasswordHash, password);
         if (result == PasswordVerificationResult.Failed)
         {
             credential.RecordFailure(now);
             await _dbContext.SaveChangesAsync(ct);
-            throw new UnauthorizedException(credential.IsLockedOut(now) ? LockedOutMessage : WrongCredentialsMessage);
+            if (credential.IsLockedOut(now))
+            {
+                _logger.LogWarning("Account {Uid} locked out after {MaxFailedAttempts} wrong passwords.", credential.Uid, SignInCredential.MaxFailedAttempts);
+                throw new UnauthorizedException(LockedOutMessage);
+            }
+            _logger.LogWarning("Sign-in refused: wrong password for account {Uid}.", credential.Uid);
+            throw new UnauthorizedException(WrongCredentialsMessage);
         }
 
         if (result == PasswordVerificationResult.SuccessRehashNeeded)
@@ -49,6 +74,8 @@ public class SignInSessions(QuizMasterDbContext _dbContext, IPasswordHasher<Sign
 
         if (stored.RevokedOn is not null && stored.ReplacedByHash is not null)
         {
+            // a spent refresh token presented again can only be a copy: possibly stolen
+            _logger.LogWarning("A spent refresh token of account {Uid} was presented again; every session of the account is ended.", stored.Uid);
             await RevokeAllAsync(stored.Uid, now, ct);
             throw new UnauthorizedException("This session has ended. Sign in again.");
         }

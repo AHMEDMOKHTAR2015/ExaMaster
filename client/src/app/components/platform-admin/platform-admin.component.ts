@@ -9,6 +9,7 @@ import {
   PlatformTenantService
 } from '../../services/tenant/platform-tenant.service';
 import { Tenant } from '../../models';
+import { MIN_PASSWORD_LENGTH } from '../../shared/password-policy';
 
 type TenantPlan = NonNullable<Tenant['plan']>;
 
@@ -21,11 +22,10 @@ type TenantPlan = NonNullable<Tenant['plan']>;
  * empty here — the vendor belongs to none.
  */
 @Component({
-  selector: 'app-platform-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './platform-admin.component.html'
+    selector: 'app-platform-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule],
+    templateUrl: './platform-admin.component.html'
 })
 export class PlatformAdminComponent extends BaseComponent implements OnInit {
   private readonly tenantService = inject(PlatformTenantService);
@@ -182,8 +182,8 @@ export class PlatformAdminComponent extends BaseComponent implements OnInit {
     const tenant = this.passwordFor();
     const email = this.adminEmail().trim();
     const password = this.adminPassword();
-    if (!tenant || !email || password.length < 6) {
-      this.notification.warning('Give the administrator\'s email and a password of at least 6 characters.');
+    if (!tenant || !email || password.length < MIN_PASSWORD_LENGTH) {
+      this.notification.warning(`Give the administrator's email and a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
     this.isSettingPassword.set(true);

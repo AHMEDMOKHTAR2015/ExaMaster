@@ -10,8 +10,7 @@ using Blocks.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.OpenApi;
-using System.Threading.RateLimiting;
-using QuizMaster.API.Endpoints.AccessRequests;
+using QuizMaster.API.Security;
 
 namespace QuizMaster.API;
 
@@ -39,7 +38,9 @@ public static class DependencyInjection
             .AddEndpointsApiExplorer()
             .AddSwaggerGen(ConfigureSwagger)
             .AddQuizMasterAuthentication(config, environment)         // this API's own access tokens (+ dev tokens in Development)
-            .AddAuthorization();
+            //insight - deny by default: an endpoint that declares no rule of its own still needs a signed-in caller, so
+            // forgetting RequireRoleAuthorization on a new endpoint can never make it public (anonymous ones say AllowAnonymous)
+            .AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
         // Live signals (inbox, review queue). One API instance needs nothing more; several need a backplane
         // (AddStackExchangeRedis, or Azure SignalR Service) so a signal sent on one reaches people connected to another.
@@ -60,27 +61,8 @@ public static class DependencyInjection
 
         services.AddScoped<RequestContext>();
 
-        //insight - the anonymous access-request form is the one endpoint anyone can fill a table through, so it is limited
-        // per client address. Behind a proxy the address is the proxy's unless forwarded headers are honoured
-        // (App Service sets ASPNETCORE_FORWARDEDHEADERS_ENABLED for containers).
-        services.AddRateLimiter(options =>
-        {
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.AddPolicy(SubmitAccessRequestEndpoint.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) }));
-            // the body GlobalExceptionMiddleware writes (PascalCase), which the app reads its message from
-            options.OnRejected = async (context, ct) =>
-            {
-                context.HttpContext.Response.ContentType = "application/json";
-                await context.HttpContext.Response.WriteAsync(JsonSerializer.Serialize(new
-                {
-                    StatusCode = StatusCodes.Status429TooManyRequests,
-                    Message = "Too many requests were sent from this device. Try again in an hour.",
-                    TraceId = context.HttpContext.TraceIdentifier
-                }), ct);
-            };
-        });
+        // per-address limits on the endpoints anyone can call (sign-in, renewal, registration, access requests)
+        services.AddQuizMasterRateLimits(config, environment);
 
         // authorization layer 2: role on THIS aggregate (see QuizMasterAccessChecker)
         services.AddScoped<IAuthorizationHandler, AggregateAccessAuthorizationHandler>();

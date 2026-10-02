@@ -15,7 +15,7 @@ public class SetAdministratorPasswordCommandValidator : QuizMasterCommandValidat
     public SetAdministratorPasswordCommandValidator()
     {
         RuleFor(c => c.Email).NotEmptyWithMessage(nameof(SetAdministratorPasswordCommand.Email)).MaximumLengthWithMessage(MaxLength.C256, nameof(SetAdministratorPasswordCommand.Email));
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
     }
 }
 

@@ -13,6 +13,7 @@ import { ServiceError } from '../../services/shared/service-error';
 import { AccessRequestInput, AccessRequestKind } from '../../models';
 import { BaseComponent } from '../../shared/base';
 import { fadeIn, slideInUp, scaleIn, shake, pulse, staggerList, crossFade } from '../../shared/animations';
+import { MIN_PASSWORD_LENGTH } from '../../shared/password-policy';
 
 /** Which face of the card is showing. */
 type LoginView = 'signIn' | 'requestAccess' | 'requestSent';
@@ -24,9 +25,8 @@ const EMPTY_REQUEST: RequestForm = {
   email: '', schoolName: '', gradeName: '', parentName: '', parentMobileNumber: '', note: ''
 };
 
-/** Mirrors the API's rules (SignInEmail), so most mistakes are caught before a round trip. */
+/** Mirrors the API's rules (SignInEmail, PasswordPolicy), so most mistakes are caught before a round trip. */
 const MIN_MOBILE_DIGITS = 4;
-const MIN_PASSWORD_LENGTH = 6;
 
 /**
  * Sign in, or — for a visitor with no account and no registration key — ask
@@ -35,12 +35,11 @@ const MIN_PASSWORD_LENGTH = 6;
  * in with the mobile number and password they chose here.
  */
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, LoadingButtonDirective],
-  templateUrl: './login.component.html',
-  animations: [fadeIn, slideInUp, scaleIn, shake, pulse, staggerList, crossFade]
+    selector: 'app-login',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe, LoadingButtonDirective],
+    templateUrl: './login.component.html',
+    animations: [fadeIn, slideInUp, scaleIn, shake, pulse, staggerList, crossFade]
 })
 export class LoginComponent extends BaseComponent {
   private authService = inject(AuthService);

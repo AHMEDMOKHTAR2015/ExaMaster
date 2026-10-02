@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Ganss.Xss;
 
 namespace QuizMaster.Domain.Questions;
 
@@ -49,4 +50,12 @@ public static partial class HtmlText
     public static bool HasContent(string? html) => PlainText(html).Length > 0;
 
     public static bool ExceedsFieldLimit(string? value) => Encoding.UTF8.GetByteCount(value ?? string.Empty) > MaxFieldBytes;
+
+    //insight - rich text is stored as the HTML the editor produced, and some screens put it back into a live editor.
+    // Cleaning it on the way in (scripts, event handlers, javascript: links, <iframe>/<object>/<form> all removed;
+    // formatting, lists and tables kept) means stored HTML is safe for any consumer, not only the ones that sanitize
+    // on display. One shared instance: Sanitize is thread-safe once configured.
+    private static readonly HtmlSanitizer Sanitizer = new();
+
+    public static string? Clean(string? html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 }

@@ -423,7 +423,7 @@
                          [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
                          [placeholder]="'usersAdmin.drawer.passwordPlaceholder' | translate" />
                   <button type="button" class="btn btn--sm" (click)="setUserPassword()"
-                          [disabled]="newPassword().length < 6" [appLoadingButton]="isSettingPassword()">
+                          [disabled]="newPassword().length < minPasswordLength" [appLoadingButton]="isSettingPassword()">
                     {{ 'usersAdmin.drawer.setPasswordAction' | translate }}
                   </button>
                 </div>

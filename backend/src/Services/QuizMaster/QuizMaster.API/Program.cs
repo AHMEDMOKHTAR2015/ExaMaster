@@ -4,11 +4,13 @@ using Blocks.AspNetCore.Middlewares;
 using Blocks.EntityFrameworkCore;
 using QuizMaster.API;
 using QuizMaster.API.Endpoints;
+using QuizMaster.API.Security;
 using QuizMaster.Application;
 using QuizMaster.Persistence;
 using QuizMaster.Persistence.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);   // IIS's own is removed in web.config
 
 #region Add
 builder.Services
@@ -46,9 +48,12 @@ if (app.Environment.IsDevelopment() && seedOptions.DemoSchool)
 #endregion
 
 #region Use
+// The API map is for developers: in production it would hand anyone a list of every endpoint and its inputs.
+if (app.Environment.IsDevelopment())
+    app.UseSwagger().UseSwaggerUI();
+
 app
-    .UseSwagger()
-    .UseSwaggerUI()
+    .UseMiddleware<SecurityHeadersMiddleware>()             // first: every response carries them, errors included
     .UseMiddleware<GlobalExceptionMiddleware>()             // early: translates every exception below into a response
     .UseMiddleware<RequestContextMiddleware>()              // correlation id + logging scope
     .UseMiddleware<RequestDiagnosticsMiddleware>()          // timing, [PerfWarn]

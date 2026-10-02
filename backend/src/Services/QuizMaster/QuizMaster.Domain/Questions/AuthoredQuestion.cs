@@ -94,6 +94,9 @@ public sealed record AuthoredQuestion(
 
     private static AuthoredQuestion Explain(QuestionDraft draft)
     {
+        // stored HTML is clean HTML: whatever the editor (or a hand-made request) sent, scripts never reach the database
+        draft = draft with { SubjectHtml = HtmlText.Clean(draft.SubjectHtml), ReferenceAnswer = HtmlText.Clean(draft.ReferenceAnswer) };
+
         if (!HtmlText.HasContent(draft.SubjectHtml))
             throw new DomainException("An Explain question needs a prompt.");
         if (!HtmlText.HasContent(draft.ReferenceAnswer))

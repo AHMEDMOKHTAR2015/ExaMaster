@@ -1,7 +1,6 @@
 import { Component, signal, inject, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ClickOutsideDirective, LoadingButtonDirective } from '../../../directives';
 import { AuthService } from '../../../services/auth';
@@ -22,18 +21,21 @@ import { HomeworkService } from '../../../services/homework.service';
 import { ClassGroup, Grade, Stage, User, ParticipationRecord, RegistrationKey, Teacher, Subject, AssignmentKind } from '../../../models';
 import { resolveSubjectTeaching, SubjectTeaching } from '../../../shared/teaching';
 import { participationScorePercent } from '../../../shared/participation-score';
+import { MIN_PASSWORD_LENGTH } from '../../../shared/password-policy';
 
 /** Page size for the selected child's participation history, applied to the Firebase reads too — each `listByUserDesc` call fetches exactly one page. */
 const PARTICIPATION_PAGE_SIZE = 5;
 
 @Component({
-  selector: 'app-user-admin-dashboard-view',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
-  templateUrl: './user-admin-dashboard-view.component.html',
+    selector: 'app-user-admin-dashboard-view',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
+    templateUrl: './user-admin-dashboard-view.component.html'
 })
 export class UserAdminDashboardViewComponent implements OnInit {
+  /** The API's minimum for a new password (shared/password-policy). */
+  readonly minPasswordLength = MIN_PASSWORD_LENGTH;
+
   private readonly authService = inject(AuthService);
   private readonly userAdminService = inject(UserAdminService);
   private readonly childAccountService = inject(ChildAccountService);
@@ -67,7 +69,7 @@ export class UserAdminDashboardViewComponent implements OnInit {
   async setChildPassword(): Promise<void> {
     const child = this.passwordChild();
     const password = this.childNewPassword();
-    if (!child?.id || password.length < 6 || this.isSettingChildPassword()) return;
+    if (!child?.id || password.length < MIN_PASSWORD_LENGTH || this.isSettingChildPassword()) return;
     this.isSettingChildPassword.set(true);
     try {
       await this.appUserService.setPassword(child.id, password);
@@ -396,8 +398,8 @@ export class UserAdminDashboardViewComponent implements OnInit {
       this.errorMessage.set('Mobile number is required');
       return;
     }
-    if (!this.password().trim() || this.password().length < 6) {
-      this.errorMessage.set('Password must be at least 6 characters');
+    if (!this.password().trim() || this.password().length < MIN_PASSWORD_LENGTH) {
+      this.errorMessage.set(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
     if (!this.stageId()) {

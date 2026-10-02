@@ -22,6 +22,6 @@ public class ProvisionTeacherLoginCommandValidator : QuizMasterCommandValidator<
 {
     public ProvisionTeacherLoginCommandValidator()
     {
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
     }
 }

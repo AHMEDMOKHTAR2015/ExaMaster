@@ -205,7 +205,7 @@ check "the family key reads as used" "1 1" "$(json '"\(.totalCount) \(.items[0].
 FAMILY_KEY=$(json '.items[0].code'); FAMILY_KEY_ID=$(json '.items[0].id')
 
 MOBILE="01$(date +%s)"
-BODY=$(jq -nc --arg code "$OPEN_KEY" --arg mobile "$MOBILE" '{code: $code, firstName: "Nadia", lastName: "New", mobileNumber: $mobile, password: "secret1"}')
+BODY=$(jq -nc --arg code "$OPEN_KEY" --arg mobile "$MOBILE" '{code: $code, firstName: "Nadia", lastName: "New", mobileNumber: $mobile, password: "smoke-pass-1"}')
 check "a parent registers with a key" 201 "$(anon POST /registrations "$BODY")"
 check "the sign-in is the mobile number" "$MOBILE@mobile.local" "$(json .email)"
 check "the same key cannot register a second family" 400 "$(anon POST /registrations "$(echo "$BODY" | jq -c '.mobileNumber = "0999111222"')")"
@@ -213,12 +213,12 @@ check "an unknown key is refused" 400 "$(anon POST /registrations "$(echo "$BODY
 check "a signed-in caller cannot register" 400 "$(call dev-student POST /registrations "$(echo "$BODY" | jq -c '.mobileNumber = "0999111333"')")"
 
 call dev-admin GET /classes >/dev/null; CLASS=$(json '.classes[0].id')
-CHILD=$(jq -nc --arg code "$FAMILY_KEY" --argjson class "$CLASS" '{code: $code, firstName: "Kareem", lastName: "Kid", mobileNumber: "0100200300", password: "secret1", classId: $class}')
+CHILD=$(jq -nc --arg code "$FAMILY_KEY" --argjson class "$CLASS" '{code: $code, firstName: "Kareem", lastName: "Kid", mobileNumber: "0100200300", password: "smoke-pass-1", classId: $class}')
 check "a child registers with the family key" 201 "$(anon POST /registrations/child "$CHILD")"
 CHILD_ID=$(json .userId)
 call dev-parent GET /me/children >/dev/null
 check "the child is linked to the parent" 1 "$(json "[.children[] | select(.id == $CHILD_ID)] | length")"
-ADD=$(jq -nc --argjson class "$CLASS" '{firstName: "Lina", lastName: "Kid", mobileNumber: "0100200301", password: "secret1", classId: $class}')
+ADD=$(jq -nc --argjson class "$CLASS" '{firstName: "Lina", lastName: "Kid", mobileNumber: "0100200301", password: "smoke-pass-1", classId: $class}')
 check "the parent adds the third child" 201 "$(call dev-parent POST /me/children "$ADD")"
 check "the allowance of 3 is spent" 400 "$(call dev-parent POST /me/children "$(echo "$ADD" | jq -c '.mobileNumber = "0100200302"')")"
 check "a student cannot add children" 403 "$(call dev-student POST /me/children "$ADD")"
@@ -241,12 +241,12 @@ check "an unused key can be deleted" 200 "$(call dev-admin DELETE /registration-
 check "a teacher key does not exist" 400 "$(call dev-admin POST /registration-keys '{"role":"TEACHER"}')"
 check "admin creates a key for a parent account" 201 "$(call dev-admin POST /registration-keys '{"role":"PARENT","expiresOn":"2030-01-01T00:00:00Z","maxChildren":2}')"
 PARENT_KEY=$(json .code)
-BODY=$(jq -nc --arg code "$PARENT_KEY" '{kind: "Parent", firstName: "Hana", lastName: "Parent", mobileNumber: "0111222333", password: "secret1", registrationKeyCode: $code}')
+BODY=$(jq -nc --arg code "$PARENT_KEY" '{kind: "Parent", firstName: "Hana", lastName: "Parent", mobileNumber: "0111222333", password: "smoke-pass-1", registrationKeyCode: $code}')
 call dev-admin GET '/registration-keys?role=APPLICATION_ADMIN' >/dev/null; ADMIN_KEY=$(json '.items[0].code')
-check "a parent cannot be created on an administrator key" 400 "$(call dev-admin POST /users "$(jq -nc --arg code "$ADMIN_KEY" '{kind: "Parent", firstName: "Wrong", lastName: "Key", mobileNumber: "0111000999", password: "secret1", registrationKeyCode: $code}')")"
+check "a parent cannot be created on an administrator key" 400 "$(call dev-admin POST /users "$(jq -nc --arg code "$ADMIN_KEY" '{kind: "Parent", firstName: "Wrong", lastName: "Key", mobileNumber: "0111000999", password: "smoke-pass-1", registrationKeyCode: $code}')")"
 check "admin creates a parent on that key" 201 "$(call dev-admin POST /users "$BODY")"
 NEW_PARENT=$(json .id)
-BODY=$(jq -nc --argjson parent "$NEW_PARENT" --argjson class "$CLASS" '{kind: "Student", firstName: "Yara", lastName: "Kid", mobileNumber: "0111222334", password: "secret1", parentId: $parent, classId: $class}')
+BODY=$(jq -nc --argjson parent "$NEW_PARENT" --argjson class "$CLASS" '{kind: "Student", firstName: "Yara", lastName: "Kid", mobileNumber: "0111222334", password: "smoke-pass-1", parentId: $parent, classId: $class}')
 check "admin enrols a student on that family's key" 201 "$(call dev-admin POST /users "$BODY")"
 check "a student cannot name another family's key" 400 "$(call dev-admin POST /users "$(echo "$BODY" | jq -c --arg code "$FAMILY_KEY" '.registrationKeyCode = $code | .mobileNumber = "0111222335"')")"
 check "the same mobile number twice is a conflict" 409 "$(call dev-admin POST /users "$(echo "$BODY" | jq -c '.kind = "Teacher" | del(.parentId, .classId)')")"
@@ -265,9 +265,9 @@ call dev-admin GET "/users?role=PARENT&pageSize=100" >/dev/null
 check "the parents list shows the new name and child count" "Hana Hassan 2" "$(json "[.items[] | select(.id == $NEW_PARENT)][0] | \"\\(.displayName) \\(.childCount)\"")"
 
 call dev-admin GET /teachers >/dev/null; ROSTER=$(json '.teachers[0].id')
-check "provisioning an existing teacher's login links it" "Linked" "$(call dev-admin POST /teachers/$ROSTER/login '{"password":"secret1"}' >/dev/null; json .status)"
-check "a teacher without an email is skipped" "SkippedNoEmail" "$(call dev-admin POST /teachers '{"firstName":"No","lastName":"Email"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"secret1"}' >/dev/null; json .status)"
-check "a new teacher gets a login" "Created" "$(call dev-admin POST /teachers '{"firstName":"Mona","lastName":"New","email":"mona@demo-school.local"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"secret1"}' >/dev/null; json .status)"
+check "provisioning an existing teacher's login links it" "Linked" "$(call dev-admin POST /teachers/$ROSTER/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
+check "a teacher without an email is skipped" "SkippedNoEmail" "$(call dev-admin POST /teachers '{"firstName":"No","lastName":"Email"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
+check "a new teacher gets a login" "Created" "$(call dev-admin POST /teachers '{"firstName":"Mona","lastName":"New","email":"mona@demo-school.local"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
 
 echo "== translation overrides"
 check "a student reads the school's labels" 200 "$(call dev-student GET /translation-overrides)"
@@ -346,11 +346,13 @@ check "change my password" 200 "$(bearer "$ACCESS" PUT /me/password '{"currentPa
 check "the new one signs in" 200 "$(anon POST /auth/sign-in '{"email":"student@demo-school.local","password":"newpass1"}')"
 check "the old one no longer does" 401 "$(anon POST /auth/sign-in '{"email":"student@demo-school.local","password":"password"}')"
 call dev-student GET /me >/dev/null; STUDENT_ID=$(json .user.id)
-check "a teacher cannot set a student's password" 403 "$(call dev-teacher PUT /users/$STUDENT_ID/password '{"password":"teacher1"}')"
-check "nor a parent, for a child who is not theirs" 403 "$(call dev-parent PUT /users/$STUDENT_ID/password '{"password":"parent1"}')"
-check "a parent can, for their own child" 200 "$(call dev-parent PUT /users/$CHILD_ID/password '{"password":"parent1"}')"
-check "an administrator can" 200 "$(call dev-admin PUT /users/$STUDENT_ID/password '{"password":"password"}')"
-check "and it is the one that signs in now" 200 "$(anon POST /auth/sign-in '{"email":"student@demo-school.local","password":"password"}')"
+check "a teacher cannot set a student's password" 403 "$(call dev-teacher PUT /users/$STUDENT_ID/password '{"password":"smoke-pass-2"}')"
+check "nor a parent, for a child who is not theirs" 403 "$(call dev-parent PUT /users/$STUDENT_ID/password '{"password":"smoke-pass-2"}')"
+check "a parent can, for their own child" 200 "$(call dev-parent PUT /users/$CHILD_ID/password '{"password":"smoke-pass-2"}')"
+check "a new password needs 8 characters" 400 "$(call dev-admin PUT /users/$STUDENT_ID/password '{"password":"short7c"}')"
+check "and cannot be a common one" "400 true" "$(call dev-admin PUT /users/$STUDENT_ID/password '{"password":"Password1"}') $(json '[.. | strings] | any(test("too common"))')"
+check "an administrator can" 200 "$(call dev-admin PUT /users/$STUDENT_ID/password '{"password":"smoke-pass-3"}')"
+check "and it is the one that signs in now" 200 "$(anon POST /auth/sign-in '{"email":"student@demo-school.local","password":"smoke-pass-3"}')"
 for i in 1 2 3 4 5; do anon POST /auth/sign-in '{"email":"student2@demo-school.local","password":"guess"}' >/dev/null; done
 check "the first-run platform administrator signs in" "200" "$(anon POST /auth/sign-in '{"email":"platform@quizmasterpro.local","password":"@dminP@$$w0rd"}')"
 check "five wrong guesses lock the account" "401 true" "$(anon POST /auth/sign-in '{"email":"student2@demo-school.local","password":"password"}') $(json '.Message | test("Too many")')"
@@ -371,6 +373,20 @@ check "but nowhere else" 401 "$(curl -s -o /dev/null -w '%{http_code}' "$API/me?
 echo "== participations history"
 check "students who have submitted, most attempts first" 200 "$(call dev-admin GET '/users?participated=true')"
 check "each with a count, none without one" "true" "$(json '(.items | length > 0) and all(.items[]; .participationCount > 0) and ([.items[].participationCount] == ([.items[].participationCount] | sort | reverse))')"
+
+echo "== security headers and limits (OWASP)"
+HEADERS=$(curl -s -D - -o /dev/null -H "Authorization: Bearer $(cat "$WORK/token-dev-admin")" "$API/subjects" | tr -d '\r')
+check "responses forbid MIME sniffing" "true" "$(echo "$HEADERS" | grep -qi '^x-content-type-options: nosniff' && echo true)"
+check "and framing (clickjacking)" "true" "$(echo "$HEADERS" | grep -qi '^x-frame-options: deny' && echo true)"
+check "a content security policy allows no inline script" "true" "$(echo "$HEADERS" | grep -i '^content-security-policy:' | grep -q "script-src 'self';" && echo true)"
+check "API answers are never cached" "true" "$(echo "$HEADERS" | grep -qi '^cache-control: no-store' && echo true)"
+check "an endpoint with no rule of its own still needs a signed-in caller" 401 "$(curl -s -o "$WORK/out.json" -w "%{http_code}" "$API/me")"
+# last: it spends this address's sign-in allowance
+LIMITED=false
+for i in $(seq 1 80); do
+  [ "$(anon POST /auth/sign-in '{"email":"nobody@demo-school.local","password":"wrong-guess"}')" = 429 ] && { LIMITED=true; break; }
+done
+check "sign-in is rate-limited per address" true "$LIMITED"
 
 echo
 echo "$PASSED passed, $FAILED failed"

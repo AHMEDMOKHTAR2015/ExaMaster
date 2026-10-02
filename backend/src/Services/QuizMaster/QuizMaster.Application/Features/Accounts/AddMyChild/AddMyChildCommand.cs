@@ -17,7 +17,7 @@ public class AddMyChildCommandValidator : AbstractValidator<AddMyChildCommand>
         RuleFor(c => c.FirstName).NotEmptyWithMessage(nameof(AddMyChildCommand.FirstName)).MaximumLengthWithMessage(MaxLength.C128, nameof(AddMyChildCommand.FirstName));
         RuleFor(c => c.LastName).NotEmptyWithMessage(nameof(AddMyChildCommand.LastName)).MaximumLengthWithMessage(MaxLength.C128, nameof(AddMyChildCommand.LastName));
         RuleFor(c => c.MobileNumber).Must(SignInEmail.HasEnoughDigits).WithMessage(SignInEmail.MobileNumberMessage).MaximumLengthWithMessage(MaxLength.C32, nameof(AddMyChildCommand.MobileNumber));
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
         RuleFor(c => c.ClassId).GreaterThan(0).WithMessageForInvalidId(nameof(AddMyChildCommand.ClassId));
     }
 }

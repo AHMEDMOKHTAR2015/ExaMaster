@@ -9,10 +9,12 @@ public static class SignInEndpoint
     {
         app.MapPost("/auth/sign-in", async (SignInCommand command, ISender sender) => Results.Ok(await sender.Send(command)))
         .AllowAnonymous()
+        .RequireRateLimiting(RateLimits.SignIn)
         .WithName("SignIn")
         .WithTags("Sign-in")
         .Produces<SessionTokens>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 }

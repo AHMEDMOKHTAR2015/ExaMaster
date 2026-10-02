@@ -16,7 +16,7 @@ public class ChangeMyPasswordCommandValidator : AbstractValidator<ChangeMyPasswo
     public ChangeMyPasswordCommandValidator()
     {
         RuleFor(c => c.CurrentPassword).NotEmptyWithMessage(nameof(ChangeMyPasswordCommand.CurrentPassword)).MaximumLength(MaxLength.C128);
-        RuleFor(c => c.NewPassword).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.NewPassword).MustBeAcceptablePassword();
     }
 }
 

@@ -276,7 +276,7 @@
         <div class="field">
           <label class="field__label" for="admin-password">New password *</label>
           <input id="admin-password" class="input input--full" type="password" autocomplete="new-password"
-                 placeholder="At least 6 characters"
+                 placeholder="At least 8 characters"
                  [ngModel]="adminPassword()" (ngModelChange)="adminPassword.set($event)" [disabled]="isSettingPassword()" />
         </div>
         <p class="field__hint">

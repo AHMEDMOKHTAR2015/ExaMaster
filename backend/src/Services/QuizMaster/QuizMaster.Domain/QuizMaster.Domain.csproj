@@ -14,6 +14,11 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\QuizMasterPro.Abstractions\QuizMasterPro.Abstractions.csproj" />
   </ItemGroup>
 
+  <!-- Rich text from authors and students is cleaned where it enters the domain (HtmlText.Clean). -->
+  <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="QuizMaster.Domain.Tests" />
   </ItemGroup>

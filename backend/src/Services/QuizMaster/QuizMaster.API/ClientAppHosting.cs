@@ -23,9 +23,12 @@ public static class ClientAppHosting
     // Any other path is a client-side route and gets index.html, except under /api and /hubs, where a miss is a 404.
     public static IEndpointRouteBuilder MapClientApp(this IEndpointRouteBuilder app)
     {
-        app.MapFallbackToFile("index.html", ClientAppFiles);
-        app.MapFallback("/api/{**path}", () => Results.NotFound());
-        app.MapFallback("/hubs/{**path}", () => Results.NotFound());
+        // public: the sign-in page is part of the app, and an unknown /api path is a 404 for anyone
+        app.MapFallbackToFile("index.html", ClientAppFiles).AllowAnonymous();
+        app.MapFallback("/api/{**path}", () => Results.NotFound()).AllowAnonymous();
+        app.MapFallback("/hubs/{**path}", () => Results.NotFound()).AllowAnonymous();
+        // a file that is not there (a stale asset link) is a 404, not the sign-in challenge deny-by-default would give it
+        app.MapFallback("{**path:file}", () => Results.NotFound()).AllowAnonymous();
         return app;
     }
 

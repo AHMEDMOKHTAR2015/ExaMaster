@@ -19,6 +19,6 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(c => c.FirstName).NotEmptyWithMessage(nameof(RegisterCommand.FirstName)).MaximumLengthWithMessage(MaxLength.C128, nameof(RegisterCommand.FirstName));
         RuleFor(c => c.LastName).NotEmptyWithMessage(nameof(RegisterCommand.LastName)).MaximumLengthWithMessage(MaxLength.C128, nameof(RegisterCommand.LastName));
         RuleFor(c => c.MobileNumber).Must(SignInEmail.HasEnoughDigits).WithMessage(SignInEmail.MobileNumberMessage).MaximumLengthWithMessage(MaxLength.C32, nameof(RegisterCommand.MobileNumber));
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
     }
 }

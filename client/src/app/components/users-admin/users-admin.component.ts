@@ -10,6 +10,7 @@ import { ChildAccountService } from '../../services/auth/child-account.service';
 import { NotificationService } from '../../services/notification.service';
 import { PagedList } from '../../shared/paged-list';
 import { AdminRole, Stage, Grade, ClassGroup, User } from '../../models';
+import { MIN_PASSWORD_LENGTH } from '../../shared/password-policy';
 
 type UserTab = 'all' | 'admins' | 'parents' | 'children';
 type DerivedStatus = 'active' | 'pending' | 'inactive' | 'suspended';
@@ -17,13 +18,15 @@ type DerivedRole = 'Admin' | 'Parent' | 'Child' | 'User';
 type NewUserRole = 'admin' | 'parent' | 'child';
 
 @Component({
-  selector: 'app-users-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
-  templateUrl: './users-admin.component.html',
+    selector: 'app-users-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
+    templateUrl: './users-admin.component.html'
 })
 export class UsersAdminComponent {
+  /** The API's minimum for a new password (shared/password-policy). */
+  readonly minPasswordLength = MIN_PASSWORD_LENGTH;
+
   private readonly appUserService = inject(AppUserService);
   private readonly stageService = inject(StageService);
   private readonly gradeService = inject(GradeService);
@@ -457,7 +460,7 @@ export class UsersAdminComponent {
   async setUserPassword(): Promise<void> {
     const id = this.editingUserId();
     const password = this.newPassword();
-    if (!id || password.length < 6 || this.isSettingPassword()) return;
+    if (!id || password.length < MIN_PASSWORD_LENGTH || this.isSettingPassword()) return;
     this.isSettingPassword.set(true);
     try {
       await this.appUserService.setPassword(id, password);
@@ -561,7 +564,7 @@ export class UsersAdminComponent {
 
     if (!firstName || !lastName) { this.notification.warning('First and last name are required.'); return; }
     if (!mobile) { this.notification.warning('Mobile number is required.'); return; }
-    if (!password || password.length < 6) { this.notification.warning('Password must be at least 6 characters.'); return; }
+    if (!password || password.length < MIN_PASSWORD_LENGTH) { this.notification.warning(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`); return; }
     // A parent claims the key they are created with; a child is always charged to their parent's key, and staff need none.
     if (role === 'parent' && !registrationKeyId) { this.notification.warning('Registration key is required.'); return; }
 

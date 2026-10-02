@@ -283,7 +283,7 @@
       </div>
       <footer class="popup__foot">
         <button class="btn" (click)="closeSetPassword()" [disabled]="isSettingChildPassword()">{{ 'common.cancel' | translate }}</button>
-        <button class="btn btn--primary" (click)="setChildPassword()" [disabled]="childNewPassword().length < 6" [appLoadingButton]="isSettingChildPassword()">
+        <button class="btn btn--primary" (click)="setChildPassword()" [disabled]="childNewPassword().length < minPasswordLength" [appLoadingButton]="isSettingChildPassword()">
           {{ 'dashboard.userAdmin.setPassword' | translate }}
         </button>
       </footer>

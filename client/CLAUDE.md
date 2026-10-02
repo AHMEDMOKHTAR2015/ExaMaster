@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-QuizMasterPro (`ng6-quiz`) is an Angular 18 (standalone components, signals) quiz platform. Its backend is the .NET API
+QuizMasterPro (`ng6-quiz`) is an Angular 20 (standalone components, signals) quiz platform. Its backend is the .NET API
 in `../backend` (SQL Server): data, sign-in, grading and notifications all live there. The app uses no
 Firebase at all — an ESLint rule refuses Firebase imports (`eslint.config.js`) and the repo carries no Firebase config.
 Where the built app is hosted is not decided yet (see Hosting below).
@@ -210,6 +210,16 @@ All components extend `BaseComponent` (`src/app/shared/base/base.component.ts`) 
 Below 900px the shell changes navigation mode: the sidebar becomes an overlay drawer, and students and parents additionally get a fixed bottom tab bar (`.tabbar` in `app.component.html`, gated on `showTabbar()`). Teacher and application admin keep the drawer only — their nav trees are too deep for four items to represent honestly. Both the drawer and the tab bar are withheld entirely while `QuizLockdownService.isActive`, for the same reason the sidebar is: a One Time Join sitting renders no navigation at all, rather than hidden navigation.
 
 The notification panel is a topbar dropdown on desktop and a full-screen sheet below 900px, and it is rendered as a **sibling of `<header class="topbar">`, never inside it**. That placement is load-bearing twice over: `.topbar` is `position: sticky` and therefore a stacking context, which caps the panel's `z-index` beneath the drawer no matter how high it is set; and `.topbar` carries `[style.opacity]="topbarOpacity()"`, which fades its entire subtree — fixed descendants included — to zero after 150px of scroll.
+
+### Security constraints from the API
+
+The API serves this app with a Content-Security-Policy of `script-src 'self'`: **no inline script and no inline event
+handler anywhere** (an `onload="…"` in `index.html` is silently blocked). That is why `angular.json` sets
+`optimization.styles.inlineCritical: false` — critical-CSS inlining loads the stylesheet through an `onload` handler.
+Fonts may come from `fonts.gstatic.com` only; any other external host must be added to the CSP in the API's
+`SecurityHeadersMiddleware` first. HTML written straight into the DOM (the rich-text editor's surface) goes through
+`DomSanitizer.sanitize` first; everything else uses `[innerHTML]`, which Angular sanitizes. New passwords need
+`MIN_PASSWORD_LENGTH` (8, `shared/password-policy.ts`); the API also refuses common ones and its message is shown as is.
 
 ### Styling
 

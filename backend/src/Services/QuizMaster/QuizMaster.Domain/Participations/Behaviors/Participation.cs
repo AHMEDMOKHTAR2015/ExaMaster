@@ -26,6 +26,9 @@ public partial class Participation
                 throw new DomainException("You have already submitted this assignment.");
         }
 
+        // an Explain answer is rich text the teacher later reads: cleaned before it is graded and stored
+        responses = responses.Select(response => response.ResponseText is null ? response : response with { ResponseText = HtmlText.Clean(response.ResponseText) }).ToList();
+
         // requiredAll is a guarantee, not a client-side nudge: only the server can make it binding.
         if (quiz.Settings.RequiredAll && !QuizGrader.IsFullyAnswered(quiz.Questions, responses))
             throw new DomainException("All questions must be answered before submitting.");

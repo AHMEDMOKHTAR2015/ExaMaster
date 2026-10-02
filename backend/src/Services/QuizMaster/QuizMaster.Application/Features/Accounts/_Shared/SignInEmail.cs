@@ -10,10 +10,8 @@ public static partial class SignInEmail
 {
     public const string MobileDomain = "mobile.local";
     public const int MinimumMobileDigits = 4;
-    public const int MinimumPasswordLength = 6;                  // what every existing password was held to
 
     public const string MobileNumberMessage = "A mobile number must have at least 4 digits.";
-    public const string PasswordMessage = "A password must be at least 6 characters.";
 
     public static string ForMobile(string mobileNumber)
     {

@@ -53,10 +53,14 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate _next, ILogger<Glo
             _logger.LogError(exception, "Unhandled exception. TraceId={TraceId}", context.TraceIdentifier);
         }
 
+        //insight - an unexpected failure's own message can name tables, columns or internal paths: outside development
+        // the caller gets a generic message and the trace id that finds the full error in the logs. Expected failures
+        // (400/401/403/404/409) keep their message: those are written for people.
+        var unexpected = statusCode >= HttpStatusCode.InternalServerError && !_env.IsDevelopment();
         var response = new
         {
             StatusCode = (int)statusCode,
-            exception.Message,
+            Message = unexpected ? $"Something went wrong on our side. If it keeps happening, quote reference {context.TraceIdentifier}." : exception.Message,
             TraceId = context.TraceIdentifier,
             Details = _env.IsDevelopment() ? exception.StackTrace : null
         };

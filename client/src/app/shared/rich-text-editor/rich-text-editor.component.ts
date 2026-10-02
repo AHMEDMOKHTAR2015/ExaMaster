@@ -2,11 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  SecurityContext,
   effect,
+  inject,
   input,
   output,
   viewChild
 } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /** One toolbar button: the `execCommand` it runs and its i18n label key. */
@@ -29,14 +32,16 @@ interface ToolbarAction {
  * The value is HTML. Every consumer renders it through Angular's `[innerHTML]`,
  * which sanitizes by default (scripts, event handlers and `javascript:` URLs are
  * stripped) — student-written HTML ends up in a teacher's review screen, so
- * nothing on this path may ever call `bypassSecurityTrustHtml`.
+ * nothing on this path may ever call `bypassSecurityTrustHtml`. The one place
+ * HTML is written straight into the DOM — this editor's own surface, filled
+ * when a stored question or answer is opened for editing — runs it through the
+ * same sanitizer first (the server also cleans it on save).
  */
 @Component({
-  selector: 'rich-text-editor',
-  templateUrl: './rich-text-editor.component.html',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe]
+    selector: 'rich-text-editor',
+    templateUrl: './rich-text-editor.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TranslatePipe]
 })
 export class RichTextEditorComponent {
   readonly value = input<string>('');
@@ -48,6 +53,7 @@ export class RichTextEditorComponent {
   readonly editingFinished = output<string>();
 
   private readonly surface = viewChild.required<ElementRef<HTMLElement>>('surface');
+  private readonly sanitizer = inject(DomSanitizer);
 
   /** Last value this component emitted, so incoming echoes don't reset the caret. */
   private lastEmitted = '';
@@ -68,7 +74,8 @@ export class RichTextEditorComponent {
       const incoming = this.value() ?? '';
       const element = this.surface().nativeElement;
       if (incoming === this.lastEmitted || incoming === element.innerHTML) return;
-      element.innerHTML = incoming;
+      // a live contenteditable runs an <img onerror> the moment it is assigned: never write unsanitized HTML here
+      element.innerHTML = this.sanitizer.sanitize(SecurityContext.HTML, incoming) ?? '';
     });
   }
 

@@ -22,7 +22,7 @@ public class CreateTenantCommandValidator : AbstractValidator<CreateTenantComman
         RuleFor(c => c.Name).NotEmptyWithMessage(nameof(CreateTenantCommand.Name)).MaximumLengthWithMessage(MaxLength.C128, nameof(CreateTenantCommand.Name));
         RuleFor(c => c.Plan).IsInEnum();
         RuleFor(c => c.AdminEmail).NotEmptyWithMessage(nameof(CreateTenantCommand.AdminEmail)).EmailAddress().MaximumLengthWithMessage(MaxLength.C256, nameof(CreateTenantCommand.AdminEmail));
-        RuleFor(c => c.AdminPassword).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128)
+        RuleFor(c => c.AdminPassword).MustBeAcceptablePassword()
             .When(c => c.AdminPassword is not null);
     }
 }

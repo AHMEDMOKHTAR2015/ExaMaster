@@ -13,10 +13,12 @@ public static class RegisterEndpoint
             return Results.Created($"/api/users/{response.UserId}", response);
         })
         .AllowAnonymous()
+        .RequireRateLimiting(RateLimits.Registration)
         .WithName("Register")
         .WithTags("Registration")
         .Produces<RegistrationResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .ProducesProblem(StatusCodes.Status409Conflict);
     }
 }

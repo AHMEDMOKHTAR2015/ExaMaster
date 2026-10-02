@@ -29,7 +29,7 @@ public class SubmitAccessRequestCommandValidator : AbstractValidator<SubmitAcces
         RuleFor(c => c.FirstName).NotEmptyWithMessage(nameof(SubmitAccessRequestCommand.FirstName)).MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.FirstName));
         RuleFor(c => c.LastName).NotEmptyWithMessage(nameof(SubmitAccessRequestCommand.LastName)).MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.LastName));
         RuleFor(c => c.MobileNumber).Must(SignInEmail.HasEnoughDigits).WithMessage(SignInEmail.MobileNumberMessage).MaximumLengthWithMessage(MaxLength.C32, nameof(SubmitAccessRequestCommand.MobileNumber));
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
 
         RuleFor(c => c.Email).EmailAddress().MaximumLengthWithMessage(MaxLength.C256, nameof(SubmitAccessRequestCommand.Email))
             .When(c => !string.IsNullOrWhiteSpace(c.Email));

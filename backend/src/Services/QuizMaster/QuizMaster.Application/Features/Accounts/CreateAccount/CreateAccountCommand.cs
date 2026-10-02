@@ -35,7 +35,7 @@ public class CreateAccountCommandValidator : AbstractValidator<CreateAccountComm
         RuleFor(c => c.LastName).NotEmptyWithMessage(nameof(CreateAccountCommand.LastName)).MaximumLengthWithMessage(MaxLength.C128, nameof(CreateAccountCommand.LastName));
         RuleFor(c => c.MobileNumber).Must(SignInEmail.HasEnoughDigits).WithMessage(SignInEmail.MobileNumberMessage).MaximumLengthWithMessage(MaxLength.C32, nameof(CreateAccountCommand.MobileNumber));
         RuleFor(c => c.Email).EmailAddress().MaximumLengthWithMessage(MaxLength.C256, nameof(CreateAccountCommand.Email)).When(c => !string.IsNullOrWhiteSpace(c.Email));
-        RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        RuleFor(c => c.Password).MustBeAcceptablePassword();
         RuleFor(c => c.RegistrationKeyCode).MaximumLengthWithMessage(MaxLength.C64, nameof(CreateAccountCommand.RegistrationKeyCode));
 
         RuleFor(c => c.RegistrationKeyCode).NotEmpty().WithMessage("A parent account is created with the family's registration key.")

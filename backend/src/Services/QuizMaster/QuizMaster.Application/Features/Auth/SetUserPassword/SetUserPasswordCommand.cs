@@ -13,7 +13,7 @@ public record SetUserPasswordCommand(string Password) : QuizMasterCommand
 public class SetUserPasswordCommandValidator : QuizMasterCommandValidator<SetUserPasswordCommand>
 {
     public SetUserPasswordCommandValidator()
-        => RuleFor(c => c.Password).MinimumLength(SignInEmail.MinimumPasswordLength).WithMessage(SignInEmail.PasswordMessage).MaximumLength(MaxLength.C128);
+        => RuleFor(c => c.Password).MustBeAcceptablePassword();
 }
 
 public class SetUserPasswordCommandHandler(Repository<User> _userRepository, ISignInAccounts _accounts, IClaimsProvider _claimsProvider)
