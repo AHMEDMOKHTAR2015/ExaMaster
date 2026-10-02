@@ -7,11 +7,10 @@ import { LoadingService } from '../../services/loading.service';
  * Displays an overlay with spinner when HTTP requests are in progress
  */
 @Component({
-  selector: 'app-loading-spinner',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
-  template: `
+    selector: 'app-loading-spinner',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [],
+    template: `
     @if (loadingService.isLoading()) {
       <div class="loading-overlay">
         <div class="spinner-container">
@@ -21,7 +20,7 @@ import { LoadingService } from '../../services/loading.service';
       </div>
     }
   `,
-  styles: [`
+    styles: [`
     .loading-overlay {
       position: fixed;
       top: 0;

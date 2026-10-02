@@ -22,11 +22,10 @@ const PAGE_SIZE = 10;
  * screen until it lands.
  */
 @Component({
-  selector: 'app-my-participations',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe, ParticipationAnswersPopupComponent],
-  templateUrl: './my-participations.component.html',
+    selector: 'app-my-participations',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe, ParticipationAnswersPopupComponent],
+    templateUrl: './my-participations.component.html'
 })
 export class MyParticipationsComponent extends BaseComponent implements OnInit {
   private readonly summary = inject(ParticipationSummaryService);

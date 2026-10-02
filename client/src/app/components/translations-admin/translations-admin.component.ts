@@ -34,11 +34,10 @@ interface LabelRow {
  * so one customer's wording never reaches another's screens.
  */
 @Component({
-  selector: 'app-translations-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe],
-  templateUrl: './translations-admin.component.html'
+    selector: 'app-translations-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe],
+    templateUrl: './translations-admin.component.html'
 })
 export class TranslationsAdminComponent extends BaseComponent implements OnInit {
   private readonly catalog = inject(TranslationCatalogService);

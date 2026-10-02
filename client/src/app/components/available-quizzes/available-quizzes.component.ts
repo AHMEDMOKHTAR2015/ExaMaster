@@ -50,23 +50,22 @@ interface PendingStart {
 }
 
 @Component({
-  selector: 'app-available-quizzes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    RouterModule,
-    TranslatePipe,
-    UserProfileComponent,
-    QuizListComponent,
-    AssignmentThumbnailComponent,
-    QuestionOptionsComponent,
-    QuestionCompleteComponent,
-    QuestionExplainComponent,
-    QuizResultComponent
-],
-  templateUrl: './available-quizzes.component.html',
-  animations: [fadeIn, slideInLeft, slideInRight]
+    selector: 'app-available-quizzes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        RouterModule,
+        TranslatePipe,
+        UserProfileComponent,
+        QuizListComponent,
+        AssignmentThumbnailComponent,
+        QuestionOptionsComponent,
+        QuestionCompleteComponent,
+        QuestionExplainComponent,
+        QuizResultComponent
+    ],
+    templateUrl: './available-quizzes.component.html',
+    animations: [fadeIn, slideInLeft, slideInRight]
 })
 export class AvailableQuizzesComponent extends BaseComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);

@@ -19,11 +19,10 @@ import { Subject, SubjectTag, ClassGroup, Teacher, Stage, User } from '../../mod
 import { parseSubjectsJson, SUBJECT_IMPORT_SAMPLE, ParsedSubjectInput } from '../../shared/subject-import';
 
 @Component({
-  selector: 'app-subjects-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, ClickOutsideDirective],
-  templateUrl: './subjects-admin.component.html',
+    selector: 'app-subjects-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe, ClickOutsideDirective],
+    templateUrl: './subjects-admin.component.html'
 })
 export class SubjectsAdminComponent {
   private readonly subjectService = inject(SubjectService);

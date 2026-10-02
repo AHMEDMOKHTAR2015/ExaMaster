@@ -17,11 +17,10 @@ import { Stage, Grade, ClassGroup, Teacher, Subject, User } from '../../models';
 import { resolveSubjectTeaching, SubjectTeaching } from '../../shared/teaching';
 
 @Component({
-  selector: 'app-application-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective],
-  templateUrl: './application-admin.component.html',
+    selector: 'app-application-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective],
+    templateUrl: './application-admin.component.html'
 })
 export class ApplicationAdminComponent {
   private readonly stageService = inject(StageService);

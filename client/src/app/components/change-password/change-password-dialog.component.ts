@@ -14,11 +14,10 @@ const MINIMUM_LENGTH = 6;
  * one continues, signed back in with the new password.
  */
 @Component({
-  selector: 'app-change-password-dialog',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
-  templateUrl: './change-password-dialog.component.html'
+    selector: 'app-change-password-dialog',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe, ClickOutsideDirective, LoadingButtonDirective],
+    templateUrl: './change-password-dialog.component.html'
 })
 export class ChangePasswordDialogComponent {
   private readonly authService = inject(AuthService);

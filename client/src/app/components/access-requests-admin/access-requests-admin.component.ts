@@ -38,11 +38,10 @@ interface ClassGroupOption {
  * Rejecting can give a reason, which the visitor sees when they try to sign in.
  */
 @Component({
-  selector: 'app-access-requests-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink, TranslatePipe],
-  templateUrl: './access-requests-admin.component.html'
+    selector: 'app-access-requests-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, DatePipe, RouterLink, TranslatePipe],
+    templateUrl: './access-requests-admin.component.html'
 })
 export class AccessRequestsAdminComponent extends BaseComponent implements OnInit {
   private readonly service = inject(AccessRequestService);

@@ -9,11 +9,10 @@ import { computeQuizWeighting, requiresManualReview, roundPercent, weightOf } fr
 import { rightWrongLabelKey } from '../shared/right-wrong-question';
 
 @Component({
-  selector: 'quiz-result',
-  templateUrl: './quiz-result.component.html',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, DatePipe]
+    selector: 'quiz-result',
+    templateUrl: './quiz-result.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TranslatePipe, DatePipe]
 })
 export class QuizResultComponent {
   private router = inject(Router);

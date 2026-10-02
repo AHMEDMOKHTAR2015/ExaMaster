@@ -45,11 +45,10 @@ interface QuizCountStageRow extends QuizCountStage {
 }
 
 @Component({
-  selector: 'app-application-admin-dashboard-view',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, KpiSkeletonComponent, ClickOutsideDirective, LoadingButtonDirective],
-  templateUrl: './application-admin-dashboard-view.component.html',
+    selector: 'app-application-admin-dashboard-view',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, KpiSkeletonComponent, ClickOutsideDirective, LoadingButtonDirective],
+    templateUrl: './application-admin-dashboard-view.component.html'
 })
 export class ApplicationAdminDashboardViewComponent implements OnInit {
   private readonly router = inject(Router);

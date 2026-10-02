@@ -3,9 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { AutoWidthInputDirective } from './auto-width-input.directive';
 
 @Component({
-  standalone: true,
-  imports: [AutoWidthInputDirective],
-  template: `<div style="width: 600px"><input appAutoWidth placeholder="…" style="min-width: 5ch; max-width: 100%; font: 16px sans-serif; padding: 4px 10px; box-sizing: border-box" /></div>`
+    imports: [AutoWidthInputDirective],
+    template: `<div style="width: 600px"><input appAutoWidth placeholder="…" style="min-width: 5ch; max-width: 100%; font: 16px sans-serif; padding: 4px 10px; box-sizing: border-box" /></div>`
 })
 class HostComponent {}
 

@@ -9,12 +9,11 @@ import { staggerList } from '../../shared/animations';
  * Follows Single Responsibility Principle - only handles list display
  */
 @Component({
-  selector: 'app-quiz-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [QuizCardComponent],
-  templateUrl: './quiz-list.component.html',
-  animations: [staggerList]
+    selector: 'app-quiz-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [QuizCardComponent],
+    templateUrl: './quiz-list.component.html',
+    animations: [staggerList]
 })
 export class QuizListComponent {
   readonly quizzes = input<QuizInfo[]>([]);

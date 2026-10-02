@@ -19,11 +19,10 @@ import { UserProfileComponent } from '../user-profile/user-profile.component';
  * between the two a one-tap round trip.
  */
 @Component({
-  selector: 'app-profile',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UserProfileComponent],
-  templateUrl: './profile.component.html'
+    selector: 'app-profile',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [UserProfileComponent],
+    templateUrl: './profile.component.html'
 })
 export class ProfileComponent extends BaseComponent implements OnInit {
   private readonly authService = inject(AuthService);

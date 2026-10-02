@@ -17,17 +17,16 @@ import { NoAccessViewComponent } from './views/no-access-view.component';
  * component ever renders, so `roleType()` is never `'userAdmin'` in practice.
  */
 @Component({
-  selector: 'app-admin-dashboard',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    TranslatePipe,
-    ApplicationAdminDashboardViewComponent,
-    TeacherDashboardViewComponent,
-    NoAccessViewComponent
-  ],
-  templateUrl: './admin-dashboard.component.html',
+    selector: 'app-admin-dashboard',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        TranslatePipe,
+        ApplicationAdminDashboardViewComponent,
+        TeacherDashboardViewComponent,
+        NoAccessViewComponent
+    ],
+    templateUrl: './admin-dashboard.component.html'
 })
 export class AdminDashboardComponent {
   private readonly authService = inject(AuthService);

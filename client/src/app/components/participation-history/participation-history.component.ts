@@ -18,11 +18,10 @@ const PARTICIPATION_PAGE_SIZE = 5;
  * living at the bottom of the dashboard.
  */
 @Component({
-  selector: 'app-participation-history',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe],
-  templateUrl: './participation-history.component.html',
+    selector: 'app-participation-history',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe],
+    templateUrl: './participation-history.component.html'
 })
 export class ParticipationHistoryComponent extends BaseComponent implements OnInit {
   private readonly authService = inject(AuthService);

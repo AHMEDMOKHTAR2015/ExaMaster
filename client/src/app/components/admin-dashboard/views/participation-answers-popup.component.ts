@@ -16,11 +16,10 @@ import { ParticipationService } from '../../../services/admin/quizzes/participat
  * holds a participation record can open it without knowing that.
  */
 @Component({
-  selector: 'app-participation-answers-popup',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe, ClickOutsideDirective],
-  templateUrl: './participation-answers-popup.component.html',
+    selector: 'app-participation-answers-popup',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe, ClickOutsideDirective],
+    templateUrl: './participation-answers-popup.component.html'
 })
 export class ParticipationAnswersPopupComponent {
   /** The attempt being reviewed. Required — the parent only renders when set. */

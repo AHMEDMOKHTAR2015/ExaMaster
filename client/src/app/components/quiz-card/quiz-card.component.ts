@@ -10,12 +10,11 @@ import { cardHover, scaleIn } from '../../shared/animations';
  * Follows Interface Segregation Principle - only requires what it needs
  */
 @Component({
-  selector: 'app-quiz-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe],
-  templateUrl: './quiz-card.component.html',
-  animations: [cardHover, scaleIn]
+    selector: 'app-quiz-card',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe],
+    templateUrl: './quiz-card.component.html',
+    animations: [cardHover, scaleIn]
 })
 export class QuizCardComponent {
   readonly quiz = input.required<QuizInfo>();

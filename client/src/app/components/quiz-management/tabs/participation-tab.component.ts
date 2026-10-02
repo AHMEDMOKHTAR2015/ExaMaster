@@ -46,11 +46,10 @@ interface TrackingRow {
  * service is scoped to the whole `/quiz-management` route subtree.
  */
 @Component({
-  selector: 'app-participation-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe],
-  templateUrl: './participation-tab.component.html',
+    selector: 'app-participation-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe],
+    templateUrl: './participation-tab.component.html'
 })
 export class ParticipationTabComponent {
   readonly state = inject(QuizManagementStateService);

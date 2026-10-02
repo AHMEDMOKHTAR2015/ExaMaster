@@ -25,11 +25,10 @@ interface GroupedResult {
  * land.
  */
 @Component({
-  selector: 'app-results-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe],
-  templateUrl: './results-tab.component.html',
+    selector: 'app-results-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe],
+    templateUrl: './results-tab.component.html'
 })
 export class ResultsTabComponent {
   readonly state = inject(QuizManagementStateService);

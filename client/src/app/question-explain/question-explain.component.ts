@@ -19,11 +19,10 @@ import { isQuestionAnswered } from '../shared/quiz-runner';
  * answer stays on `/Answers` until submission.
  */
 @Component({
-  selector: 'question-explain',
-  templateUrl: './question-explain.component.html',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RichTextEditorComponent]
+    selector: 'question-explain',
+    templateUrl: './question-explain.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RichTextEditorComponent]
 })
 export class QuestionExplainComponent {
   readonly question = input.required<Question>();

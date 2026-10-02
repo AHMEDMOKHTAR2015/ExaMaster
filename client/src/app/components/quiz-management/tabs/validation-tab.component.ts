@@ -24,11 +24,10 @@ interface ReviewGradeDraft {
  * editor) because nothing outside this tab opens either one.
  */
 @Component({
-  selector: 'app-validation-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, LoadingButtonDirective],
-  templateUrl: './validation-tab.component.html',
+    selector: 'app-validation-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, LoadingButtonDirective],
+    templateUrl: './validation-tab.component.html'
 })
 export class ValidationTabComponent {
   readonly state = inject(QuizManagementStateService);

@@ -21,7 +21,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-root',
-    standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './app.component.html',
     animations: [routeAnimation],

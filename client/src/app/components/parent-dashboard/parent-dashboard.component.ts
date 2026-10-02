@@ -9,10 +9,9 @@ import { UserAdminDashboardViewComponent } from '../admin-dashboard/views/user-a
  * {@link UserAdminDashboardViewComponent} the shared shell used to.
  */
 @Component({
-  selector: 'app-parent-dashboard',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, UserAdminDashboardViewComponent],
-  templateUrl: './parent-dashboard.component.html',
+    selector: 'app-parent-dashboard',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TranslatePipe, UserAdminDashboardViewComponent],
+    templateUrl: './parent-dashboard.component.html'
 })
 export class ParentDashboardComponent {}

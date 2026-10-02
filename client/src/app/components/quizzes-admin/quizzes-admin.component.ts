@@ -49,11 +49,10 @@ interface QuestionRow {
 }
 
 @Component({
-  selector: 'app-quizzes-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, QuizIllustrationComponent, RichTextEditorComponent, TagToggleListComponent],
-  templateUrl: './quizzes-admin.component.html',
+    selector: 'app-quizzes-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, QuizIllustrationComponent, RichTextEditorComponent, TagToggleListComponent],
+    templateUrl: './quizzes-admin.component.html'
 })
 export class QuizzesAdminComponent {
   private readonly quizAdminService = inject(QuizAdminService);

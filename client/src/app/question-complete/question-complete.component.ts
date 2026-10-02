@@ -15,11 +15,10 @@ import { AutoWidthInputDirective } from '../directives';
  * preserves in-progress answers with no extra bookkeeping.
  */
 @Component({
-  selector: 'question-complete',
-  templateUrl: './question-complete.component.html',
-  standalone: true,
-  imports: [AutoWidthInputDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'question-complete',
+    templateUrl: './question-complete.component.html',
+    imports: [AutoWidthInputDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class QuestionCompleteComponent {
   readonly question = input.required<Question>();

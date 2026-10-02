@@ -14,11 +14,10 @@ type KeyTab = 'all' | 'userAdmin' | 'applicationAdmin';
 type DerivedStatus = 'active' | 'used' | 'expired' | 'inactive';
 
 @Component({
-  selector: 'app-registration-keys-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective],
-  templateUrl: './registration-keys-admin.component.html',
+    selector: 'app-registration-keys-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ClickOutsideDirective],
+    templateUrl: './registration-keys-admin.component.html'
 })
 export class RegistrationKeysAdminComponent {
   private readonly keyService = inject(RegistrationKeyAdminService);

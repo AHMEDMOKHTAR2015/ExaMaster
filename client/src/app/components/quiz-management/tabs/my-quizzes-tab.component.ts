@@ -85,11 +85,10 @@ const EXPLAIN_AUTHORING_MESSAGES: Record<string, string> = {
  * `?action=create` rather than going through the workspace shell.
  */
 @Component({
-  selector: 'app-my-quizzes-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent, TagToggleListComponent],
-  templateUrl: './my-quizzes-tab.component.html',
+    selector: 'app-my-quizzes-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent, TagToggleListComponent],
+    templateUrl: './my-quizzes-tab.component.html'
 })
 export class MyQuizzesTabComponent implements OnInit {
   readonly state = inject(QuizManagementStateService);

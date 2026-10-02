@@ -28,11 +28,10 @@ interface TeacherForm {
 }
 
 @Component({
-  selector: 'app-teachers-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, ClickOutsideDirective],
-  templateUrl: './teachers-admin.component.html',
+    selector: 'app-teachers-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, TranslatePipe, ClickOutsideDirective],
+    templateUrl: './teachers-admin.component.html'
 })
 export class TeachersAdminComponent {
   private readonly teacherService = inject(TeacherService);

@@ -13,11 +13,10 @@ import { QuizResultComponent } from '../quiz-result/quiz-result.component';
 import { QUESTION_TYPE } from '../models';
 
 @Component({
-  selector: 'app-quiz',
-  templateUrl: './quiz.component.html',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, QuestionOptionsComponent, QuestionCompleteComponent, QuestionExplainComponent, QuizResultComponent, TranslatePipe]
+    selector: 'app-quiz',
+    templateUrl: './quiz.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, QuestionOptionsComponent, QuestionCompleteComponent, QuestionExplainComponent, QuizResultComponent, TranslatePipe]
 })
 export class QuizComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);

@@ -14,11 +14,10 @@ import { QuizManagementStateService } from '../quiz-management-state.service';
  * route provides.
  */
 @Component({
-  selector: 'app-assignments-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe],
-  templateUrl: './assignments-tab.component.html',
+    selector: 'app-assignments-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe],
+    templateUrl: './assignments-tab.component.html'
 })
 export class AssignmentsTabComponent {
   readonly state = inject(QuizManagementStateService);

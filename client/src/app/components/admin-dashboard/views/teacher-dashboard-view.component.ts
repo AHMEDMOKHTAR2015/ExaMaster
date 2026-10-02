@@ -53,11 +53,10 @@ interface TrackingRow {
 }
 
 @Component({
-  selector: 'app-teacher-dashboard-view',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, KpiSkeletonComponent, ClickOutsideDirective],
-  templateUrl: './teacher-dashboard-view.component.html',
+    selector: 'app-teacher-dashboard-view',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, TranslatePipe, ParticipationAnswersPopupComponent, KpiSkeletonComponent, ClickOutsideDirective],
+    templateUrl: './teacher-dashboard-view.component.html'
 })
 export class TeacherDashboardViewComponent implements OnInit {
   private readonly authService = inject(AuthService);

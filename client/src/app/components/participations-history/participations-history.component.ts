@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
-import { ClickOutsideDirective, LoadingButtonDirective } from '../../directives';
+import { LoadingButtonDirective } from '../../directives';
 import {
   StageService,
   GradeService,
@@ -28,11 +28,10 @@ interface ParticipantRow {
 }
 
 @Component({
-  selector: 'app-participations-history',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe, ParticipationAnswersPopupComponent, ClickOutsideDirective, LoadingButtonDirective],
-  templateUrl: './participations-history.component.html',
+    selector: 'app-participations-history',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe, ParticipationAnswersPopupComponent, LoadingButtonDirective],
+    templateUrl: './participations-history.component.html'
 })
 export class ParticipationsHistoryComponent extends BaseComponent implements OnInit {
   private readonly router = inject(Router);

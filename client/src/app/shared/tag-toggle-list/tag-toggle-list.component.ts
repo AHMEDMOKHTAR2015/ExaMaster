@@ -7,11 +7,10 @@ import { SubjectTag } from '../../models';
  * Used wherever a question is tagged (bank question form, bulk edit, teacher quiz editor).
  */
 @Component({
-  selector: 'app-tag-toggle-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe],
-  template: `
+    selector: 'app-tag-toggle-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TranslatePipe],
+    template: `
     <div class="tag-toggle-list" role="group" [attr.aria-label]="label()">
       @for (tag of tags(); track tag.id) {
         <button type="button" class="tag-toggle" [class.is-on]="selected().includes(tag.id)"
@@ -22,7 +21,7 @@ import { SubjectTag } from '../../models';
         <span class="tag-toggle-list__empty">{{ emptyText() | translate }}</span>
       }
     </div>
-  `,
+  `
 })
 export class TagToggleListComponent {
   readonly tags = input.required<readonly SubjectTag[]>();

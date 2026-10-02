@@ -13,12 +13,11 @@ import { LanguageService } from '../../services/language.service';
  * Follows Single Responsibility Principle - only handles profile display
  */
 @Component({
-  selector: 'app-user-profile',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslatePipe],
-  templateUrl: './user-profile.component.html',
-  animations: [fadeIn, slideInUp, staggerList]
+    selector: 'app-user-profile',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, TranslatePipe],
+    templateUrl: './user-profile.component.html',
+    animations: [fadeIn, slideInUp, staggerList]
 })
 export class UserProfileComponent extends BaseComponent {
   readonly profile = input<UserProfile | null>(null);

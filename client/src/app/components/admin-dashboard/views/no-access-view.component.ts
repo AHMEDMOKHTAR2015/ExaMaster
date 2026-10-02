@@ -4,11 +4,10 @@ import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
-  selector: 'app-no-access-view',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe],
-  templateUrl: './no-access-view.component.html',
+    selector: 'app-no-access-view',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TranslatePipe],
+    templateUrl: './no-access-view.component.html'
 })
 export class NoAccessViewComponent {
   private readonly router = inject(Router);

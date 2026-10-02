@@ -20,14 +20,13 @@ import { QuizManagementStateService } from './quiz-management-state.service';
  * instance spans the shell and whichever tab is showing.
  */
 @Component({
-  selector: 'app-quiz-management',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule, TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive,
-    ClickOutsideDirective, LoadingButtonDirective
-  ],
-  templateUrl: './quiz-management.component.html',
+    selector: 'app-quiz-management',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        FormsModule, TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive,
+        ClickOutsideDirective, LoadingButtonDirective
+    ],
+    templateUrl: './quiz-management.component.html'
 })
 export class QuizManagementComponent implements OnInit {
   readonly state = inject(QuizManagementStateService);
