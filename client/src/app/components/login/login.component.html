@@ -128,15 +128,7 @@
         @switch (view()) {
           @case ('signIn') {
             <div class="auth-view">
-              <div class="auth-card__brand">
-                <!-- Purely decorative — `alt=""` drops it from the accessibility tree
-                     rather than announcing it, same intent as the story panel's
-                     `aria-hidden`. -->
-                <div class="auth-logo auth-logo--card"><img src="assets/icon.png" alt="" /></div>
-                <h1 class="auth-card__title" data-view-heading="signIn" tabindex="-1">{{ 'app.name' | translate }}</h1>
-                <p class="auth-card__sub">{{ 'auth.signInToAccount' | translate }}</p>
-              </div>
-
+              
               <img class="auth-card__illustration" src="assets/illustrations/login-hero.svg" alt="" />
 
               @if (error()) {
@@ -288,30 +280,32 @@
                   </div>
                 </div>
 
-                <div class="field">
-                  <label class="field__label" for="req-mobile">{{ 'auth.fields.mobile' | translate }}</label>
-                  <input id="req-mobile" class="input input--full" type="tel" inputmode="tel" name="mobileNumber" autocomplete="tel" required
-                         [placeholder]="'auth.placeholders.mobile' | translate" aria-describedby="req-mobile-hint"
-                         [ngModel]="request().mobileNumber" (ngModelChange)="setRequestField('mobileNumber', $event)" [disabled]="isSubmittingRequest()" />
-                  <p class="field__hint" id="req-mobile-hint">{{ 'auth.requestAccess.mobileHint' | translate }}</p>
-                </div>
-
                 <div class="auth-form__pair">
+                  <div class="field">
+                    <label class="field__label" for="req-mobile">{{ 'auth.fields.mobile' | translate }}</label>
+                    <input id="req-mobile" class="input input--full" type="tel" inputmode="tel" name="mobileNumber" autocomplete="tel" required
+                           [placeholder]="'auth.placeholders.mobile' | translate" aria-describedby="req-mobile-hint"
+                           [ngModel]="request().mobileNumber" (ngModelChange)="setRequestField('mobileNumber', $event)" [disabled]="isSubmittingRequest()" />
+                    <p class="field__hint" id="req-mobile-hint">{{ 'auth.requestAccess.mobileHint' | translate }}</p>
+                  </div>
                   <div class="field">
                     <label class="field__label" for="req-school">{{ 'auth.requestAccess.school' | translate }}</label>
                     <input id="req-school" class="input input--full" name="schoolName" autocomplete="organization" required
                            [placeholder]="'auth.requestAccess.schoolPlaceholder' | translate"
                            [ngModel]="request().schoolName" (ngModelChange)="setRequestField('schoolName', $event)" [disabled]="isSubmittingRequest()" />
                   </div>
-                  @if (requestKind() === 'child') {
+                </div>
+
+                @if (requestKind() === 'child') {
+                  <div class="auth-form__pair">
                     <div class="field">
                       <label class="field__label" for="req-grade">{{ 'common.grade' | translate }}</label>
                       <input id="req-grade" class="input input--full" name="gradeName" autocomplete="off" required
                              [placeholder]="'auth.requestAccess.gradePlaceholder' | translate"
                              [ngModel]="request().gradeName" (ngModelChange)="setRequestField('gradeName', $event)" [disabled]="isSubmittingRequest()" />
                     </div>
-                  }
-                </div>
+                  </div>
+                }
 
                 <div class="auth-form__pair">
                   <div class="field">

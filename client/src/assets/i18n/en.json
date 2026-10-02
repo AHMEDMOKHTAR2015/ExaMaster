@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "QuizMaster",
+    "name": "ExaMaster",
     "tagline": "Learning Platform",
-    "loading": "Loading QuizMaster..."
+    "loading": "Loading ExaMaster..."
   },
   "nav": {
     "menu": "Menu",
@@ -209,7 +209,7 @@
       "parentName": "Parent's name",
       "parentMobile": "Parent's mobile",
       "parentHint": "Helps us link your account to your parent's.",
-      "school": "School",
+      "school": "School / Institution",
       "schoolPlaceholder": "e.g. Al Noor Language School",
       "gradePlaceholder": "e.g. Grade 4",
       "note": "Anything else we should know?",
