@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HomeworkAssignment, AssignmentKind, PagedResult } from '../models';
-import { ApiClient } from './api/api-client.service';
-import { ApiAssignment, idNumber, idNumbers, idString } from './api/api-models';
+import { ApiClient, ApiParams } from './api/api-client.service';
+import { ApiAssignment, ApiAssignmentResult, idNumber, idNumbers, idString } from './api/api-models';
+import { assignmentFilterParams } from './api/assignment-filter-params';
+import { AssignmentFilter, AssignmentResultRow } from '../shared/quiz-management';
 import { toApiSemester, toSemester } from './api/question-mapping';
 import { onePage } from './api/list-paging';
 import { ServiceError } from './shared/service-error';
@@ -49,24 +51,36 @@ export class HomeworkService {
   }
 
   /** The signed-in teacher's own assignments, closed ones included, newest first. */
-  async listByCreator(): Promise<HomeworkAssignment[]> {
-    return this.list({ mine: true, includeInactive: true });
+  /** The caller's own assignments, active or not, narrowed by Quiz Management's filter bar (applied by the API). */
+  async listByCreator(filter: AssignmentFilter = {}): Promise<HomeworkAssignment[]> {
+    return this.list({ mine: true, includeInactive: true, ...assignmentFilterParams(filter) });
   }
 
-  async listAll(_pageSize?: number, _cursor?: string): Promise<PagedResult<HomeworkAssignment>> {
-    return onePage(await this.list({ includeInactive: true }));
+  /** How far the students of each of the caller's assignments have got, worked out by the API for the filter bar's selection. */
+  async listResults(filter: AssignmentFilter = {}): Promise<AssignmentResultRow[]> {
+    const { results } = await this.api.get<{ results: ApiAssignmentResult[] }>('/assignments/results', assignmentFilterParams(filter));
+    return results.map(row => ({
+      assignmentId: String(row.assignmentId),
+      subjectId: idString(row.subjectId),
+      semester: toSemester(row.semester),
+      result: {
+        targeted: row.targeted, completed: row.completed, inProgress: 0, notStarted: row.notStarted, overdue: row.overdue,
+        completionRate: row.completionRate, averageScore: row.averageScore, validated: row.validated
+      }
+    }));
   }
 
-  async countAll(): Promise<number> {
-    return (await this.list({ includeInactive: true })).length;
+  /** Every assignment in the school, active or not, narrowed by `filter` (applied by the API), as one page. */
+  async listAll(_pageSize?: number, _cursor?: string, filter: AssignmentFilter = {}): Promise<PagedResult<HomeworkAssignment>> {
+    return onePage(await this.list({ includeInactive: true, ...assignmentFilterParams(filter) }));
   }
 
-  async listByKind(kind: AssignmentKind, _pageSize?: number, _cursor?: string): Promise<PagedResult<HomeworkAssignment>> {
-    return onePage((await this.list({ includeInactive: true })).filter(a => a.kind === kind));
+  async countAll(filter: AssignmentFilter = {}): Promise<number> {
+    return (await this.list({ includeInactive: true, ...assignmentFilterParams(filter) })).length;
   }
 
   async countByKind(kind: AssignmentKind): Promise<number> {
-    return (await this.listByKind(kind)).items.length;
+    return this.countAll({ kind });
   }
 
   async getById(id: string): Promise<HomeworkAssignment | null> {
@@ -106,7 +120,7 @@ export class HomeworkService {
     await this.api.put(`/assignments/${id}`, { ...body(merged), isActive: merged.active });
   }
 
-  private async list(params: Record<string, string | number | boolean>): Promise<HomeworkAssignment[]> {
+  private async list(params: ApiParams): Promise<HomeworkAssignment[]> {
     const { assignments } = await this.api.get<{ assignments: ApiAssignment[] }>('/assignments', params);
     return assignments.map(toAssignment).sort((a, b) => b.createdAt - a.createdAt);
   }

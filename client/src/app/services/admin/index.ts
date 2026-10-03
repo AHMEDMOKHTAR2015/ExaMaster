@@ -31,6 +31,7 @@ export * from './teachers/teacher.service';
 export * from './teachers/teacher-account.service';
 export * from './teachers/teacher-scope.service';
 export * from './teachers/teacher-stats.service';
+export * from './teachers/teacher-students.service';
 
 // Quizzes
 export * from './quizzes/quiz-admin.service';

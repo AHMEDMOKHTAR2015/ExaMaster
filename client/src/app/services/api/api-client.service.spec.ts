@@ -63,6 +63,15 @@ describe('ApiClient', () => {
     expect(await result).toEqual({ ok: true });
   });
 
+  it('sends a list as the key repeated, the way the API binds an array', async () => {
+    const result = client.get('/questions', { ids: [3, 7] });
+
+    const request = http.expectOne(r => r.url === `${environment.apiUrl}/questions`);
+    expect(request.request.params.getAll('ids')).toEqual(['3', '7']);
+    request.flush({});
+    await result;
+  });
+
   it('rejects with a ServiceError, never a raw HttpErrorResponse', async () => {
     const result = client.post('/registrations', { code: 'x' });
     http.expectOne(`${environment.apiUrl}/registrations`).flush({ Message: 'Registration key not found.' }, { status: 400, statusText: 'Bad Request' });

@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../services/auth';
 import { TeacherScopeService, HomeworkParticipationService, TeacherStatsService, TeacherRosterStats, GradeService } from '../../services/admin';
@@ -17,8 +17,9 @@ import { splitAssignmentTargets } from '../../shared/assignment-targets';
 import { participationScorePercent } from '../../shared/participation-score';
 import {
   indexQuizzesById, effectiveSubjectId, effectiveSemester, assignmentKind,
-  filterAssignments, SemesterFilter, KindFilter
+  AssignmentFilter, SemesterFilter, KindFilter
 } from '../../shared/quiz-management';
+import { debounced } from '../../shared/debounce';
 
 /** One reviewable submission (quiz or homework) surfaced in the Validation tab. */
 export interface ValidationItem {
@@ -91,6 +92,20 @@ export class QuizManagementStateService {
   readonly filterClassId = signal('');
   readonly filterKind = signal<KindFilter>('all');
   readonly searchQuery = signal('');
+
+  /**
+   * The filter bar as last applied: the dropdowns apply at once, the search box
+   * once typing pauses. The assignments list, the review queue (and its badge)
+   * and the results all ask the API for exactly this, so they always agree.
+   */
+  readonly appliedFilter = signal<AssignmentFilter>({});
+  private readonly applySearchSoon = debounced(inject(DestroyRef));
+
+  /**
+   * Bumped by the shell's Refresh: the tabs that read from the API (Validation,
+   * Results) reload when it changes, as they do when the filter does.
+   */
+  readonly refreshTick = signal(0);
 
   /** `label` holds an i18n key under the shared `semester.*` dictionary — keeps this wording identical to every other semester picker in the app (e.g. the admin's quiz/question bank). */
   readonly semesterOptions: { value: HomeworkSemester; label: string }[] = [
@@ -175,21 +190,8 @@ export class QuizManagementStateService {
 
   readonly quizById = computed(() => indexQuizzesById(this.quizList()));
 
-  /** Assignments after the global filter bar is applied. */
-  readonly filteredAssignments = computed<HomeworkAssignment[]>(() =>
-    filterAssignments(
-      this.assignments(),
-      {
-        subjectId: this.filterSubjectId(),
-        semester: this.filterSemester(),
-        classId: this.filterClassId(),
-        kind: this.filterKind(),
-        search: this.searchQuery()
-      },
-      this.quizById(),
-      (assignment) => this.assignmentQuizName(assignment)
-    )
-  );
+  /** The teacher's assignments the filter bar selects — the API applies {@link appliedFilter} (see {@link loadAssignments}). */
+  readonly filteredAssignments = computed<HomeworkAssignment[]>(() => this.assignments());
 
   readonly activeAssignmentCount = computed(() =>
     this.filteredAssignments().filter(a => a.active).length
@@ -209,57 +211,13 @@ export class QuizManagementStateService {
   readonly rosterScoreStats = signal<TeacherRosterStats>({ studentCount: 0, averageScore: 0, scoredCount: 0 });
   readonly overallAverageScore = computed(() => this.rosterScoreStats().averageScore);
 
+  // ---- Validation (the shell needs the count for the tab badge) ---------------
   /**
-   * Completed attempts at bank quizzes that name this teacher as reviewer.
-   *
-   * Kept in its own signal rather than folded into `recordsByAssignment`, which
-   * is keyed by assignment id — these have no assignment to key by. Loaded by
-   * {@link loadReviewerRecords}.
+   * Submissions waiting for this teacher's verdict, within the filter bar: the
+   * API counts them (the same query the Validation tab pages through), so the
+   * badge is right without reading the submissions themselves.
    */
-  readonly reviewerRecords = signal<ParticipationRecord[]>([]);
-
-  // ---- Validation roll-up (shell needs the count for the tab badge) ----------
-  readonly validationItems = computed<ValidationItem[]>(() => {
-    const cache = this.recordsByAssignment();
-    const items: ValidationItem[] = [];
-    for (const assignment of this.filteredAssignments()) {
-      // Every kind of assigned work is reviewable: quizzes are auto-scored, but
-      // they can still contain Explain questions that need a mark, and the
-      // teacher's verdict applies to both kinds. Both write their submissions to
-      // `participationsByHomework/{assignmentId}`, so both are already loaded.
-      const records = cache.get(assignment.id);
-      if (!records) continue;
-      for (const record of records) {
-        if (record.status !== 'completed') continue;
-        items.push({
-          assignment,
-          record,
-          studentName: this.getStudentName(record.childId),
-          title: assignment.title,
-          kind: assignment.kind ?? 'homework'
-        });
-      }
-    }
-
-    // Bank quizzes. No assignment, so nothing above reaches them — they are here
-    // because the quiz named this teacher as its reviewer, which is the only
-    // thing that makes such a submission gradable at all.
-    for (const record of this.reviewerRecords()) {
-      if (record.status !== 'completed') continue;
-      items.push({
-        assignment: null,
-        record,
-        studentName: this.getStudentName(record.childId),
-        title: record.quizName || record.homeworkTitle || '',
-        kind: 'quiz'
-      });
-    }
-    return items;
-  });
-
-  readonly pendingValidationCount = computed(() =>
-    this.validationItems().filter(i => !i.record.validation).length
-  );
+  readonly pendingValidationCount = signal(0);
 
 
   // ---- Assignment form derived state -----------------------------------------
@@ -361,6 +319,53 @@ export class QuizManagementStateService {
       const uid = this.authService.user()?.uid ?? null;
       if (uid !== this.loadedForUid) untracked(() => this.resetForAccountChange());
     }, { allowSignalWrites: true });
+
+    // The dropdowns apply as soon as they change; the search box through onSearchChange.
+    effect(() => {
+      this.filterSubjectId(); this.filterSemester(); this.filterClassId(); this.filterKind();
+      untracked(() => this.applyFilter());
+    });
+    // Whatever applies the filter re-asks the API for the assignments and the badge.
+    effect(() => {
+      this.appliedFilter(); this.refreshTick();
+      untracked(() => {
+        if (!this.initPromise) return;                 // the first load brings them (loadInitialData)
+        void this.loadAssignments();
+        void this.refreshPendingValidationCount();
+      });
+    });
+  }
+
+  /** The search box: applied once typing pauses, so a word is one request rather than one per keystroke. */
+  onSearchChange(search: string): void {
+    this.searchQuery.set(search);
+    this.applySearchSoon(() => this.applyFilter());
+  }
+
+  private applyFilter(): void {
+    const next: AssignmentFilter = {
+      subjectId: this.filterSubjectId() || undefined,
+      semester: this.filterSemester(),
+      classId: this.filterClassId() || undefined,
+      kind: this.filterKind(),
+      search: this.searchQuery().trim() || undefined
+    };
+    const current = this.appliedFilter();
+    const unchanged = (Object.keys(next) as (keyof AssignmentFilter)[]).every(key => next[key] === current[key])
+      && Object.keys(current).length === Object.keys(next).length;
+    if (!unchanged) this.appliedFilter.set(next);
+  }
+
+  /** Re-read the badge's count of submissions waiting for a verdict. Failures keep the last count: a badge is not worth an error. */
+  async refreshPendingValidationCount(): Promise<void> {
+    const reviewerId = this.currentUser()?.id;
+    if (!reviewerId) return;
+    try {
+      const source = this.homeworkParticipationService.reviewQueueSource(reviewerId, 'pending', this.appliedFilter());
+      this.pendingValidationCount.set(await source.fetchCount());
+    } catch {
+      // keep the last known count
+    }
   }
 
   init(): Promise<void> {
@@ -402,7 +407,7 @@ export class QuizManagementStateService {
     this.rosterScoreStats.set({ studentCount: 0, averageScore: 0, scoredCount: 0 });
 
     this.recordsByAssignment.set(new Map());
-    this.reviewerRecords.set([]);
+    this.pendingValidationCount.set(0);
     this.selectedAssignmentId.set(null);
 
     // Filters and the open form are this teacher's working context too — a
@@ -413,6 +418,7 @@ export class QuizManagementStateService {
     this.filterClassId.set('');
     this.filterKind.set('all');
     this.searchQuery.set('');
+    this.appliedFilter.set({});
     this.closeAssignmentForm();
   }
 
@@ -439,6 +445,7 @@ export class QuizManagementStateService {
         this.teacherQuizService.listByCreator(),
         this.teacherStats.getRosterStats(classIds)
       ]);
+      void this.refreshPendingValidationCount();
       if (customQuizzes.status === 'fulfilled') this.myCustomQuizzes.set(customQuizzes.value);
       if (rosterStats.status === 'fulfilled') this.rosterScoreStats.set(rosterStats.value);
       const failure = [customQuizzes, rosterStats].find((result): result is PromiseRejectedResult => result.status === 'rejected');
@@ -451,11 +458,15 @@ export class QuizManagementStateService {
     }
   }
 
+  /** The teacher's assignments the filter bar selects ({@link appliedFilter}); a later call wins over a slower earlier one. */
   async loadAssignments(): Promise<void> {
     const user = this.currentUser();
     if (!user) return;
-    this.assignments.set(await this.homeworkService.listByCreator());
+    const run = ++this.assignmentsGeneration;
+    const assignments = await this.homeworkService.listByCreator(this.appliedFilter());
+    if (run === this.assignmentsGeneration) this.assignments.set(assignments);
   }
+  private assignmentsGeneration = 0;
 
   async loadCustomQuizzes(): Promise<void> {
     const user = this.currentUser();
@@ -509,6 +520,7 @@ export class QuizManagementStateService {
    */
   refreshRecords(): Promise<void> {
     const cache = this.recordsByAssignment();
+    this.refreshTick.update(tick => tick + 1);       // the Validation and Results tabs re-ask the API
     return this.loadRecordsFor(this.filteredAssignments().filter(a => cache.has(a.id)), true);
   }
 
@@ -517,14 +529,8 @@ export class QuizManagementStateService {
    * verdict updates every badge without a full reload.
    */
   patchRecord(assignmentId: string | null, recordId: string, patch: Partial<ParticipationRecord>): void {
-    // A bank-quiz submission lives in `reviewerRecords`, not in the
-    // by-assignment cache, so it is patched by record id alone.
-    if (assignmentId === null) {
-      this.reviewerRecords.update(records =>
-        records.map(r => r.id === recordId ? { ...r, ...patch } : r)
-      );
-      return;
-    }
+    // A bank-quiz submission answers no assignment, so nothing here caches it.
+    if (assignmentId === null) return;
     this.recordsByAssignment.update(map => {
       const next = new Map(map);
       const records = next.get(assignmentId);
@@ -533,34 +539,6 @@ export class QuizManagementStateService {
       }
       return next;
     });
-  }
-
-  /**
-   * Load the bank-quiz submissions this teacher is the named reviewer for.
-   *
-   * Drained in full rather than paged: the Validation tab shows the whole queue
-   * and its badge counts it, so a partial read would under-report outstanding
-   * work — the same reason `loadRecordsFor` drains each assignment.
-   */
-  async loadReviewerRecords(force = false): Promise<void> {
-    const reviewerId = this.currentUser()?.id;
-    if (!reviewerId) return;
-    if (!force && this.reviewerRecords().length > 0) return;
-
-    try {
-      const records: ParticipationRecord[] = [];
-      let cursor: string | undefined;
-      do {
-        const page = await this.homeworkParticipationService.listUnassignedForReviewer(reviewerId, 50, cursor);
-        records.push(...page.items);
-        cursor = page.nextCursor;
-      } while (cursor);
-      this.reviewerRecords.set(records);
-    } catch {
-      // Assigned work still lists; this half degrades to empty rather than
-      // taking the tab down with it.
-      this.reviewerRecords.set([]);
-    }
   }
 
   /** The students an assignment targets: the picked uids, or the whole class. */

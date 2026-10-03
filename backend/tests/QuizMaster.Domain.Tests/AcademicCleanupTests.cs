@@ -38,4 +38,18 @@ public class AcademicCleanupTests
         Assert.Equal([1], classGroup.SubjectIds);
         Assert.Equal([1], teacher.SubjectIds);
     }
+
+    // Who a teacher's students are (GET /me/students): the classes they are assigned to AND that study one of their subjects.
+    [Fact]
+    public void A_teacher_teaches_a_class_only_when_assigned_to_it_and_it_studies_one_of_their_subjects()
+    {
+        var (science, math) = (Subject(1, "Science"), Subject(2, "Math"));
+        var (scienceTeacher, mathTeacher, unassigned) = (RosterTeacher(7, science), RosterTeacher(8, math), RosterTeacher(9, science));
+        var grade = Grade.Create(Stage.Create("Primary", 1, ByAdmin).WithId(1), "G1", 1, ByAdmin).WithId(2);
+        var scienceClass = ClassGroup.Create(grade, "1A", [scienceTeacher, mathTeacher], [science], ByAdmin);
+
+        Assert.True(scienceClass.IsTaughtBy(scienceTeacher));
+        Assert.False(scienceClass.IsTaughtBy(mathTeacher));      // assigned, but the class does not study Math
+        Assert.False(scienceClass.IsTaughtBy(unassigned));       // the right subject, but not assigned
+    }
 }

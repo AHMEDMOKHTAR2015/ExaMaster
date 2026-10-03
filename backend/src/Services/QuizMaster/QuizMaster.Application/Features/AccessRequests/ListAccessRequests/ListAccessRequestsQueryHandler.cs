@@ -11,15 +11,12 @@ public class ListAccessRequestsQueryHandler(QuizMasterDbContext _dbContext)
             requests = requests.Where(request => request.Status == status);
         if (query.Kind is { } kind)
             requests = requests.Where(request => request.Kind == kind);
-        if (!string.IsNullOrWhiteSpace(query.Search))
-        {
-            var pattern = $"%{query.Search.Trim()}%";
-            requests = requests.Where(request => EF.Functions.Like(request.FirstName + " " + request.LastName, pattern)
-                || EF.Functions.Like(request.MobileNumber, pattern)
-                || EF.Functions.Like(request.SchoolName!, pattern)
-                || EF.Functions.Like(request.ParentName!, pattern)
-                || EF.Functions.Like(request.ParentMobileNumber!, pattern));
-        }
+        if (TextSearch.ContainsPattern(query.Search) is { } pattern)
+            requests = requests.Where(request => EF.Functions.Like(request.FirstName + " " + request.LastName, pattern, TextSearch.EscapeCharacter)
+                || EF.Functions.Like(request.MobileNumber, pattern, TextSearch.EscapeCharacter)
+                || EF.Functions.Like(request.SchoolName!, pattern, TextSearch.EscapeCharacter)
+                || EF.Functions.Like(request.ParentName!, pattern, TextSearch.EscapeCharacter)
+                || EF.Functions.Like(request.ParentMobileNumber!, pattern, TextSearch.EscapeCharacter));
 
         // pending first and oldest first, so the queue is worked in arrival order; decided ones newest decision first
         var totalCount = await requests.CountAsync(ct);

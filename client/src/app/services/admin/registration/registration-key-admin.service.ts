@@ -33,13 +33,24 @@ export class RegistrationKeyAdminService {
     return (await this.raw({}, 1, 1)).totalCount;
   }
 
-  /** The Registration Keys table, newest first, optionally one status; paged on the server. */
-  pagedSource(status?: RegistrationKeyStatus): PagedSource<RegistrationKey> {
-    const filter = status ? { status: API_STATUS[status] } : {};
+  /**
+   * The Registration Keys table, newest first, optionally one status, one role,
+   * and codes containing `search`; the API applies each, so they cover every
+   * page. Paged on the server.
+   */
+  pagedSource(status?: RegistrationKeyStatus, role?: KeyRole, search?: string): PagedSource<RegistrationKey> {
+    const filter: Record<string, string> = {};
+    if (status) filter['status'] = API_STATUS[status];
+    if (role) filter['role'] = API_ROLE[role];
+    if (search?.trim()) filter['search'] = search.trim();
     return {
       fetchPage: (pageSize, cursor) => this.page(filter, pageSize, cursor),
       fetchCount: async () => (await this.raw(filter, 1, 1)).totalCount
     };
+  }
+
+  async countByRole(role: KeyRole): Promise<number> {
+    return (await this.raw({ role: API_ROLE[role] }, 1, 1)).totalCount;
   }
 
   async countByStatus(status: RegistrationKeyStatus): Promise<number> {

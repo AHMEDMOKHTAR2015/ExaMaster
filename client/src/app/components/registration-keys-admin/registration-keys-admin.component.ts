@@ -1,5 +1,5 @@
 import { ServiceError } from '../../services/shared/service-error';
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -8,6 +8,7 @@ import { RegistrationKeyAdminService } from '../../services/admin';
 import { NotificationService } from '../../services/notification.service';
 import { resolveKeyStatus } from '../../shared/registration-key-status';
 import { PagedList } from '../../shared/paged-list';
+import { debounced } from '../../shared/debounce';
 import { RegistrationKey } from '../../models';
 
 type KeyTab = 'all' | 'userAdmin' | 'applicationAdmin';
@@ -27,22 +28,16 @@ export class RegistrationKeysAdminComponent {
   /** The current page of keys. No longer every key in the organization. */
   readonly allKeys = signal<RegistrationKey[]>([]);
 
-  /**
-   * The table, paged on the server, narrowed by the stored `status`.
-   *
-   * Filtering by status is possible at all because the status is persisted now
-   * — it used to be computed at render time, which is exactly why this screen
-   * had to download every key.
-   *
-   * The role tabs stay client-side over the page: `role` is stored and could be
-   * queried, but combining it with the status filter would need another
-   * composite index for each pairing, and a school's key count does not justify
-   * that. Revisit if it ever does.
-   */
+  /** The table: paged, filtered by status and role tab, and searched by code — all by the API, across every page. */
   readonly keyList = PagedList.from<RegistrationKey>(
     () => {
       const status = this.statusFilter();
-      return this.keyService.pagedSource(status === 'all' ? undefined : status);
+      const tab = this.activeTab();
+      return this.keyService.pagedSource(
+        status === 'all' ? undefined : status,
+        tab === 'all' ? undefined : tab,
+        this.searchQuery()
+      );
     },
     20,
     () => this.notification.error('Failed to load registration keys.')
@@ -110,40 +105,27 @@ export class RegistrationKeysAdminComponent {
    * query (see {@link keyList}), so counting it across everything would mean
    * downloading everything, which is what this change removed.
    */
+  /** Server counts for the role tabs: every key of that role, not the rows on screen. */
+  readonly roleCounts = signal<Record<KeyTab, number>>({ all: 0, userAdmin: 0, applicationAdmin: 0 });
+
   readonly counts = computed(() => {
-    const page = this.keyList.items();
+    const roles = this.roleCounts();
     const status = this.statusCounts();
     return {
-      all: this.keyList.total(),
-      userAdmin: page.filter(k => k.role === 'userAdmin').length,
-      applicationAdmin: page.filter(k => k.role === 'applicationAdmin').length,
+      all: roles.all,
+      userAdmin: roles.userAdmin,
+      applicationAdmin: roles.applicationAdmin,
       active: status.active,
       expired: status.expired,
       used: status.used,
     };
   });
 
-  /**
-   * The page on screen, narrowed by the role tab and the search box.
-   *
-   * Both are page-scoped: Firestore has no substring search, and the role tab is
-   * deliberately not part of the query (see {@link keyList}).
-   */
-  readonly filteredKeys = computed(() => {
-    let list = this.keyList.items();
-    const tab = this.activeTab();
-    if (tab !== 'all') list = list.filter(k => k.role === tab);
-
-    const q = this.searchQuery().toLowerCase().trim();
-    if (q) list = list.filter(k =>
-      (k.code ?? k.id).toLowerCase().includes(q) ||
-      (k.role ?? '').toLowerCase().includes(q)
-    );
-    return list;
-  });
+  /** The page on screen; the API has already applied the role tab, status and search. */
+  readonly filteredKeys = computed(() => this.keyList.items());
 
   readonly totalPages = computed(() => this.keyList.totalPages());
-  /** The page the server returned, narrowed by the client-side role/search filters. */
+  /** The page the server returned. */
   readonly paginatedKeys = computed(() => this.filteredKeys());
 
   readonly pageRangeLabel = computed(() => {
@@ -171,31 +153,47 @@ export class RegistrationKeysAdminComponent {
   /** Four aggregation queries; no documents read. */
   private async refreshStatusCounts(): Promise<void> {
     try {
-      const [active, inactive, expired, used] = await Promise.all([
+      const [active, inactive, expired, used, all, userAdmin, applicationAdmin] = await Promise.all([
         this.keyService.countByStatus('active'),
         this.keyService.countByStatus('inactive'),
         this.keyService.countByStatus('expired'),
-        this.keyService.countByStatus('used')
+        this.keyService.countByStatus('used'),
+        this.keyService.countKeys(),
+        this.keyService.countByRole('userAdmin'),
+        this.keyService.countByRole('applicationAdmin')
       ]);
       this.statusCounts.set({ active, inactive, expired, used });
+      this.roleCounts.set({ all, userAdmin, applicationAdmin });
     } catch {
       this.statusCounts.set({ active: 0, inactive: 0, expired: 0, used: 0 });
+      this.roleCounts.set({ all: 0, userAdmin: 0, applicationAdmin: 0 });
     }
   }
 
   // ---------- UI handlers ----------
 
-  setTab(tab: KeyTab): void {
-    this.activeTab.set(tab);
-    this.currentPage.set(1);
-  }
-  onSearchChange(q: string): void { this.searchQuery.set(q); this.currentPage.set(1); }
-  /** The status filter is part of the query now, so changing it must reload. */
-  async onStatusFilterChange(s: 'all' | DerivedStatus): Promise<void> {
-    this.statusFilter.set(s);
+  /** Waits for typing to pause, so a code is one request rather than one per keystroke. */
+  private readonly reloadSoon = debounced(inject(DestroyRef));
+
+  /** The tab, status and search are part of the query, so changing any of them reloads from page 1. */
+  private async reloadKeys(): Promise<void> {
     this.currentPage.set(1);
     await this.keyList.reload();
     this.allKeys.set(this.keyList.items());
+  }
+
+  setTab(tab: KeyTab): void {
+    if (this.activeTab() === tab) return;
+    this.activeTab.set(tab);
+    void this.reloadKeys();
+  }
+  onSearchChange(q: string): void {
+    this.searchQuery.set(q);
+    this.reloadSoon(() => void this.reloadKeys());
+  }
+  async onStatusFilterChange(s: 'all' | DerivedStatus): Promise<void> {
+    this.statusFilter.set(s);
+    await this.reloadKeys();
   }
   async previousPage(): Promise<void> {
     await this.keyList.previous();

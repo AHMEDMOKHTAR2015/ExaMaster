@@ -71,6 +71,13 @@ export class PagedList<T> {
     Math.min(this.currentPage() * this.pageSize, this.total())
   );
 
+  /**
+   * Bumped by every {@link reload}. A search box reloads on each pause in typing,
+   * so an older, slower answer can arrive after a newer one; anything that
+   * started under an earlier generation is discarded rather than shown.
+   */
+  private generation = 0;
+
   constructor(
     private readonly fetchPage: (pageSize: number, cursor?: string) => Promise<PagedResult<T>>,
     private readonly fetchCount: () => Promise<number>,
@@ -124,17 +131,21 @@ export class PagedList<T> {
    * set, so it means nothing once that set changes.
    */
   async reload(): Promise<void> {
+    const run = ++this.generation;
     this.cursors = [undefined];
     this.isLoading.set(true);
     try {
-      this.total.set(await this.fetchCount());
-      await this.fetchInto(1);
+      const total = await this.fetchCount();
+      if (run !== this.generation) return;
+      this.total.set(total);
+      await this.fetchInto(1, run);
     } catch (error) {
+      if (run !== this.generation) return;
       this.items.set([]);
       this.total.set(0);
       this.report(error);
     } finally {
-      this.isLoading.set(false);
+      if (run === this.generation) this.isLoading.set(false);
     }
   }
 
@@ -144,7 +155,7 @@ export class PagedList<T> {
     if (this.isLoading()) return;
     this.isLoading.set(true);
     try {
-      await this.fetchInto(target);
+      await this.fetchInto(target, this.generation);
     } catch (error) {
       this.report(error);
     } finally {
@@ -171,9 +182,12 @@ export class PagedList<T> {
   async refresh(): Promise<void> {
     const page = this.currentPage();
     this.isLoading.set(true);
+    const run = this.generation;
     try {
-      this.total.set(await this.fetchCount());
-      await this.fetchInto(Math.min(page, this.totalPages()));
+      const total = await this.fetchCount();
+      if (run !== this.generation) return;
+      this.total.set(total);
+      await this.fetchInto(Math.min(page, this.totalPages()), run);
     } catch (error) {
       this.report(error);
     } finally {
@@ -187,16 +201,19 @@ export class PagedList<T> {
    * The walk stops early when a page reports no `nextCursor` — that is the end
    * of the data, and asking for anything beyond it would loop.
    */
-  private async fetchInto(page: number): Promise<void> {
+  private async fetchInto(page: number, run: number): Promise<void> {
     while (this.cursors.length < page) {
       const known = this.cursors.length;
       const step = await this.fetchPage(this.pageSize, this.cursors[known - 1]);
+      if (run !== this.generation) return;
       if (!step.nextCursor) break;
       this.cursors[known] = step.nextCursor;
     }
 
     const target = Math.min(page, this.cursors.length);
     const result = await this.fetchPage(this.pageSize, this.cursors[target - 1]);
+    // A reload started while this was in flight (a search typed further): its answer, not this one, is current.
+    if (run !== this.generation) return;
     // Record the cursor this page hands forward, so the next page is one query.
     this.cursors[target] = result.nextCursor;
     this.items.set(result.items);

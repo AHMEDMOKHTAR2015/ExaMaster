@@ -12,6 +12,8 @@ public class SearchRegistrationKeysQueryHandler(Repository<RegistrationKey> _key
             keys = keys.Where(key => key.Role == role);
         if (query.Status is { } status)
             keys = WithStatus(keys, status, now);
+        if (TextSearch.ContainsPattern(query.Search) is { } pattern)
+            keys = keys.Where(key => EF.Functions.Like(key.Code, pattern, TextSearch.EscapeCharacter));
 
         return await keys
             .OrderByDescending(key => key.CreatedOn).ThenByDescending(key => key.Id)

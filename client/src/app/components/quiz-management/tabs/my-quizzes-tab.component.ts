@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,7 +8,9 @@ import { QuizAdminService } from '../../../services/admin/quizzes/quiz-admin.ser
 import { TeacherQuizService } from '../../../services/teacher-quiz.service';
 import { NotificationService } from '../../../services/notification.service';
 import { QuestionAdminItem } from '../../../interfaces';
-import { BankFilter, matchesBankFilter } from '../../../shared/question-bank-filters';
+import { QuestionBankFilters } from '../../../services/admin/quizzes/quiz-admin.service';
+import { debounced } from '../../../shared/debounce';
+import { LoadMoreList } from '../../../shared/load-more-list';
 import {
   TeacherQuiz, TeacherQuizQuestion, QuizConfig, HomeworkSemester, Grade,
   QUESTION_TYPE, DEFAULT_QUESTION_DURATION_SECONDS
@@ -157,9 +159,16 @@ export class MyQuizzesTabComponent implements OnInit {
   /** Inline panel for appending questions from the admin question bank into the builder. */
   readonly showBankPicker = signal(false);
   readonly bankPickerSearch = signal('');
-  readonly bankQuestions = signal<QuestionAdminItem[]>([]);
-  readonly isLoadingBankQuestions = signal(false);
-  private bankQuestionsLoaded = false;
+  /** The matching questions, a page at a time; the API applies {@link bankPickerFilters} across the whole bank. */
+  readonly bankList = new LoadMoreList<QuestionAdminItem>(
+    () => this.quizAdminService.questionSource(this.bankPickerFilters()),
+    50,
+    () => this.notification.error('Failed to load the question bank.')
+  );
+  readonly bankTotal = this.bankList.total;
+  readonly isLoadingBankQuestions = this.bankList.isLoading;
+  readonly isLoadingMoreBankQuestions = this.bankList.isLoadingMore;
+  private readonly bankSearchSoon = debounced(inject(DestroyRef));
 
   /** Inline panel for reusing questions from one of this teacher's other quizzes. */
   readonly showQuizPicker = signal(false);
@@ -180,17 +189,29 @@ export class MyQuizzesTabComponent implements OnInit {
     return [...grades].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   });
 
-  /** Question-bank items matching the builder's stage + group's grade + subject + search box, for "Add from question bank". */
-  readonly filteredBankQuestions = computed<QuestionAdminItem[]>(() => {
-    const filter: BankFilter = {
-      stageId: this.builderStageId(),
-      gradeId: this.builderGradeId(),
-      subjectId: this.builderSubjectId(),
-      semester: this.builderSemester() || undefined,
-      search: this.bankPickerSearch().toLowerCase().trim()
+  /**
+   * The bank questions this quiz could use, for "Add from question bank": the
+   * API matches the builder's stage, group's grade, subject and term, and the
+   * search box, across the whole bank (see {@link bankPickerFilters}).
+   */
+  readonly filteredBankQuestions = this.bankList.items;
+
+  readonly hasMoreBankQuestions = this.bankList.hasMore;
+
+  /**
+   * The builder's selections as the API's question filters. Grade is strict — a
+   * question nobody has classified is not "for every year" — while the term is
+   * permissive: most banks are authored without one, so an unset term fits any.
+   */
+  private bankPickerFilters(): QuestionBankFilters {
+    return {
+      stageId: this.builderStageId() || undefined,
+      gradeId: this.builderGradeId() || undefined,
+      subjectId: this.builderSubjectId() || undefined,
+      forSemester: this.builderSemester() || undefined,
+      search: this.bankPickerSearch() || undefined
     };
-    return this.bankQuestions().filter(q => matchesBankFilter(q, filter));
-  });
+  }
 
   /**
    * Bank question ids currently represented in the builder, driving the picker's
@@ -222,6 +243,17 @@ export class MyQuizzesTabComponent implements OnInit {
     const id = this.quizPickerSourceId();
     return id ? this.state.customQuizById().get(id) ?? null : null;
   });
+
+  constructor() {
+    // While the bank picker is open it shows what this quiz could use, so it
+    // re-asks the API whenever it opens or the builder's stage, group, subject or
+    // term changes. The search box reloads on its own, once typing pauses.
+    effect(() => {
+      if (!this.showBankPicker()) return;
+      this.builderStageId(); this.builderGradeId(); this.builderSubjectId(); this.builderSemester();
+      untracked(() => void this.bankList.reload());
+    });
+  }
 
   ngOnInit(): void {
     // The sidebar "Create New Quiz" CTA links here with ?action=create so the
@@ -374,21 +406,18 @@ export class MyQuizzesTabComponent implements OnInit {
 
   // ---- Question bank picker --------------------------------------------------
 
-  /** Toggles the "Add from question bank" panel, lazy-loading the bank on first open. */
-  async toggleBankPicker(): Promise<void> {
-    const opening = !this.showBankPicker();
-    this.showBankPicker.set(opening);
-    if (opening && !this.bankQuestionsLoaded) {
-      this.isLoadingBankQuestions.set(true);
-      try {
-        this.bankQuestions.set(await this.quizAdminService.listQuestions());
-        this.bankQuestionsLoaded = true;
-      } catch {
-        this.notification.error('Failed to load the question bank.');
-      } finally {
-        this.isLoadingBankQuestions.set(false);
-      }
-    }
+  /** Toggles the "Add from question bank" panel; while open it follows the builder's selections (see the constructor). */
+  toggleBankPicker(): void {
+    this.showBankPicker.update(open => !open);
+  }
+
+  onBankSearchChange(search: string): void {
+    this.bankPickerSearch.set(search);
+    this.bankSearchSoon(() => void this.bankList.reload());
+  }
+
+  loadMoreBankQuestions(): void {
+    void this.bankList.loadMore();
   }
 
   /**

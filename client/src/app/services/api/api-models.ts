@@ -233,6 +233,21 @@ export interface ApiParticipationSummary {
   homeworkId: number | null; homeworkTitle: string | null; childId: number; childName: string | null; reviewerId: number | null;
   classId: number | null; score: number; scorePercent: number; correctCount: number; wrongCount: number; pendingReviewCount: number;
   startedOn: string; endedOn: string; validationStatus: ApiValidationStatus | null;
+  /** The answered assignment's kind; null when it answers none (a bank quiz). GET /participations only. */
+  assignmentKind?: ApiAssignmentKind | null;
+}
+
+/** One assignment's progress (GET /assignments/results); subject and semester are its own, else its quiz's. */
+export interface ApiAssignmentResult {
+  assignmentId: number; subjectId: number | null; semester: ApiSemester | null;
+  targeted: number; completed: number; notStarted: number; overdue: number; validated: number;
+  completionRate: number; averageScore: number;
+}
+
+/** One of a teacher's students (GET /me/students): the account, plus the counts of their work in that teacher's subjects. */
+export interface ApiMyStudent {
+  student: ApiUser; parentName: string | null; stageName: string | null; gradeName: string | null; className: string;
+  quizCount: number; homeworkCount: number; lastSubmittedOn: string | null;
 }
 
 /** A student's standing in one subject over the past year (GET /me/subject-performance). */

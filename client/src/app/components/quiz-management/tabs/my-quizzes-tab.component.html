@@ -275,7 +275,7 @@
           @if (showBankPicker()) {
             <div class="qb-bank-picker">
               <input class="input input--full" type="search" [placeholder]="'quizManagement.builder.bankSearchPlaceholder' | translate"
-                     [ngModel]="bankPickerSearch()" (ngModelChange)="bankPickerSearch.set($event)" />
+                     [ngModel]="bankPickerSearch()" (ngModelChange)="onBankSearchChange($event)" />
               @if (isLoadingBankQuestions()) {
                 <div class="empty">{{ 'quizManagement.builder.bankLoading' | translate }}</div>
               } @else {
@@ -284,7 +284,7 @@
                      the number that tells a teacher whether their filters are
                      too narrow. -->
                 <p class="muted qb-bank-count">
-                  {{ 'quizManagement.builder.bankCount' | translate : { count: filteredBankQuestions().length } }}
+                  {{ 'quizManagement.builder.bankCount' | translate : { count: bankTotal() } }}
                 </p>
                 <div class="qb-bank-list">
                   @for (bq of filteredBankQuestions(); track bq.id) {
@@ -301,6 +301,12 @@
                     <div class="empty"><div class="empty__title">{{ 'quizManagement.builder.bankEmpty' | translate }}</div></div>
                   }
                 </div>
+                @if (hasMoreBankQuestions()) {
+                  <button class="btn btn--sm btn--ghost" type="button" (click)="loadMoreBankQuestions()"
+                          [disabled]="isLoadingMoreBankQuestions()">
+                    {{ 'common.loadMore' | translate }}
+                  </button>
+                }
               }
             </div>
           }

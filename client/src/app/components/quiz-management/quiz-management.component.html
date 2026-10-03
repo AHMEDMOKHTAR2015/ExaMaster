@@ -123,7 +123,7 @@
         <div class="field field--grow">
           <label class="field__label">{{ 'quizManagement.filters.search' | translate }}</label>
           <input class="input input--full" type="search" [placeholder]="'quizManagement.filters.searchPlaceholder' | translate"
-                 [ngModel]="state.searchQuery()" (ngModelChange)="state.searchQuery.set($event)" />
+                 [ngModel]="state.searchQuery()" (ngModelChange)="state.onSearchChange($event)" />
         </div>
       </div>
     </div>

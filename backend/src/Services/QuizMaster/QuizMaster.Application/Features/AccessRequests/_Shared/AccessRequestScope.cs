@@ -1,3 +1,5 @@
+using QuizMaster.Application.Features.Users.Shared;
+
 namespace QuizMaster.Application.Features.AccessRequests.Shared;
 
 // Reads and writes inside the organization a platform administrator chose while approving an access request.
@@ -50,14 +52,7 @@ public class AccessRequestScope(QuizMasterDbContext _dbContext)
         var parents = _dbContext.Users.IgnoreQueryFilters()
             .Where(user => user.TenantId == tenantId && user.Roles.Contains(UserRoleType.PARENT));
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var pattern = $"%{search.Trim()}%";
-            parents = parents.Where(user => EF.Functions.Like(user.DisplayName, pattern)
-                || EF.Functions.Like(user.MobileNumber!, pattern) || EF.Functions.Like(user.Email, pattern));
-        }
-
-        var found = await parents.OrderBy(user => user.DisplayName).ThenBy(user => user.Id).Take(limit)
+        var found = await parents.MatchingSearch(search).OrderBy(user => user.DisplayName).ThenBy(user => user.Id).Take(limit)
             .Select(user => new { user.Id, user.DisplayName, user.MobileNumber, user.RegistrationKeyId })
             .ToListAsync(ct);
 

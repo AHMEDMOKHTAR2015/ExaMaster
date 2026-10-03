@@ -5,7 +5,8 @@ import { environment } from '../../../environments/environment';
 import { ServiceError } from '../shared/service-error';
 
 /** Query parameters; `undefined`/`null` values are left out rather than sent as the string "undefined". */
-export type ApiParams = Record<string, string | number | boolean | null | undefined>;
+/** Query parameters; a list is sent as the key repeated (`ids=1&ids=2`), which is how the API binds an array. */
+export type ApiParams = Record<string, string | number | boolean | readonly (string | number)[] | null | undefined>;
 
 /**
  * The QuizMasterPro.Backend API, as promises — the shape every feature service
@@ -59,7 +60,11 @@ function toHttpParams(params?: ApiParams): HttpParams | undefined {
   if (!params) return undefined;
   let result = new HttpParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') result = result.set(key, String(value));
+    if (Array.isArray(value)) {
+      for (const item of value) result = result.append(key, String(item));
+    } else if (value !== undefined && value !== null && value !== '') {
+      result = result.set(key, String(value));
+    }
   }
   return result;
 }

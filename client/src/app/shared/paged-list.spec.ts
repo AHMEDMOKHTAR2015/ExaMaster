@@ -158,6 +158,31 @@ describe('PagedList', () => {
   });
 });
 
+describe('PagedList with a search typed quickly', () => {
+  // A search box reloads on every pause in typing, so an earlier, slower answer
+  // can land after a later one. The list must show the LATEST query's rows.
+  it('keeps the newest reload when an older one answers last', async () => {
+    let releaseFirst!: () => void;
+    let query = 'sa';
+    const fetchPage = async (): Promise<PagedResult<string>> => {
+      const asked = query;
+      if (asked === 'sa') await new Promise<void>(resolve => (releaseFirst = resolve));
+      return { items: [`rows for ${asked}`], nextCursor: undefined };
+    };
+    const list = new PagedList<string>(fetchPage, async () => 1, 10);
+
+    const first = list.reload();                 // "sa": slow
+    await Promise.resolve();
+    query = 'sara';
+    await list.reload();                         // "sara": answers first
+    releaseFirst();
+    await first;                                 // "sa" answers last and must be ignored
+
+    expect(list.items()).toEqual(['rows for sara']);
+    expect(list.isLoading()).toBe(false);
+  });
+});
+
 describe('buildPageNumbers', () => {
   it('lists every page when there are few enough to fit', () => {
     expect(buildPageNumbers(5, 3)).toEqual([1, 2, 3, 4, 5]);

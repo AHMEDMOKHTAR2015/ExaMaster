@@ -31,13 +31,17 @@ export class TeacherQuizService {
     }
   }
 
-  /** Every teacher's quizzes, for the application admin's overview: one page, without their questions. */
-  async listAll(_pageSize?: number, _cursor?: string): Promise<PagedResult<TeacherQuiz>> {
-    return onePage((await this.summaries(false)).map(toSummaryQuiz));
+  /**
+   * Every teacher's quizzes, for the application admin's overview: one page,
+   * without their questions; only those whose name or description contains
+   * `search` (the API matches it).
+   */
+  async listAll(_pageSize?: number, _cursor?: string, search?: string): Promise<PagedResult<TeacherQuiz>> {
+    return onePage((await this.summaries(false, search)).map(toSummaryQuiz));
   }
 
-  async countAll(): Promise<number> {
-    return (await this.summaries(false)).length;
+  async countAll(search?: string): Promise<number> {
+    return (await this.summaries(false, search)).length;
   }
 
   /** Returns the new quiz's id. */
@@ -73,8 +77,9 @@ export class TeacherQuizService {
     return quizzes.reduce((total, quiz) => total + quiz.questionCount, 0);
   }
 
-  private async summaries(mine: boolean): Promise<ApiTeacherQuizSummary[]> {
-    return (await this.api.get<{ quizzes: ApiTeacherQuizSummary[] }>('/teacher-quizzes', mine ? { mine: true } : {})).quizzes;
+  private async summaries(mine: boolean, search?: string): Promise<ApiTeacherQuizSummary[]> {
+    const params = { mine: mine || undefined, search: search?.trim() || undefined };
+    return (await this.api.get<{ quizzes: ApiTeacherQuizSummary[] }>('/teacher-quizzes', params)).quizzes;
   }
 }
 

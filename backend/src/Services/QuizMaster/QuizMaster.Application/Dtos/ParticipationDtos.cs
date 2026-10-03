@@ -19,7 +19,8 @@ public record ParticipationSummaryDto(
     int PendingReviewCount,
     DateTime StartedOn,
     DateTime EndedOn,
-    ValidationStatus? ValidationStatus);
+    ValidationStatus? ValidationStatus,
+    AssignmentKind? AssignmentKind = null);                 // the answered assignment's kind; null when it answers none (a quiz)
 
 public record ParticipationDto(
     int Id,

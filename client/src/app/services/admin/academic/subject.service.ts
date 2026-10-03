@@ -33,9 +33,9 @@ export class SubjectService {
     return (await this.all()).length;
   }
 
-  /** The Subjects admin table, by name (the API's order). */
-  pagedSource(): PagedSource<Subject> {
-    return pagedList(() => this.all());
+  /** The Subjects admin table, by name (the API's order); only subjects whose name contains `search` (the API matches it). */
+  pagedSource(search?: string): PagedSource<Subject> {
+    return pagedList(() => this.all(search));
   }
 
   /** Returns the new subject's id, which the API assigns. */
@@ -53,7 +53,7 @@ export class SubjectService {
     await this.api.delete(`/subjects/${subjectId}`);
   }
 
-  private async all(): Promise<Subject[]> {
-    return (await this.api.get<{ subjects: ApiSubject[] }>('/subjects')).subjects.map(toSubject);
+  private async all(search?: string): Promise<Subject[]> {
+    return (await this.api.get<{ subjects: ApiSubject[] }>('/subjects', { search: search?.trim() || undefined })).subjects.map(toSubject);
   }
 }

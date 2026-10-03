@@ -12,6 +12,7 @@
     "application": "التطبيق",
     "actions": "إجراءات",
     "dashboard": "لوحة التحكم",
+    "myStudents": "طلابي",
     "participationHistory": "سجل المشاركة",
     "allParticipations": "جميع المشاركات",
     "availableQuizzes": "الاختبارات المتاحة",
@@ -993,7 +994,7 @@
       "allStages": "كل المراحل",
       "allGrades": "كل الصفوف",
       "clearFilters": "مسح عوامل التصفية",
-      "searchPlaceholder": "تصفية هذه الصفحة…",
+      "searchPlaceholder": "ابحث في نص السؤال…",
       "showingPage": "عرض {{ count }} من {{ total }} سؤالاً — صفحة {{ page }} من {{ pages }}",
       "filteredPage": "المطابق لـ “{{ query }}” في هذه الصفحة",
       "jumpToId": "فتح السؤال رقم {{ id }}",
@@ -1078,6 +1079,31 @@
     "titleQuiz": "إنجاز الاختبار - {{ title }}",
     "titleHomework": "إنجاز الواجب - {{ title }}"
   },
+  "myStudents": {
+    "title": "طلابي",
+    "subtitle": "الطلاب في المجموعات التي تدرّسها، والاختبارات والواجبات التي سلّموها في موادك",
+    "searchPlaceholder": "ابحث بالاسم أو رقم الجوال أو ولي الأمر أو المجموعة",
+    "groupFilter": "تصفية حسب المجموعة",
+    "allGroups": "كل المجموعات",
+    "count": "عدد الطلاب: {{ count }}",
+    "loading": "جارٍ تحميل طلابك…",
+    "loadFailed": "تعذّر تحميل طلابك. حدّث الصفحة للمحاولة مرة أخرى.",
+    "noSubmissions": "لا يوجد بعد",
+    "empty": "لا يوجد لديك طلاب بعد",
+    "emptyHint": "يظهر الطلاب هنا بعد أن يعيّنك المسؤول في مجموعة تدرس إحدى موادك.",
+    "noMatches": "لا يوجد طلاب مطابقون لبحثك",
+    "table": {
+      "student": "الطالب",
+      "parent": "ولي الأمر",
+      "stage": "المرحلة",
+      "grade": "الصف",
+      "group": "المجموعة",
+      "quizzes": "الاختبارات",
+      "homework": "الواجبات",
+      "lastSubmission": "آخر تسليم",
+      "countsHint": "ما سلّمه الطالب في موادك أو في أعمال كلّفته بها"
+    }
+  },
   "participationsHistory": {
     "title": "سجل المشاركات",
     "subtitle": "جميع الطلاب الذين لديهم سجل مشاركة عبر مؤسستك",
@@ -1107,7 +1133,7 @@
       "parents": "الأولياء",
       "children": "الطلاب"
     },
-    "searchPlaceholder": "بحث بالاسم أو البريد الإلكتروني أو ولي الأمر…",
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو رقم الجوال…",
     "filters": {
       "all": "الكل",
       "active": "نشط",
@@ -1354,7 +1380,7 @@
       "userAdmin": "مفاتيح الأولياء",
       "applicationAdmin": "مفاتيح مدير التطبيق"
     },
-    "searchPlaceholder": "بحث بمعرّف المفتاح أو الدور…",
+    "searchPlaceholder": "ابحث برمز المفتاح…",
     "statusFilter": {
       "all": "جميع الحالات",
       "active": "نشط",

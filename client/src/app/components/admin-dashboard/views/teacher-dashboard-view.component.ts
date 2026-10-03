@@ -301,7 +301,7 @@ export class TeacherDashboardViewComponent implements OnInit {
    * query per student at once. Merges rather than replaces so an earlier
    * page's summaries survive a later page's fetch.
    *
-   * `pageSize: 200` rather than a full pagination loop: a school-year's worth
+   * `pageSize: 100` (the API's cap; more is refused) rather than a full pagination loop: a school-year's worth
    * of one student's participations is nowhere near that, so in practice this
    * is exhaustive without the extra round trips a cursor loop would cost for
    * no real gain. A student whose history genuinely exceeds that would show a
@@ -312,7 +312,7 @@ export class TeacherDashboardViewComponent implements OnInit {
     if (students.length === 0) return;
     try {
       const entries = await Promise.all(students.map(async student => {
-        const { items } = await this.participationService.listByUser(student.uid, 200);
+        const { items } = await this.participationService.listByUser(student.uid, 100);
         const completed = items.filter(p => p.status === 'completed');
         const averageScore = completed.length > 0
           ? Math.round(completed.reduce((sum, p) => sum + participationScorePercent(p), 0) / completed.length)

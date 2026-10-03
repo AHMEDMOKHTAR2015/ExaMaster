@@ -27,6 +27,7 @@ public static class EndpointRegistration
         // Users
         GetCurrentUserEndpoint.Map(api);
         GetMyChildrenEndpoint.Map(api);
+        GetMyStudentsEndpoint.Map(api);
         SearchUsersEndpoint.Map(api);
         GetUserEndpoint.Map(api);
         AssignUserRolesEndpoint.Map(api);
@@ -108,6 +109,7 @@ public static class EndpointRegistration
 
         // Assignments
         ListAssignmentsEndpoint.Map(api);
+        GetAssignmentResultsEndpoint.Map(api);
         GetAssignmentEndpoint.Map(api);
         GetAssignmentSittingEndpoint.Map(api);
         CreateAssignmentEndpoint.Map(api);

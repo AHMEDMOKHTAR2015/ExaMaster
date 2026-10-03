@@ -53,12 +53,21 @@
           <button class="btn btn--sm btn--primary" (click)="openValidation(item)">{{ 'quizManagement.validation.validate' | translate }}</button>
         </div>
       } @empty {
-        <div class="empty">
-          <div class="empty__title">{{ 'quizManagement.validation.noSubmissions' | translate }}</div>
-          <p>{{ 'quizManagement.validation.noSubmissionsDesc' | translate }}</p>
-        </div>
+        @if (queue.isLoading()) {
+          <div class="empty">{{ 'common.loading' | translate }}</div>
+        } @else {
+          <div class="empty">
+            <div class="empty__title">{{ 'quizManagement.validation.noSubmissions' | translate }}</div>
+            <p>{{ 'quizManagement.validation.noSubmissionsDesc' | translate }}</p>
+          </div>
+        }
       }
     </div>
+    @if (queue.hasMore()) {
+      <button class="btn btn--sm btn--ghost" type="button" (click)="queue.loadMore()" [disabled]="queue.isLoadingMore()">
+        {{ 'common.loadMore' | translate }}
+      </button>
+    }
   </div>
 </div>
 

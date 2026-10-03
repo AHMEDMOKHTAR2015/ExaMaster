@@ -59,6 +59,14 @@ check "two auto-graded answers right, weighted 53%" "2 53 2" "$(json '"\(.score)
 check "Complete suggestion is pro rata (1 of 2 blanks)" 14 "$(json '.answers[2].suggestedAward')"
 PID=$(json .participationId)
 
+echo "== a teacher's students"
+check "a teacher lists the students of the classes they teach" 200 "$(call dev-teacher GET /me/students)"
+check "the practice quiz counts as one quiz, no homework" "1 0" \
+  "$(jq -r --argjson id "$STUDENT_ID" '.students[] | select(.student.id == $id) | "\(.quizCount) \(.homeworkCount)"' "$WORK/out.json")"
+check "a student cannot list students" 403 "$(call dev-student GET /me/students)"
+check "a parent cannot list students" 403 "$(call dev-parent GET /me/students)"
+check "an administrator is not a teacher here" 403 "$(call dev-admin GET /me/students)"
+
 echo "== who may read and review it"
 check "owner reads it" 200 "$(call dev-student GET /participations/$PID)"
 check "parent reads their child's" 200 "$(call dev-parent GET /participations/$PID)"
@@ -374,6 +382,72 @@ check "but nowhere else" 401 "$(curl -s -o /dev/null -w '%{http_code}' "$API/me?
 echo "== participations history"
 check "students who have submitted, most attempts first" 200 "$(call dev-admin GET '/users?participated=true')"
 check "each with a count, none without one" "true" "$(json '(.items | length > 0) and all(.items[]; .participationCount > 0) and ([.items[].participationCount] == ([.items[].participationCount] | sort | reverse))')"
+
+echo "== server-side search and filters (they cover every page, not only the one on screen)"
+call dev-admin GET '/users?search=0100200&pageSize=100' >/dev/null
+check "users: search matches a mobile number" true "$(json '.totalCount > 0 and all(.items[]; .mobileNumber | test("0100200"))')"
+call dev-admin GET '/users?search=%25' >/dev/null
+check "users: a typed % is a literal, not a wildcard" 0 "$(json .totalCount)"
+call dev-admin GET '/users?activity=Pending&pageSize=100' >/dev/null
+check "users: Pending is active and never signed in" true "$(json '.totalCount > 0 and all(.items[]; .isActive and .lastActiveOn == null)')"
+call dev-admin GET '/users?activity=Suspended&pageSize=100' >/dev/null
+check "users: Suspended is deactivated" true "$(json 'all(.items[]; .isActive | not)')"
+call dev-admin GET '/registration-keys?pageSize=1' >/dev/null; KEY_PART=$(json '.items[0].code' | cut -c1-8)
+call dev-admin GET "/registration-keys?search=$KEY_PART" >/dev/null
+check "registration keys: search by part of a code" true \
+  "$(jq -r --arg p "$KEY_PART" '.totalCount >= 1 and all(.items[]; .code | contains($p))' "$WORK/out.json")"
+call dev-admin GET '/registration-keys?role=PARENT&pageSize=100' >/dev/null
+check "registration keys: the role tab is a server filter" true "$(json 'all(.items[]; .role == "PARENT")')"
+call dev-admin GET '/teachers?search=tarek' >/dev/null
+check "teachers: search by name" true "$(json '(.teachers | length) >= 1 and all(.teachers[]; (.firstName + " " + .lastName) | ascii_downcase | contains("tarek"))')"
+call dev-admin GET '/teachers?search=no-such-teacher-xyz' >/dev/null
+check "teachers: a search with no match is empty" 0 "$(json '.teachers | length')"
+call dev-admin GET '/subjects?search=scien' >/dev/null
+check "subjects: search by name" true "$(json '(.subjects | length) >= 1 and all(.subjects[]; .name | ascii_downcase | contains("scien"))')"
+call dev-admin GET '/quizzes?search=basics' >/dev/null
+check "bank quizzes: search by name" true "$(json '(.quizzes | length) >= 1 and all(.quizzes[]; (.name + " " + (.description // "")) | ascii_downcase | contains("basics"))')"
+call dev-admin GET '/teacher-quizzes?search=tarek' >/dev/null
+check "teacher quizzes: search by the author's name" true "$(json '(.quizzes | length) >= 1')"
+# the quiz builder's picker: an unclassified question fits any term, but never a chosen grade
+check "upload an unclassified question" 200 "$(call dev-admin POST /questions/bulk '{"questions":[{"type":"Choose","text":"Zebra search probe","options":["a","b"],"correctOption":1}]}')"
+PROBE=$(json '.ids[0]')
+call dev-admin GET '/questions?search=zebra%20search%20probe' >/dev/null
+check "questions: search by text across the bank" "1 $PROBE" "$(json '"\(.totalCount) \(.items[0].id)"')"
+call dev-admin GET '/questions?search=zebra%20search%20probe&forSemester=Second' >/dev/null
+check "questions: a question with no term fits any term (forSemester)" 1 "$(json .totalCount)"
+call dev-admin GET '/questions?search=zebra%20search%20probe&semester=Second' >/dev/null
+check "questions: the bank's own semester filter stays exact" 0 "$(json .totalCount)"
+call dev-admin GET '/questions?search=zebra%20search%20probe&gradeId=1' >/dev/null
+check "questions: a question with no grade never fits a chosen grade" 0 "$(json .totalCount)"
+call dev-admin GET "/questions?search=$PROBE" >/dev/null
+check "questions: a number typed in the search finds that question" true "$(jq -r --argjson id "$PROBE" 'any(.items[]; .id == $id)' "$WORK/out.json")"
+call dev-admin GET "/questions?ids=$PROBE&ids=${Q[0]}" >/dev/null
+check "questions: exactly the ones asked for by id (a quiz builder naming its own)" 2 "$(json .totalCount)"
+check "remove the probe question" 200 "$(call dev-admin DELETE /questions/$PROBE)"
+
+echo "== Quiz Management: filter bar, results and review queue on the server"
+call dev-teacher GET /me >/dev/null; TEACHER_UID=$(json .user.id)
+call dev-teacher GET '/assignments?mine=true&includeInactive=true' >/dev/null
+MY_ASSIGNMENTS=$(json '.assignments | length'); FIRST_TITLE=$(json '.assignments[0].title')
+check "the teacher has assignments to filter" true "$(json '(.assignments | length) > 0')"
+call dev-teacher GET '/assignments?mine=true&includeInactive=true&kind=Homework' >/dev/null
+check "assignments: the kind filter" true "$(json 'all(.assignments[]; .kind == "Homework")')"
+call dev-teacher GET "/assignments?mine=true&includeInactive=true&search=$(jq -rn --arg t "$FIRST_TITLE" '$t | @uri')" >/dev/null
+check "assignments: search by title" true "$(jq -r --arg t "$FIRST_TITLE" 'any(.assignments[]; .title == $t)' "$WORK/out.json")"
+call dev-teacher GET '/assignments?mine=true&includeInactive=true&search=no-such-assignment-xyz' >/dev/null
+check "assignments: a search with no match is empty" 0 "$(json '.assignments | length')"
+check "results: a teacher reads their own" 200 "$(call dev-teacher GET /assignments/results)"
+check "results: one row per assignment the filter bar selects" "$MY_ASSIGNMENTS" "$(json '.results | length')"
+check "results: every targeted student is completed, not started or overdue" true \
+  "$(json 'all(.results[]; .targeted == .completed + .notStarted + .overdue and .validated <= .completed)')"
+check "results: students cannot read them" 403 "$(call dev-student GET /assignments/results)"
+call dev-teacher GET "/participations?reviewerId=$TEACHER_UID&verdict=Pending&pageSize=100" >/dev/null
+check "review queue: Pending has no verdict yet" true "$(json 'all(.items[]; .validationStatus == null)')"
+call dev-teacher GET "/participations?reviewerId=$TEACHER_UID&verdict=Reviewed&pageSize=100" >/dev/null
+check "review queue: Reviewed has a verdict, latest first" true \
+  "$(json '(.totalCount > 0) and all(.items[]; .validationStatus != null)')"
+call dev-teacher GET "/participations?reviewerId=$TEACHER_UID&kind=Homework&pageSize=100" >/dev/null
+check "review queue: the kind filter uses the assignment's kind" true "$(json 'all(.items[]; .assignmentKind == "Homework")')"
 
 echo "== security headers and limits (OWASP)"
 HEADERS=$(curl -s -D - -o /dev/null -H "Authorization: Bearer $(cat "$WORK/token-dev-admin")" "$API/subjects" | tr -d '\r')

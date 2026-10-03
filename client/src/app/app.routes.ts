@@ -130,6 +130,14 @@ export const routes: Routes = [
     title: 'Admin Dashboard - QuizMaster'
   },
   {
+    // A teacher's students: the server lists only the groups this teacher teaches (GET /me/students).
+    path: 'my-students',
+    loadComponent: () => import('./components/my-students/my-students.component')
+      .then(m => m.MyStudentsComponent),
+    canActivate: [teacherGuard],
+    title: 'My Students - QuizMaster'
+  },
+  {
     path: 'parent-dashboard',
     loadComponent: () => import('./components/parent-dashboard/parent-dashboard.component')
       .then(m => m.ParentDashboardComponent),

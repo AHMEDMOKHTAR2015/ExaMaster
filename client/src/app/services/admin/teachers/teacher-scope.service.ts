@@ -7,7 +7,7 @@ import { TeacherService } from './teacher.service';
 import { ClassGroupService } from '../academic/class-group.service';
 import { SubjectService } from '../academic/subject.service';
 import { StageService } from '../academic/stage.service';
-import { AppUserService } from '../users/app-user.service';
+import { TeacherStudentsService } from './teacher-students.service';
 import { HomeworkService } from '../../homework.service';
 import { QuizService } from '../../quiz.service';
 import { QuizInfo, ScopedClass, TeacherScope, QuizScopeParams } from '../../../interfaces';
@@ -29,9 +29,10 @@ import { QuizInfo, ScopedClass, TeacherScope, QuizScopeParams } from '../../../i
  *  - Quiz.subjectId / .stageId   → a quiz's subject and educational stage.
  *
  * A teacher "teaches" a class when they are assigned to it AND it studies one of
- * their subjects (see {@link classesForTeacher}). Their roster is every child in
- * those classes; their assignable quizzes are those tagged with their subjects
- * within their classes' stages.
+ * their subjects (see {@link classesForTeacher}). Their roster is every active
+ * student in those classes — worked out by the API (`GET /me/students`), so the
+ * browser never holds anyone else's students; their assignable quizzes are those
+ * tagged with their subjects within their classes' stages.
  */
 @Injectable({ providedIn: 'root' })
 export class TeacherScopeService {
@@ -39,7 +40,7 @@ export class TeacherScopeService {
   private readonly classService = inject(ClassGroupService);
   private readonly subjectService = inject(SubjectService);
   private readonly stageService = inject(StageService);
-  private readonly userService = inject(AppUserService);
+  private readonly teacherStudents = inject(TeacherStudentsService);
   private readonly homeworkService = inject(HomeworkService);
   private readonly quizService = inject(QuizService);
 
@@ -72,24 +73,23 @@ export class TeacherScopeService {
   /**
    * Load everything a teacher may see, already scoped and grouped.
    *
-   * Reference collections (classes, subjects, stages, quizzes) and the user list
-   * are fetched concurrently in a single batch — no per-student round-trips. Roster
-   * scores come from the denormalized `participationCount`/`participations` already
-   * on each user record, so building the roster never triggers N+1 participation reads.
+   * Reference collections (classes, subjects, stages, quizzes) and the roster are
+   * fetched concurrently in a single batch — no per-student round-trips. The
+   * roster comes from the API already limited to this teacher's students, each
+   * with a `participationCount` of their work in this teacher's subjects.
    */
   async loadScope(teacher: Teacher): Promise<TeacherScope> {
-    const [allClasses, allSubjects, stages, allUsers, assignments] = await Promise.all([
+    const [allClasses, allSubjects, stages, students, assignments] = await Promise.all([
       this.loadAllClasses(),
       this.loadAllSubjects(),
       this.loadAllStages(),
-      this.loadAllUsers(),
+      this.teacherStudents.listRoster(),
       this.homeworkService.listByCreator(),
       this.ensureQuizzesLoaded() // populates quizService.quizList; result intentionally unused
     ]);
 
     const classes = classesForTeacher(teacher, allClasses);
     const subjects = TeacherScopeService.scopeSubjects(teacher, allSubjects);
-    const students = TeacherScopeService.scopeStudents(classes, allUsers);
     const quizzes = TeacherScopeService.scopeQuizzes({ teacher, classes, quizzes: this.quizService.quizList() });
     const byClass = TeacherScopeService.groupByClass(teacher, classes, subjects, students);
 
@@ -115,9 +115,6 @@ export class TeacherScopeService {
     const result = await this.stageService.listStages(100);
     return result.items;
   }
-  private async loadAllUsers(): Promise<User[]> {
-    return this.pageAll((cursor) => this.userService.listUsers(100, cursor));
-  }
 
   /** Drain a cursor-paginated endpoint into a single array. */
   private async pageAll<T>(
@@ -141,15 +138,6 @@ export class TeacherScopeService {
   static scopeSubjects(teacher: Teacher | null, allSubjects: Subject[]): Subject[] {
     const ids = new Set(teacher?.subjectIds ?? []);
     return allSubjects.filter(s => ids.has(s.id));
-  }
-
-  /** The roster: children enrolled in one of the teacher's classes. */
-  static scopeStudents(teacherClasses: ClassGroup[], allUsers: User[]): User[] {
-    const classIds = new Set(teacherClasses.map(c => c.id));
-    if (classIds.size === 0) return [];
-    return allUsers.filter(u =>
-      u.accountType === 'child' && !!u.classId && classIds.has(u.classId)
-    );
   }
 
   /**

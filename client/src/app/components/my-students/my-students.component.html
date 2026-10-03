@@ -1,0 +1,103 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'myStudents.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'myStudents.subtitle' | translate }}</p>
+  </div>
+</div>
+
+<div class="card users-card">
+  <div class="users-toolbar">
+    <div class="input-wrap users-toolbar__search">
+      <svg class="leading" viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="input input--search input--full"
+        type="text"
+        [attr.aria-label]="'myStudents.searchPlaceholder' | translate"
+        [placeholder]="'myStudents.searchPlaceholder' | translate"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)" />
+    </div>
+    <select class="form-input form-input--sm users-toolbar__select"
+            [attr.aria-label]="'myStudents.groupFilter' | translate"
+            [ngModel]="groupFilter()"
+            (ngModelChange)="groupFilter.set($event)">
+      <option value="">{{ 'myStudents.allGroups' | translate }}</option>
+      @for (group of groups(); track group.id) {
+        <option [value]="group.id">{{ group.label }}</option>
+      }
+    </select>
+    <div class="users-toolbar__spacer"></div>
+    <span class="muted">{{ 'myStudents.count' | translate : { count: visibleStudents().length } }}</span>
+  </div>
+
+  @if (loading()) {
+    <div class="empty"><span>{{ 'myStudents.loading' | translate }}</span></div>
+  } @else if (hasError()) {
+    <div class="empty">
+      <div class="empty__title">{{ 'myStudents.loadFailed' | translate }}</div>
+    </div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+      <table class="tbl tbl--my-students">
+        <thead>
+          <tr>
+            <th>{{ 'myStudents.table.student' | translate }}</th>
+            <th>{{ 'myStudents.table.parent' | translate }}</th>
+            <th>{{ 'myStudents.table.stage' | translate }}</th>
+            <th>{{ 'myStudents.table.grade' | translate }}</th>
+            <th>{{ 'myStudents.table.group' | translate }}</th>
+            <th [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.quizzes' | translate }}</th>
+            <th [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.homework' | translate }}</th>
+            <th>{{ 'myStudents.table.lastSubmission' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of visibleStudents(); track student.id) {
+            <tr>
+              <td>
+                <div class="cell-stack">
+                  <div class="avatar avatar--sm" aria-hidden="true" [attr.data-variant]="avatarVariant(student)">{{ initials(student.displayName) }}</div>
+                  <div>
+                    <div class="cell-stack__main">{{ student.displayName }}</div>
+                    @if (student.mobileNumber) {
+                      <div class="cell-stack__sub" dir="ltr">{{ student.mobileNumber }}</div>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td>{{ student.parentName || ('common.na' | translate) }}</td>
+              <td>{{ student.stageName || ('common.na' | translate) }}</td>
+              <td>{{ student.gradeName || ('common.na' | translate) }}</td>
+              <td>{{ student.className }}</td>
+              <td><span class="badge badge--brand">{{ student.quizCount }}</span></td>
+              <td><span class="badge badge--brand">{{ student.homeworkCount }}</span></td>
+              <td>
+                @if (student.lastSubmittedAt) {
+                  {{ student.lastSubmittedAt | date: 'mediumDate' }}
+                } @else {
+                  <span class="muted">{{ 'myStudents.noSubmissions' | translate }}</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8">
+                <div class="empty">
+                  @if (students().length === 0) {
+                    <div class="empty__title">{{ 'myStudents.empty' | translate }}</div>
+                    <span class="muted">{{ 'myStudents.emptyHint' | translate }}</span>
+                  } @else {
+                    <div class="empty__title">{{ 'myStudents.noMatches' | translate }}</div>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

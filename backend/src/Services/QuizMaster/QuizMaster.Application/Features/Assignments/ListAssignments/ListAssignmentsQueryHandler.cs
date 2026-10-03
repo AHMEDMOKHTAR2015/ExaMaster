@@ -14,10 +14,9 @@ public class ListAssignmentsQueryHandler(QuizMasterDbContext _dbContext, IClaims
         {
             if (!query.IncludeInactive)
                 assignments = assignments.Where(assignment => assignment.IsActive);
-            if (query.ClassId is { } classId)
-                assignments = assignments.Where(assignment => assignment.ClassId == classId);
             if (query.Mine)
                 assignments = assignments.Where(assignment => assignment.CreatedById == caller.UserId);
+            assignments = assignments.Matching(query.Filter(), _dbContext);
 
             return new ListAssignmentsResponse(await assignments
                 .OrderByDescending(assignment => assignment.DueAt)

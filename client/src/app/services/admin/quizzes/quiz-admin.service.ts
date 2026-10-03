@@ -5,6 +5,7 @@ import { ApiClient } from '../../api/api-client.service';
 import { ApiBankQuiz, ApiBankQuizSummary, ApiPage, ApiQuestion, idNumber, idNumbers, idString } from '../../api/api-models';
 import { questionTypeId, toApiSemester, toDraft, toQuizConfig, toQuizSettings, toSegments, toSemester } from '../../api/question-mapping';
 import { onePage } from '../../api/list-paging';
+import { PagedSource } from '../../shared/query-spec';
 import { ServiceError } from '../../shared/service-error';
 
 export type QuestionSemester = 'first' | 'second' | 'full';
@@ -15,6 +16,16 @@ export interface QuestionBankFilters {
   stageId?: string;
   gradeId?: string;
   tagId?: string;
+  /** Exactly this semester (the bank quiz builder and the homework wizard scope by it). */
+  semester?: string;
+  /** Words in the question's text, or a question id; matched by the API across the whole bank. */
+  search?: string;
+  /**
+   * The quiz builder's term: questions of that semester OR with none — an
+   * unclassified question fits any term (the API's `forSemester`). Unlike the
+   * other filters this one is permissive on purpose.
+   */
+  forSemester?: string;
 }
 
 const MAX_PAGE = 100;                                    // the API's page-size limit
@@ -34,12 +45,13 @@ export class QuizAdminService {
   // ---- bank quizzes ----
 
   /** Every bank quiz, by name; the API returns them all, so there is one page. */
-  async listQuizzes(_pageSize = 10, _cursor?: string): Promise<PagedResult<QuizAdminItem>> {
-    return onePage((await this.allQuizzes()).map(toQuizItem));
+  /** The bank quizzes whose name or description contains `search` (the API matches it), as one page. */
+  async listQuizzes(_pageSize = 10, _cursor?: string, search?: string): Promise<PagedResult<QuizAdminItem>> {
+    return onePage((await this.allQuizzes(search)).map(toQuizItem));
   }
 
-  async countQuizzes(): Promise<number> {
-    return (await this.allQuizzes()).length;
+  async countQuizzes(search?: string): Promise<number> {
+    return (await this.allQuizzes(search)).length;
   }
 
   async getQuiz(quizId: number): Promise<QuizAdminItem | null> {
@@ -67,19 +79,29 @@ export class QuizAdminService {
 
   // ---- questions ----
 
-  /** The whole bank, by id: for the quiz builder and the homework wizard, which filter it as the admin types. */
-  async listQuestions(): Promise<QuestionAdminItem[]> {
-    const questions: QuestionAdminItem[] = [];
-    let cursor: string | undefined;
-    do {
-      const page = await this.listQuestionsPage(MAX_PAGE, cursor);
-      questions.push(...page.items);
-      cursor = page.nextCursor;
-    } while (cursor);
-    return questions.sort((a, b) => a.id - b.id);
+  /** The bank narrowed by `filters`, as a source for a paged list or a picker (`LoadMoreList`). */
+  questionSource(filters: QuestionBankFilters): PagedSource<QuestionAdminItem> {
+    return {
+      fetchPage: (pageSize, cursor) => this.listQuestionsPage(pageSize, cursor, filters),
+      fetchCount: () => this.countQuestions(filters)
+    };
   }
 
-  /** One page of the bank, narrowed by any of subject / stage / grade; paged on the server (cursor = next page number). */
+  /**
+   * Exactly these questions, in no particular order — a quiz's own, so its
+   * builder can name them and add up their durations without reading the bank.
+   * Ids that no longer exist are left out.
+   */
+  async getQuestionsByIds(ids: number[]): Promise<QuestionAdminItem[]> {
+    const unique = [...new Set(ids)];
+    const chunks: number[][] = [];
+    for (let i = 0; i < unique.length; i += MAX_PAGE) chunks.push(unique.slice(i, i + MAX_PAGE));
+    const pages = await Promise.all(chunks.map(chunk =>
+      this.api.get<ApiPage<ApiQuestion>>('/questions', { ids: chunk, page: 1, pageSize: MAX_PAGE })));
+    return pages.flatMap(page => page.items.map(toQuestionItem));
+  }
+
+  /** One page of the bank, narrowed by any of the filters; paged on the server (cursor = next page number). */
   async listQuestionsPage(pageSize = 20, cursor?: string, filters: QuestionBankFilters = {}): Promise<PagedResult<QuestionAdminItem>> {
     const page = cursor ? Number(cursor) : 1;
     const result = await this.searchQuestions(filters, page, pageSize);
@@ -154,8 +176,8 @@ export class QuizAdminService {
 
   // ---- helpers ----
 
-  private async allQuizzes(): Promise<ApiBankQuizSummary[]> {
-    return (await this.api.get<{ quizzes: ApiBankQuizSummary[] }>('/quizzes')).quizzes;
+  private async allQuizzes(search?: string): Promise<ApiBankQuizSummary[]> {
+    return (await this.api.get<{ quizzes: ApiBankQuizSummary[] }>('/quizzes', { search: search?.trim() || undefined })).quizzes;
   }
 
   private async fetchQuiz(id: number): Promise<ApiBankQuiz | null> {
@@ -168,7 +190,9 @@ export class QuizAdminService {
 
   private searchQuestions(filters: QuestionBankFilters, page: number, pageSize: number): Promise<ApiPage<ApiQuestion>> {
     return this.api.get<ApiPage<ApiQuestion>>('/questions', {
-      subjectId: filters.subjectId, stageId: filters.stageId, gradeId: filters.gradeId, tagId: filters.tagId, page, pageSize: Math.min(pageSize, MAX_PAGE)
+      subjectId: filters.subjectId, stageId: filters.stageId, gradeId: filters.gradeId, tagId: filters.tagId,
+      semester: toApiSemester(filters.semester) ?? undefined, search: filters.search?.trim() || undefined, forSemester: toApiSemester(filters.forSemester) ?? undefined,
+      page, pageSize: Math.min(pageSize, MAX_PAGE)
     });
   }
 

@@ -401,6 +401,10 @@
           <p class="available-questions-empty">{{ 'quizBuilder.noneMatch' | translate }}</p>
         }
       </div>
+      @if (availableQuestionList.hasMore()) {
+        <button class="btn btn--sm btn--ghost" type="button" (click)="availableQuestionList.loadMore()"
+                [disabled]="availableQuestionList.isLoadingMore()">{{ 'common.loadMore' | translate }}</button>
+      }
     </div>
     }
   </div>
@@ -1232,7 +1236,7 @@
                   }
                 </select>
                 <input class="quizzes-admin__form-input" [placeholder]="'homeworkWizard.searchBank' | translate" [ngModel]="homeworkBankSearch()"
-                  (ngModelChange)="homeworkBankSearch.set($event)" />
+                  (ngModelChange)="onHomeworkBankSearchChange($event)" />
               </div>
             </div>
             <div class="qpool__list">
@@ -1253,6 +1257,10 @@
                 <p class="quizzes-admin__muted">{{ 'homeworkWizard.noBankMatch' | translate }}</p>
               }
             </div>
+            @if (homeworkBankList.hasMore()) {
+              <button class="btn btn--sm btn--ghost" type="button" (click)="homeworkBankList.loadMore()"
+                      [disabled]="homeworkBankList.isLoadingMore()">{{ 'common.loadMore' | translate }}</button>
+            }
           </div>
         }
       </div>

@@ -8,6 +8,17 @@ import { ServiceError } from '../../shared/service-error';
 import { toApiRoles, toUser } from '../../auth/current-user.mapper';
 
 type AccountType = 'parent' | 'child';
+
+/** How recently an account has been used — the Users table's status filter, applied by the API (`UserFilters`). */
+export type UserActivity = 'active' | 'pending' | 'inactive' | 'suspended';
+const API_ACTIVITY: Record<UserActivity, string> = { active: 'Active', pending: 'Pending', inactive: 'Inactive', suspended: 'Suspended' };
+
+/** What the Users table narrows by; the API applies each, so they cover every page, not only the one on screen. */
+export interface UserListFilter {
+  /** Name, email or mobile number. */
+  search?: string;
+  activity?: UserActivity;
+}
 const ROLE_OF: Record<AccountType, ApiRole> = { parent: 'PARENT', child: 'STUDENT' };
 const MAX_PAGE = 100;                                    // the API's page-size limit
 
@@ -31,9 +42,12 @@ export class AppUserService {
     return (await this.raw({}, 1, 1)).totalCount;
   }
 
-  /** The Users table, optionally one account type, by name; paged on the server. */
-  pagedSource(accountType?: AccountType): PagedSource<User> {
-    const filter = accountType ? { role: ROLE_OF[accountType] } : {};
+  /** The Users table, optionally one account type, searched and filtered by the API, by name; paged on the server. */
+  pagedSource(accountType?: AccountType, narrow: UserListFilter = {}): PagedSource<User> {
+    const filter: Record<string, string> = {};
+    if (accountType) filter['role'] = ROLE_OF[accountType];
+    if (narrow.search?.trim()) filter['search'] = narrow.search.trim();
+    if (narrow.activity) filter['activity'] = API_ACTIVITY[narrow.activity];
     return {
       fetchPage: (pageSize, cursor) => this.page(filter, pageSize, cursor),
       fetchCount: async () => (await this.raw(filter, 1, 1)).totalCount

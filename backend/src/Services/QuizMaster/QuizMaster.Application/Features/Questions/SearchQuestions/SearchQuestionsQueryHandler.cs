@@ -17,10 +17,17 @@ public class SearchQuestionsQueryHandler(Repository<Question> _questionRepositor
             questions = questions.Where(question => question.GradeId == gradeId);
         if (query.Semester is { } semester)
             questions = questions.Where(question => question.Semester == semester);
+        if (query.ForSemester is { } forSemester)
+            questions = questions.Where(question => question.Semester == null || question.Semester == forSemester);
         if (query.TagId is { } tagId)
             questions = questions.Where(question => question.TagIds.Contains(tagId));
-        if (!string.IsNullOrWhiteSpace(query.Search))
-            questions = questions.Where(question => EF.Functions.Like(question.Name, $"%{query.Search.Trim()}%"));
+        if (query.Ids is { Length: > 0 } ids)
+            questions = questions.Where(question => ids.Contains(question.Id));
+        if (TextSearch.ContainsPattern(query.Search) is { } pattern)
+        {
+            var searchedId = int.TryParse(query.Search!.Trim(), out var number) ? number : 0;
+            questions = questions.Where(question => EF.Functions.Like(question.Name, pattern, TextSearch.EscapeCharacter) || question.Id == searchedId);
+        }
 
         return await questions
             .OrderByDescending(question => question.Id)

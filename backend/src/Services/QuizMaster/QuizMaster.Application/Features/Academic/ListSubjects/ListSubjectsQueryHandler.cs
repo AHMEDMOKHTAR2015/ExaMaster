@@ -6,6 +6,8 @@ public class ListSubjectsQueryHandler(SubjectRepository _subjectRepository)
     public async Task<ListSubjectsResponse> Handle(ListSubjectsQuery query, CancellationToken ct)
     {
         var items = _subjectRepository.QueryNotTracked();
+        if (TextSearch.ContainsPattern(query.Search) is { } pattern)
+            items = items.Where(e => EF.Functions.Like(e.Name, pattern, TextSearch.EscapeCharacter));
 
         var list = await items.OrderBy(e => e.Name).ToListAsync(ct);
 

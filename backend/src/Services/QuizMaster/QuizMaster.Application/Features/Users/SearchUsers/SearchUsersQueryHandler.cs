@@ -1,3 +1,5 @@
+using QuizMaster.Application.Features.Users.Shared;
+
 namespace QuizMaster.Application.Features.Users.SearchUsers;
 
 public class SearchUsersQueryHandler(Repository<User> _userRepository, QuizMasterDbContext _dbContext)
@@ -15,13 +17,11 @@ public class SearchUsersQueryHandler(Repository<User> _userRepository, QuizMaste
             users = users.Where(user => user.ParentId == parentId);
         if (query.IsActive is { } isActive)
             users = users.Where(user => user.IsActive == isActive);
+        if (query.Activity is { } activity)
+            users = users.WithActivity(activity, DateTime.UtcNow);
         if (query.Participated)
             users = users.Where(user => _dbContext.Participations.Any(participation => participation.ChildId == user.Id));
-        if (!string.IsNullOrWhiteSpace(query.Search))
-        {
-            var pattern = $"%{query.Search.Trim()}%";
-            users = users.Where(user => EF.Functions.Like(user.DisplayName, pattern) || EF.Functions.Like(user.Email, pattern));
-        }
+        users = users.MatchingSearch(query.Search);
 
         var ordered = query.Participated
             ? users.OrderByDescending(user => _dbContext.Participations.Count(participation => participation.ChildId == user.Id)).ThenBy(user => user.Id)

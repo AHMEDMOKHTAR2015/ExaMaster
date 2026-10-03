@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { LoadingButtonDirective } from '../../../directives';
 import { HomeworkParticipationService, ParticipationService } from '../../../services/admin';
+import { ReviewQueueItem, ReviewVerdictFilter } from '../../../services/admin/quizzes/homework-participation.service';
+import { LoadMoreList } from '../../../shared/load-more-list';
 import { NotificationService } from '../../../services/notification.service';
 import { TeacherReviewQueueService } from '../../../services/teacher-review-queue.service';
 import { ParticipationAnswer, ParticipationRecord, AssignmentKind } from '../../../models';
@@ -37,7 +39,23 @@ export class ValidationTabComponent {
   private readonly notification = inject(NotificationService);
   private readonly reviewQueue = inject(TeacherReviewQueueService);
 
-  readonly validationFilter = signal<'pending' | 'reviewed' | 'all'>('pending');
+  readonly validationFilter = signal<ReviewVerdictFilter>('pending');
+
+  /**
+   * The review queue, a page at a time: every submission this teacher reviews
+   * (their assignments' and bank quizzes naming them), narrowed by the verdict
+   * select and the filter bar — by the API, which also orders it.
+   */
+  readonly queue = new LoadMoreList<ReviewQueueItem>(
+    () => {
+      const reviewerId = this.state.currentUser()?.id;
+      return reviewerId
+        ? this.homeworkParticipationService.reviewQueueSource(reviewerId, this.validationFilter(), this.state.appliedFilter())
+        : null;
+    },
+    20,
+    () => this.notification.error('Failed to load the submissions to review.')
+  );
 
   // ---- Answer-review popup (reused presentational component) ------------------
   readonly answersRecord = signal<ParticipationRecord | null>(null);
@@ -59,20 +77,10 @@ export class ValidationTabComponent {
   readonly reviewDrafts = signal<Map<number, ReviewGradeDraft>>(new Map());
 
   constructor() {
-    // Re-fetch whenever the filter bar changes the set in view. `untracked`
-    // keeps the cache write inside `loadRecordsFor` from re-triggering this.
+    // Re-ask the API whenever the verdict select, the filter bar or the shell's Refresh changes what is in view.
     effect(() => {
-      const assignments = this.state.filteredAssignments();
-      untracked(() => void this.state.loadRecordsFor(assignments));
-    });
-
-    // Bank-quiz submissions naming this teacher as reviewer. Independent of the
-    // assignment filter — they have no assignment for it to match — so this is
-    // a one-shot load keyed off the signed-in user rather than part of the
-    // effect above.
-    effect(() => {
-      const id = this.state.currentUser()?.id;
-      if (id) untracked(() => void this.state.loadReviewerRecords());
+      this.validationFilter(); this.state.appliedFilter(); this.state.refreshTick(); this.state.currentUser();
+      untracked(() => void this.queue.reload());
     });
   }
 
@@ -90,15 +98,19 @@ export class ValidationTabComponent {
     return Array.isArray(answers) ? answers.filter(a => a.requiresReview) : [];
   });
 
+  /** The queue's rows, each with the assignment it answers when that assignment is in view (for its group's name). */
   readonly filteredValidationItems = computed<ValidationItem[]>(() => {
-    const items = this.state.validationItems();
-    const filter = this.validationFilter();
-    if (filter === 'pending') return items.filter(i => !i.record.validation);
-    if (filter === 'reviewed') {
-      return [...items.filter(i => !!i.record.validation)]
-        .sort((a, b) => b.record.validation!.validatedAt - a.record.validation!.validatedAt);
-    }
-    return items;
+    const assignmentsById = new Map(this.state.assignments().map(a => [a.id, a]));
+    return this.queue.items().map(({ record, studentName, kind }) => {
+      const assignment = record.homeworkId ? assignmentsById.get(record.homeworkId) ?? null : null;
+      return {
+        assignment,
+        record,
+        studentName,
+        title: assignment?.title ?? record.homeworkTitle ?? record.quizName ?? '',
+        kind
+      };
+    });
   });
 
   // ---- Answer review ---------------------------------------------------------
@@ -213,8 +225,11 @@ export class ValidationTabComponent {
     this.isSavingValidation.set(true);
     try {
       const saved = await this.homeworkParticipationService.review(item.record.id, { status: this.validationStatus(), feedback }, marks);
-      // Reflect the server's result locally so badges and scores update without a full reload.
-      if (saved) this.state.patchRecord(item.assignment?.id ?? null, item.record.id, saved);
+      // The queue and its badge re-ask the API (a verdict moves the row from Pending to Reviewed); the
+      // Participation tab's cache takes the new score in place.
+      if (saved) this.state.patchRecord(item.record.homeworkId ?? null, item.record.id, saved);
+      void this.queue.reload();
+      void this.state.refreshPendingValidationCount();
       void this.reviewQueue.refresh();
       this.notification.success(`Submission ${this.validationStatus() === 'approved' ? 'approved' : 'marked for revision'}.`);
       this.validationTarget.set(null);

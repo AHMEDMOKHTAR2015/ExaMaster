@@ -34,32 +34,11 @@ describe('TeacherScopeService scoping rules', () => {
     completedQuizzes: []
   });
 
-  const users: User[] = [
-    child('stu1', 'c1'),                                   // in teacher's class
-    child('stu2', 'c1'),                                   // in teacher's class
-    child('stu3', 'c3'),                                   // other teacher's class
-    { ...child('parent1', 'c1'), accountType: 'parent' },  // not a child
-    child('stu4', undefined)                               // no class
-  ];
+  // The roster as the API returns it (GET /me/students): only this teacher's students, so no
+  // scoping rule runs in the browser any more — the server's is tested in the API's suites.
+  const roster: User[] = [child('stu1', 'c1'), child('stu2', 'c1')];
 
   const myClasses = classes.filter(c => c.id === 'c1'); // = classesForTeacher(teacher, classes)
-
-  describe('scopeStudents', () => {
-    it('keeps only children enrolled in the teacher’s classes', () => {
-      const roster = TeacherScopeService.scopeStudents(myClasses, users);
-      expect(roster.map(s => s.uid)).toEqual(['stu1', 'stu2']);
-    });
-
-    it('returns empty when the teacher has no classes', () => {
-      expect(TeacherScopeService.scopeStudents([], users)).toEqual([]);
-    });
-
-    it('excludes parents and class-less children', () => {
-      const roster = TeacherScopeService.scopeStudents(myClasses, users);
-      expect(roster.some(s => s.accountType !== 'child')).toBe(false);
-      expect(roster.some(s => !s.classId)).toBe(false);
-    });
-  });
 
   describe('scopeSubjects / subjectsTaughtIn', () => {
     it('resolves only the teacher’s subjects', () => {
@@ -122,7 +101,6 @@ describe('TeacherScopeService scoping rules', () => {
 
   describe('groupByClass', () => {
     it('groups the roster by class with the subjects taught there', () => {
-      const roster = TeacherScopeService.scopeStudents(myClasses, users);
       const grouped = TeacherScopeService.groupByClass(teacher, myClasses, subjects, roster);
       expect(grouped.length).toBe(1);
       expect(grouped[0].cls.id).toBe('c1');

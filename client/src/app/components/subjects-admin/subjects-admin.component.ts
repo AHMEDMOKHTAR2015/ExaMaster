@@ -1,5 +1,6 @@
 import { ServiceError } from '../../services/shared/service-error';
-import { Component, signal, inject, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
+import { Component, DestroyRef, signal, inject, computed, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
+import { debounced } from '../../shared/debounce';
 
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -54,7 +55,7 @@ export class SubjectsAdminComponent {
    * page count are provably the same filtered set.
    */
   readonly subjectList = PagedList.from<Subject>(
-    () => this.subjectService.pagedSource(),
+    () => this.subjectService.pagedSource(this.searchQuery()),
     20,
     () => this.notification.error('Failed to load subjects.')
   );
@@ -102,16 +103,16 @@ export class SubjectsAdminComponent {
     return this.students().filter(s => !!s.classId && classIds.has(s.classId!));
   });
 
-  /**
-   * The rows on screen, narrowed by the search box — page-scoped, because
-   * Firestore has no substring search and the collection is no longer held.
-   */
-  readonly filteredSubjects = computed(() => {
-    const q = this.searchQuery().toLowerCase().trim();
-    const list = this.subjectList.items();
-    if (!q) return list;
-    return list.filter(s => s.name.toLowerCase().includes(q));
-  });
+  /** The rows on screen; the API has already applied the search box (the subject's name). */
+  readonly filteredSubjects = computed(() => this.subjectList.items());
+
+  /** Waits for typing to pause, so a name is one request rather than one per keystroke. */
+  private readonly reloadSoon = debounced(inject(DestroyRef));
+
+  onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    this.reloadSoon(() => void this.subjectList.reload());
+  }
 
   constructor() {
     this.loadAll();

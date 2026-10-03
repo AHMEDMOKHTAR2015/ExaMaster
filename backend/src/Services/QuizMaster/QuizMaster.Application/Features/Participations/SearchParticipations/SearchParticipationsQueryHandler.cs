@@ -25,8 +25,13 @@ public class SearchParticipationsQueryHandler(QuizMasterDbContext _dbContext, IC
             participations = participations.Where(p => p.ReviewerId == reviewerId);
         if (query.AwaitingReview)
             participations = participations.AwaitingReview();
+        if (query.Verdict is { } verdict)
+            participations = participations.WithVerdict(verdict);
+        participations = participations.Matching(query.Filter(), _dbContext);
 
-        var ordered = participations.OrderByDescending(p => p.EndedOn).ThenByDescending(p => p.Id);
+        var ordered = query.Verdict == ReviewVerdict.Reviewed
+            ? participations.OrderByDescending(p => p.ValidatedOn).ThenByDescending(p => p.Id)
+            : participations.OrderByDescending(p => p.EndedOn).ThenByDescending(p => p.Id);
         var totalCount = await ordered.CountAsync(ct);
         var items = await ordered
             .Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)

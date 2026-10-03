@@ -47,7 +47,8 @@ public static class ParticipationViews
             participation.PendingReviewCount,
             participation.StartedOn,
             participation.EndedOn,
-            participation.ValidationStatus));
+            participation.ValidationStatus,
+            dbContext.Assignments.Where(assignment => assignment.Id == participation.HomeworkId).Select(assignment => (AssignmentKind?)assignment.Kind).FirstOrDefault()));
 
     // What a reviewer still has to do: no verdict yet, or answers still unmarked.
     public static IQueryable<Participation> AwaitingReview(this IQueryable<Participation> participations)

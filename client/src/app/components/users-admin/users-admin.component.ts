@@ -1,6 +1,6 @@
 import { ServiceError } from '../../services/shared/service-error';
 import { UserAdminService } from '../../services/admin';
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -9,10 +9,12 @@ import { AppUserService, StageService, GradeService, ClassGroupService } from '.
 import { ChildAccountService } from '../../services/auth/child-account.service';
 import { NotificationService } from '../../services/notification.service';
 import { PagedList } from '../../shared/paged-list';
+import { debounced } from '../../shared/debounce';
 import { AdminRole, Stage, Grade, ClassGroup, User } from '../../models';
 import { MIN_PASSWORD_LENGTH } from '../../shared/password-policy';
 
 type UserTab = 'all' | 'admins' | 'parents' | 'children';
+// The same four statuses the API filters by (`UserActivity`); getStatus derives one for the badge.
 type DerivedStatus = 'active' | 'pending' | 'inactive' | 'suspended';
 type DerivedRole = 'Admin' | 'Parent' | 'Child' | 'User';
 type NewUserRole = 'admin' | 'parent' | 'child';
@@ -58,8 +60,10 @@ export class UsersAdminComponent {
   readonly userList = PagedList.from<User>(
     () => {
       const tab = this.activeTab();
+      const status = this.statusFilter();
       return this.appUserService.pagedSource(
-        tab === 'parents' ? 'parent' : tab === 'children' ? 'child' : undefined
+        tab === 'parents' ? 'parent' : tab === 'children' ? 'child' : undefined,
+        { search: this.searchQuery(), activity: status === 'all' ? undefined : status }
       );
     },
     13,
@@ -109,11 +113,10 @@ export class UsersAdminComponent {
 
   /** Derive a status from the active flag + recency of last login. */
   getStatus(u: User): DerivedStatus {
+    // The API's rule (`UserFilters.WithActivity`), so a row's badge always agrees with the status filter that found it.
     if (u.active === false) return 'suspended';
     const last = this.toMs(u.lastLoginAt);
-    const created = this.toMs(u.createdAt);
-    // Never logged in (or only stamped at signup) → pending invite.
-    if (!last || (created && last && last - created < 1000)) return 'pending';
+    if (!last) return 'pending';                       // never signed in
     const days = (Date.now() - last) / (1000 * 60 * 60 * 24);
     if (days > 14) return 'inactive';
     return 'active';
@@ -130,13 +133,16 @@ export class UsersAdminComponent {
     };
   });
 
-  /** Apply tab + search + status filters. */
+  /**
+   * The rows to show. The server pages, searches and filters every tab but
+   * Admins, so those rows arrive already narrowed; the Admins tab is one small,
+   * complete list (see {@link loadUsers}), so it is narrowed here.
+   */
   readonly filteredUsers = computed(() => {
     let list = this.allUsers();
     const tab = this.activeTab();
-    if (tab === 'admins')   list = list.filter(u => this.isAdmin(u));
-    if (tab === 'parents')  list = list.filter(u => u.accountType === 'parent');
-    if (tab === 'children') list = list.filter(u => u.accountType === 'child');
+    if (tab !== 'admins') return list;
+    list = list.filter(u => this.isAdmin(u));
 
     const status = this.statusFilter();
     if (status !== 'all') list = list.filter(u => this.getStatus(u) === status);
@@ -309,14 +315,19 @@ export class UsersAdminComponent {
     void this.loadUsers();
   }
 
+  /** Waits for typing to pause, so a name is one request rather than one per keystroke. */
+  private readonly reloadSoon = debounced(inject(DestroyRef));
+
   onSearchChange(q: string): void {
     this.searchQuery.set(q);
     this.currentPage.set(1);
+    if (this.activeTab() !== 'admins') this.reloadSoon(() => void this.loadUsers());
   }
 
   onStatusFilterChange(s: 'all' | DerivedStatus): void {
     this.statusFilter.set(s);
     this.currentPage.set(1);
+    if (this.activeTab() !== 'admins') void this.loadUsers();
   }
 
   goToPage(page: number): void {

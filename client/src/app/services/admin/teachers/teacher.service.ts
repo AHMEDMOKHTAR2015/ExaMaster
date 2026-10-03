@@ -35,9 +35,9 @@ export class TeacherService {
     return (await this.all()).length;
   }
 
-  /** The Teachers admin table, by surname. */
-  pagedSource(): PagedSource<Teacher> {
-    return pagedList(() => this.all());
+  /** The Teachers admin table, by surname; only teachers whose name, email or subject contains `search` (the API matches it). */
+  pagedSource(search?: string): PagedSource<Teacher> {
+    return pagedList(() => this.all(search));
   }
 
   /** Returns the new teacher's id, which the API assigns. */
@@ -64,7 +64,8 @@ export class TeacherService {
     };
   }
 
-  private async all(): Promise<Teacher[]> {
-    return (await this.api.get<{ teachers: ApiTeacher[] }>('/teachers')).teachers.map(toTeacher).sort(bySurname);
+  private async all(search?: string): Promise<Teacher[]> {
+    const { teachers } = await this.api.get<{ teachers: ApiTeacher[] }>('/teachers', { search: search?.trim() || undefined });
+    return teachers.map(toTeacher).sort(bySurname);
   }
 }

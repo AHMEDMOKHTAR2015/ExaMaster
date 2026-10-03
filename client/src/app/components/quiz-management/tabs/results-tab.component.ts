@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
-import { HomeworkAssignment, HomeworkSemester } from '../../../models';
-import {
-  effectiveSubjectId, effectiveSemester,
-  computeAssignmentResult, sumAssignmentResults, AssignmentResult
-} from '../../../shared/quiz-management';
+import { HomeworkSemester } from '../../../models';
+import { sumAssignmentResults, AssignmentResult, AssignmentResultRow } from '../../../shared/quiz-management';
+import { HomeworkService } from '../../../services/homework.service';
+import { NotificationService } from '../../../services/notification.service';
 import { QuizManagementStateService } from '../quiz-management-state.service';
 
 /** A subject/semester roll-up of assignment results for the Results tab. */
@@ -20,9 +19,9 @@ interface GroupedResult {
  * "Results" tab — completion and score roll-ups across the filtered
  * assignments, overall and broken down by subject and semester.
  *
- * Every roll-up is derived from the participation cache, so the tab fetches
- * records for whatever the filter bar currently selects and recomputes as they
- * land.
+ * The API works out each assignment's progress for the filter bar's selection
+ * (`GET /assignments/results`); this tab only adds the rows up into groups, so
+ * it never reads a submission itself.
  */
 @Component({
     selector: 'app-results-tab',
@@ -32,42 +31,49 @@ interface GroupedResult {
 })
 export class ResultsTabComponent {
   readonly state = inject(QuizManagementStateService);
+  private readonly homeworkService = inject(HomeworkService);
+  private readonly notification = inject(NotificationService);
+
+  private readonly rows = signal<AssignmentResultRow[]>([]);
+  readonly isLoading = signal(false);
+  private generation = 0;
 
   constructor() {
-    // Re-fetch whenever the filter bar changes the set in view. `untracked`
-    // keeps the cache write inside `loadRecordsFor` from re-triggering this.
+    // Re-ask the API whenever the filter bar or the shell's Refresh changes what is in view.
     effect(() => {
-      const assignments = this.state.filteredAssignments();
-      untracked(() => void this.state.loadRecordsFor(assignments));
+      this.state.appliedFilter(); this.state.refreshTick();
+      untracked(() => void this.load());
     });
   }
 
-  /** Per-assignment results for the filtered set whose records are loaded. */
-  readonly loadedResults = computed(() => {
-    const cache = this.state.recordsByAssignment();
-    return this.state.filteredAssignments()
-      .map(a => {
-        const records = cache.get(a.id);
-        if (!records) return null;
-        const byChild = new Map(records.map(r => [r.childId, r]));
-        const targets = this.state.targetStudentsOf(a).map(t => t.uid);
-        return { assignment: a, result: computeAssignmentResult(targets, byChild, a.dueAt) };
-      })
-      .filter((x): x is { assignment: HomeworkAssignment; result: AssignmentResult } => x !== null);
-  });
+  /** A later load wins over a slower earlier one (the filter changed meanwhile). */
+  private async load(): Promise<void> {
+    const run = ++this.generation;
+    this.isLoading.set(true);
+    try {
+      const rows = await this.homeworkService.listResults(this.state.appliedFilter());
+      if (run === this.generation) this.rows.set(rows);
+    } catch {
+      if (run === this.generation) this.notification.error('Failed to load the results.');
+    } finally {
+      if (run === this.generation) this.isLoading.set(false);
+    }
+  }
+
+  /** Per-assignment results, each with the subject and semester the API counted it under. */
+  readonly loadedResults = this.rows.asReadonly();
 
   readonly overallResult = computed<AssignmentResult>(() =>
     sumAssignmentResults(this.loadedResults().map(r => r.result))
   );
 
   readonly resultsBySubject = computed<GroupedResult[]>(() => {
-    const quizById = this.state.quizById();
     const groups = new Map<string, AssignmentResult[]>();
-    for (const { assignment, result } of this.loadedResults()) {
-      const subjectId = effectiveSubjectId(assignment, quizById) ?? '';
-      const arr = groups.get(subjectId) ?? [];
+    for (const { subjectId, result } of this.loadedResults()) {
+      const key = subjectId ?? '';
+      const arr = groups.get(key) ?? [];
       arr.push(result);
-      groups.set(subjectId, arr);
+      groups.set(key, arr);
     }
     return [...groups.entries()].map(([subjectId, results]) => ({
       key: subjectId || 'general',
@@ -78,10 +84,8 @@ export class ResultsTabComponent {
   });
 
   readonly resultsBySemester = computed<GroupedResult[]>(() => {
-    const quizById = this.state.quizById();
     const groups = new Map<string, AssignmentResult[]>();
-    for (const { assignment, result } of this.loadedResults()) {
-      const semester = effectiveSemester(assignment, quizById);
+    for (const { semester, result } of this.loadedResults()) {
       const key = semester ?? 'unspecified';
       const arr = groups.get(key) ?? [];
       arr.push(result);

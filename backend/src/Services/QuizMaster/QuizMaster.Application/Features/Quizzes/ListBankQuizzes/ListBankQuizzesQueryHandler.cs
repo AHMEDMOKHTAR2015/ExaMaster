@@ -18,8 +18,8 @@ public class ListBankQuizzesQueryHandler(QuizMasterDbContext _dbContext, IClaims
             quizzes = quizzes.Where(quiz => quiz.SubjectId == subjectId);
         if (query.StageId is { } stageId)
             quizzes = quizzes.Where(quiz => quiz.StageId == stageId);
-        if (!string.IsNullOrWhiteSpace(query.Search))
-            quizzes = quizzes.Where(quiz => EF.Functions.Like(quiz.Name, $"%{query.Search.Trim()}%"));
+        if (TextSearch.ContainsPattern(query.Search) is { } pattern)
+            quizzes = quizzes.Where(quiz => EF.Functions.Like(quiz.Name, pattern, TextSearch.EscapeCharacter) || EF.Functions.Like(quiz.Description!, pattern, TextSearch.EscapeCharacter));
 
         var summaries = await quizzes
             .OrderBy(quiz => quiz.Name)

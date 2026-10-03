@@ -1,7 +1,25 @@
 import { Injectable, inject } from '@angular/core';
-import { ParticipationRecord, ParticipationValidation, PagedResult } from '../../../models';
+import { AssignmentKind, ParticipationRecord, ParticipationValidation, PagedResult } from '../../../models';
 import { ApiClient } from '../../api/api-client.service';
+import { ApiPage, ApiParticipationSummary } from '../../api/api-models';
+import { assignmentFilterParams } from '../../api/assignment-filter-params';
+import { toParticipationRecord } from '../../api/participation-mapping';
+import { PagedSource } from '../../shared/query-spec';
+import { AssignmentFilter } from '../../../shared/quiz-management';
 import { ParticipationService } from './participation.service';
+
+/** Which of a reviewer's submissions to list: those still waiting for a verdict, those given one, or both. */
+export type ReviewVerdictFilter = 'pending' | 'reviewed' | 'all';
+
+/** One submission in a teacher's review queue, with what the list shows about it. */
+export interface ReviewQueueItem {
+  record: ParticipationRecord;
+  studentName: string;
+  /** As the student sees it: the assignment's kind, or a quiz when it answers none (a bank quiz). */
+  kind: AssignmentKind;
+}
+
+const MAX_PAGE = 100;                                    // the API's page-size limit
 
 /** One reviewed answer's mark: a share of the quiz, 0 up to the answer's weight. */
 export interface ReviewMarkInput {
@@ -26,10 +44,31 @@ export class HomeworkParticipationService {
     return this.participations.search({ homeworkId: Number(homeworkId) }, pageSize, cursor);
   }
 
-  /** Bank-quiz attempts (no assignment) this teacher reviews. `reviewerId` is their API user id. */
-  async listUnassignedForReviewer(reviewerId: string, pageSize = 50, cursor?: string): Promise<PagedResult<ParticipationRecord>> {
-    const page = await this.participations.search({ reviewerId: Number(reviewerId) }, pageSize, cursor);
-    return { ...page, items: page.items.filter(record => !record.homeworkId) };
+  /**
+   * A teacher's review queue — every submission they review, to their own
+   * assignments and to bank quizzes naming them — narrowed by verdict and by
+   * Quiz Management's filter bar, all by the API. Reviewed ones come most
+   * recently reviewed first, the rest newest first. `reviewerId` is their API user id.
+   */
+  reviewQueueSource(reviewerId: string, verdict: ReviewVerdictFilter, filter: AssignmentFilter): PagedSource<ReviewQueueItem> {
+    const params = {
+      reviewerId: Number(reviewerId),
+      verdict: verdict === 'pending' ? 'Pending' : verdict === 'reviewed' ? 'Reviewed' : undefined,
+      ...assignmentFilterParams(filter)
+    };
+    return {
+      fetchPage: async (pageSize, cursor) => {
+        const page = cursor ? Number(cursor) : 1;
+        const size = Math.min(pageSize, MAX_PAGE);
+        const result = await this.api.get<ApiPage<ApiParticipationSummary>>('/participations', { ...params, page, pageSize: size });
+        return {
+          items: result.items.map(toReviewQueueItem),
+          nextCursor: page * size < result.totalCount ? String(page + 1) : undefined
+        };
+      },
+      fetchCount: async () =>
+        (await this.api.get<ApiPage<ApiParticipationSummary>>('/participations', { ...params, page: 1, pageSize: 1 })).totalCount
+    };
   }
 
   /** Save a review; returns the attempt as the server now has it (new score, verdict, marks). */
@@ -45,4 +84,12 @@ export class HomeworkParticipationService {
     });
     return this.participations.getById(participationId);
   }
+}
+
+function toReviewQueueItem(summary: ApiParticipationSummary): ReviewQueueItem {
+  return {
+    record: toParticipationRecord(summary),
+    studentName: summary.childName ?? '',
+    kind: summary.assignmentKind === 'Homework' ? 'homework' : 'quiz'
+  };
 }

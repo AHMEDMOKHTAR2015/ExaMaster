@@ -14,6 +14,7 @@
     "application": "Application",
     "actions": "Actions",
     "dashboard": "Dashboard",
+    "myStudents": "My Students",
     "participationHistory": "Participation History",
     "allParticipations": "Students Participations",
     "availableQuizzes": "Available Quizzes",
@@ -994,7 +995,7 @@
       "allStages": "All stages",
       "allGrades": "All grades",
       "clearFilters": "Clear filters",
-      "searchPlaceholder": "Filter this page…",
+      "searchPlaceholder": "Search question text…",
       "showingPage": "Showing {{ count }} of {{ total }} questions — page {{ page }} of {{ pages }}",
       "filteredPage": "matching “{{ query }}” on this page",
       "jumpToId": "Open question #{{ id }}",
@@ -1079,6 +1080,31 @@
     "titleQuiz": "Quiz Completion - {{ title }}",
     "titleHomework": "Homework Completion - {{ title }}"
   },
+  "myStudents": {
+    "title": "My Students",
+    "subtitle": "Students in the groups you teach, and the quizzes and homework they've submitted in your subjects",
+    "searchPlaceholder": "Search by name, mobile, parent or group",
+    "groupFilter": "Filter by group",
+    "allGroups": "All groups",
+    "count": "{{ count }} student(s)",
+    "loading": "Loading your students…",
+    "loadFailed": "Couldn't load your students. Refresh the page to try again.",
+    "noSubmissions": "None yet",
+    "empty": "You have no students yet",
+    "emptyHint": "Students appear here once an administrator assigns you to a group that studies one of your subjects.",
+    "noMatches": "No students match your search",
+    "table": {
+      "student": "Student",
+      "parent": "Parent",
+      "stage": "Stage",
+      "grade": "Grade",
+      "group": "Group",
+      "quizzes": "Quizzes",
+      "homework": "Homework",
+      "lastSubmission": "Last submission",
+      "countsHint": "Submissions in your subjects, or to work you assigned"
+    }
+  },
   "participationsHistory": {
     "title": "Participations History",
     "subtitle": "Every student with participation history across your organization",
@@ -1108,7 +1134,7 @@
       "parents": "Parents",
       "children": "Children"
     },
-    "searchPlaceholder": "Search by name, email, parent…",
+    "searchPlaceholder": "Search by name, email or mobile…",
     "filters": {
       "all": "All",
       "active": "Active",
@@ -1355,7 +1381,7 @@
       "userAdmin": "Parent keys",
       "applicationAdmin": "App admin keys"
     },
-    "searchPlaceholder": "Search by key ID or role…",
+    "searchPlaceholder": "Search by key code…",
     "statusFilter": {
       "all": "All statuses",
       "active": "Active",

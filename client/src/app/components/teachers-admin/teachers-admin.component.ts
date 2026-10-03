@@ -1,5 +1,6 @@
 import { ServiceError } from '../../services/shared/service-error';
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { debounced } from '../../shared/debounce';
 
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -54,9 +55,9 @@ export class TeachersAdminComponent {
   /** Whether {@link teachers} has been fetched this session. */
   private allTeachersLoaded = false;
 
-  /** The table, paged on the server. */
+  /** The table: searched by the API (name, email or subject), across every teacher. */
   readonly teacherList = PagedList.from<Teacher>(
-    () => this.teacherService.pagedSource(),
+    () => this.teacherService.pagedSource(this.searchQuery()),
     20,
     () => this.notification.error('Failed to load teachers.')
   );
@@ -99,18 +100,16 @@ export class TeachersAdminComponent {
   readonly classPickerOpen = signal(false);
   readonly classPickerQuery = signal('');
 
-  readonly filteredTeachers = computed(() => {
-    // Page-scoped: Firestore has no substring search and the collection is no
-    // longer held in memory.
-    const q = this.searchQuery().toLowerCase().trim();
-    const list = this.teacherList.items();
-    if (!q) return list;
-    return list.filter(t =>
-      `${t.firstName} ${t.lastName}`.toLowerCase().includes(q) ||
-      (t.email ?? '').toLowerCase().includes(q) ||
-      (t.subjectIds ?? []).some(id => this.getSubjectName(id).toLowerCase().includes(q))
-    );
-  });
+  /** The rows on screen; the API has already applied the search box. */
+  readonly filteredTeachers = computed(() => this.teacherList.items());
+
+  /** Waits for typing to pause, so a name is one request rather than one per keystroke. */
+  private readonly reloadSoon = debounced(inject(DestroyRef));
+
+  onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    this.reloadSoon(() => void this.teacherList.reload());
+  }
 
   readonly selectedSubjectsForForm = computed(() => {
     const ids = this.form().subjectIds;

@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, inject, computed, effect, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -33,6 +33,9 @@ import { Stage, ClassGroup, Subject, SubjectTag, Grade, QuizConfig, HomeworkAssi
 import { QuizIllustrationComponent } from './quiz-illustration.component';
 import { parseBulkQuestionsJson, BulkUploadQuestionInput, BULK_UPLOAD_SAMPLE } from '../../shared/bulk-question-upload';
 import { PagedList } from '../../shared/paged-list';
+import { debounced } from '../../shared/debounce';
+import { LoadMoreList } from '../../shared/load-more-list';
+import { AssignmentFilter } from '../../shared/quiz-management';
 
 /**
  * A bank row: the stored question plus the names its Subject / Stage / Grade
@@ -107,26 +110,14 @@ export class QuizzesAdminComponent {
    * dropdown is only built when someone opens the wizard.
    */
   readonly quizList = new PagedList<QuizAdminItem>(
-    (pageSize, cursor) => this.quizAdminService.listQuizzes(pageSize, cursor),
-    () => this.quizAdminService.countQuizzes(),
+    (pageSize, cursor) => this.quizAdminService.listQuizzes(pageSize, cursor, this.quizSearchQuery()),
+    () => this.quizAdminService.countQuizzes(this.quizSearchQuery()),
     20,
     () => this.notification.error('Failed to load quizzes.')
   );
 
-  /**
-   * The rows on screen, narrowed by the search box — page-scoped, because
-   * Firestore has no substring search.
-   */
-  readonly visibleQuizRows = computed(() => {
-    const query = this.quizSearchQuery().toLowerCase().trim();
-    const rows = this.quizList.items();
-    if (!query) return rows;
-    return rows.filter(quiz =>
-      quiz.name.toLowerCase().includes(query) ||
-      String(quiz.id).includes(query) ||
-      (quiz.description ?? '').toLowerCase().includes(query)
-    );
-  });
+  /** The rows on screen; the API has already matched the search box (name or description). */
+  readonly visibleQuizRows = computed(() => this.quizList.items());
 
 
 
@@ -144,28 +135,14 @@ export class QuizzesAdminComponent {
    * here would have blanked the name of every quiz not on the visible page.
    */
   readonly teacherQuizList = new PagedList<TeacherQuiz>(
-    (pageSize, cursor) => this.teacherQuizService.listAll(pageSize, cursor),
-    () => this.teacherQuizService.countAll(),
+    (pageSize, cursor) => this.teacherQuizService.listAll(pageSize, cursor, this.teacherQuizSearchQuery()),
+    () => this.teacherQuizService.countAll(this.teacherQuizSearchQuery()),
     20,
     () => this.notification.error('Failed to load teacher-created quizzes.')
   );
 
-  /**
-   * The rows on screen, narrowed by the search box — page-scoped, because
-   * Firestore has no substring search and the collection is no longer in memory.
-   */
-  readonly filteredTeacherQuizzes = computed(() => {
-    const query = this.teacherQuizSearchQuery().toLowerCase().trim();
-    const rows = this.teacherQuizList.items();
-    if (!query) return rows;
-    return rows.filter(quiz =>
-      quiz.name.toLowerCase().includes(query) ||
-      quiz.description.toLowerCase().includes(query) ||
-      (quiz.subjectId ?? '').toLowerCase().includes(query) ||
-      (quiz.semester ?? '').toLowerCase().includes(query) ||
-      (this.teacherQuizCreatorNames()[quiz.createdBy] ?? '').toLowerCase().includes(query)
-    );
-  });
+  /** The rows on screen; the API has already matched the search box (name, description or author). */
+  readonly filteredTeacherQuizzes = computed(() => this.teacherQuizList.items());
 
 
   readonly quizFormId = signal<number | null>(null);
@@ -205,7 +182,7 @@ export class QuizzesAdminComponent {
    * clocks each question independently rather than the quiz as a whole.
    */
   readonly configDuration = computed<number>(() => {
-    const byId = new Map(this.allQuestions().map(q => [q.id, q]));
+    const byId = this.questionById();
     return this.assignedQuestionIds().reduce(
       (total, id) => total + (byId.get(id)?.duration ?? DEFAULT_QUESTION_DURATION_SECONDS),
       0
@@ -236,16 +213,20 @@ export class QuizzesAdminComponent {
   });
 
   /**
-   * The whole bank, held in memory for the quiz builder's Available Questions
-   * panel and the homework wizard — both filter it by Stage + Subject + Semester
-   * as the admin types, which no single Firestore query can serve.
-   *
-   * Loaded lazily by {@link ensureAllQuestionsLoaded} when one of those two
-   * views opens, never on component init: the bank tab pages from the server and
-   * an admin who only edits quizzes never pays for the full read.
+   * Questions fetched by id — a quiz's assigned ones, a homework's selection, a
+   * base quiz's — so the builder and the wizard can name them and add up their
+   * durations without reading the whole bank. See {@link questionById}.
    */
-  readonly allQuestions = signal<QuestionAdminItem[]>([]);
-  private allQuestionsLoaded = false;
+  private readonly fetchedQuestions = signal<Map<number, QuestionAdminItem>>(new Map());
+
+  /** Every question this screen has seen, by id: fetched ones plus whatever the lists below have loaded. */
+  readonly questionById = computed(() => {
+    const byId = new Map(this.fetchedQuestions());
+    for (const q of [...this.availableQuestionList.items(), ...this.homeworkBankList.items(), ...this.questionPageItems()]) {
+      byId.set(q.id, q);
+    }
+    return byId;
+  });
 
   readonly selectedQuestionIds = signal<number[]>([]);
 
@@ -283,6 +264,8 @@ export class QuizzesAdminComponent {
    * page 1 has no cursor.
    */
   private questionCursors: (string | undefined)[] = [undefined];
+  /** Bumped by every reload of the bank, so an older, slower answer (a search typed further) is discarded. */
+  private questionGeneration = 0;
 
   readonly totalQuestionPages = computed(() =>
     Math.max(1, Math.ceil(this.totalQuestionsCount() / this.questionPageSize))
@@ -303,14 +286,10 @@ export class QuizzesAdminComponent {
   });
 
   /**
-   * The loaded page as table rows, with the classification names resolved and
-   * the search box applied.
-   *
-   * The search is deliberately page-local: Firestore has no substring operator,
-   * so searching the whole bank would mean reading the whole bank — the thing
-   * this tab stopped doing. The Subject / Stage / Grade filters are the
-   * server-side way to narrow, and an all-digits query is treated as an id and
-   * fetched directly by {@link jumpToQuestionId}.
+   * The loaded page as table rows, with the classification names resolved.
+   * The API has already applied the search box (the question's text) and the
+   * Subject / Stage / Grade / Tag filters across the whole bank; an all-digits
+   * query can also be fetched as an id by {@link jumpToQuestionId}.
    */
   readonly visibleQuestionRows = computed<QuestionRow[]>(() => {
     const rows = this.questionPageItems().map(question => ({
@@ -321,17 +300,7 @@ export class QuizzesAdminComponent {
       gradeName: this.getGradeName(question.gradeId),
       semesterLabel: this.getSemesterLabel(question.semester)
     }));
-
-    const query = this.questionSearchQuery().toLowerCase().trim();
-    if (!query) return rows;
-    return rows.filter(row =>
-      row.question.name.toLowerCase().includes(query) ||
-      row.question.id.toString().includes(query) ||
-      row.subjectName.toLowerCase().includes(query) ||
-      row.stageName.toLowerCase().includes(query) ||
-      row.gradeName.toLowerCase().includes(query) ||
-      row.semesterLabel.toLowerCase().includes(query)
-    );
+    return rows;
   });
 
   /** True when every row on the page is selected — drives the header checkbox. */
@@ -352,8 +321,16 @@ export class QuizzesAdminComponent {
     // Count only assigned questions that fall within the quiz's current
     // Stage + Subject + Semester scope — i.e. the ones actually shown in the
     // Available Questions list — so the badge can never disagree with the list.
-    const assigned = new Set(this.assignedQuestionIds());
-    return this.availableQuestions().filter(q => assigned.has(q.id)).length;
+    // Worked out from the assigned questions themselves (fetched by id), not from the
+    // rows loaded so far, so it is right however many pages the list has.
+    const byId = this.questionById();
+    const stageId = this.quizFormStageId();
+    const subjectId = this.quizFormSubjectId();
+    const semester = this.quizFormSemester();
+    return this.assignedQuestionIds().filter(id => {
+      const q = byId.get(id);
+      return !!q && q.stageId === stageId && q.subjectId === subjectId && q.semester === semester;
+    }).length;
   });
 
   /**
@@ -370,17 +347,16 @@ export class QuizzesAdminComponent {
    * automatically whenever any of the three selections change, and resolves to
    * an empty list while the scope is incomplete.
    */
-  readonly availableQuestions = computed<QuestionAdminItem[]>(() => {
-    if (!this.hasQuestionScope()) return [];
-    const stageId = this.quizFormStageId();
-    const subjectId = this.quizFormSubjectId();
-    const semester = this.quizFormSemester();
-    return this.allQuestions().filter(question =>
-      question.stageId === stageId &&
-      question.subjectId === subjectId &&
-      question.semester === semester
-    );
-  });
+  readonly availableQuestionList = new LoadMoreList<QuestionAdminItem>(
+    () => this.hasQuestionScope()
+      ? this.quizAdminService.questionSource({
+          stageId: this.quizFormStageId(), subjectId: this.quizFormSubjectId(), semester: this.quizFormSemester()
+        })
+      : null,
+    50,
+    () => this.notification.error('Failed to load the question bank.')
+  );
+  readonly availableQuestions = this.availableQuestionList.items;
 
   /** Exposed for the template to branch the authoring form on question type. */
   readonly QUESTION_TYPE = QUESTION_TYPE;
@@ -571,22 +547,14 @@ export class QuizzesAdminComponent {
    */
   readonly homeworkList = new PagedList<HomeworkAssignment>(
     async (pageSize, cursor) => {
-      const kind = this.homeworkKindFilter();
-      const page = kind === 'all'
-        ? await this.homeworkService.listAll(pageSize, cursor)
-        : await this.homeworkService.listByKind(kind, pageSize, cursor);
+      const page = await this.homeworkService.listAll(pageSize, cursor, this.homeworkListFilter());
       // Resolve the quiz names this page needs, here rather than from a full
       // teacherQuizzes list — so the QUIZ column is right without the screen
       // holding every quiz in the school.
       await this.cacheQuizNamesFor(page.items);
       return page;
     },
-    () => {
-      const kind = this.homeworkKindFilter();
-      return kind === 'all'
-        ? this.homeworkService.countAll()
-        : this.homeworkService.countByKind(kind);
-    },
+    () => this.homeworkService.countAll(this.homeworkListFilter()),
     20,
     () => this.notification.error('Failed to load assignments.')
   );
@@ -599,19 +567,12 @@ export class QuizzesAdminComponent {
    * in front of you. The same trade the Questions Bank tab made — hence its
    * `noMatchesOnPage` wording, which this reuses.
    */
-  readonly visibleHomeworkRows = computed(() => {
-    const query = this.homeworkSearchQuery().toLowerCase().trim();
-    const rows = this.homeworkList.items();
-    if (!query) return rows;
-    return rows.filter(hw =>
-      hw.title.toLowerCase().includes(query) ||
-      // Search the name the row actually shows, not the sentinel behind it.
-      this.assignmentQuizName(hw).toLowerCase().includes(query) ||
-      hw.stageId.toLowerCase().includes(query) ||
-      hw.classId.toLowerCase().includes(query) ||
-      (hw.semester ?? '').toLowerCase().includes(query)
-    );
-  });
+  readonly visibleHomeworkRows = computed(() => this.homeworkList.items());
+
+  /** The kind toggle and the search box (the title or the quiz's name), as the API applies them. */
+  private homeworkListFilter(): AssignmentFilter {
+    return { kind: this.homeworkKindFilter(), search: this.homeworkSearchQuery() || undefined };
+  }
 
   setHomeworkKindFilter(kind: 'all' | 'quiz' | 'homework'): void {
     this.homeworkKindFilter.set(kind);
@@ -688,39 +649,40 @@ export class QuizzesAdminComponent {
 
   readonly homeworkSelectedCount = computed(() => this.homeworkSelectedQuestionIds().length);
 
-  /** Questions belonging to the selected base quiz, resolved against the bank. */
+  /** Questions belonging to the selected base quiz, fetched by id. */
   readonly quizSourceQuestions = computed<QuestionAdminItem[]>(() => {
-    const byId = new Map(this.allQuestions().map(q => [q.id, q]));
+    const byId = this.questionById();
     return this.homeworkBaseQuizQuestionIds()
       .map(id => byId.get(id))
       .filter((q): q is QuestionAdminItem => !!q);
   });
 
-  /** Bank questions filtered by the wizard's subject + stage + semester + search controls. */
+  /** The bank, filtered by the wizard's subject + stage + semester + search controls — by the API, a page at a time. */
+  readonly homeworkBankList = new LoadMoreList<QuestionAdminItem>(
+    () => this.quizAdminService.questionSource({
+      subjectId: this.homeworkBankSubjectFilter() || undefined,
+      stageId: this.homeworkBankStageFilter() || undefined,
+      semester: this.homeworkBankSemesterFilter() || undefined,
+      search: this.homeworkBankSearch() || undefined
+    }),
+    50,
+    () => this.notification.error('Failed to load the question bank.')
+  );
+
+  /** The bank rows on screen, minus the base quiz's own when those are listed above (no duplicates). */
   readonly bankFilteredQuestions = computed<QuestionAdminItem[]>(() => {
-    const sem = this.homeworkBankSemesterFilter();
-    const subjectId = this.homeworkBankSubjectFilter();
-    const stageId = this.homeworkBankStageFilter();
-    const term = this.homeworkBankSearch().toLowerCase().trim();
-    // When the "From quiz" section is shown, hide its questions here so the bank
-    // list only offers questions not already listed above (no duplicates).
     const fromQuiz = this.homeworkSourceQuiz()
       ? new Set(this.homeworkBaseQuizQuestionIds())
       : new Set<number>();
-    return this.allQuestions().filter(q => {
-      if (fromQuiz.has(q.id)) return false;
-      const matchesSubject = !subjectId || q.subjectId === subjectId;
-      const matchesStage = !stageId || q.stageId === stageId;
-      const matchesSemester = !sem || q.semester === sem;
-      const matchesText = !term || q.name.toLowerCase().includes(term) || q.id.toString().includes(term);
-      return matchesSubject && matchesStage && matchesSemester && matchesText;
-    });
+    return this.homeworkBankList.items().filter(q => !fromQuiz.has(q.id));
   });
 
-  /** The composed selection expanded to full question objects (for review). */
+  /** The composed selection expanded to full question objects (for review), in the order chosen. */
   readonly selectedQuestionsDetailed = computed<QuestionAdminItem[]>(() => {
-    const selected = new Set(this.homeworkSelectedQuestionIds());
-    return this.allQuestions().filter(q => selected.has(q.id));
+    const byId = this.questionById();
+    return this.homeworkSelectedQuestionIds()
+      .map(id => byId.get(id))
+      .filter((q): q is QuestionAdminItem => !!q);
   });
 
   /** Whether every base-quiz question is currently selected. */
@@ -756,6 +718,24 @@ export class QuizzesAdminComponent {
   }
 
   constructor() {
+    // The builder's Available Questions follow the quiz's Stage + Subject + Semester while it is open.
+    effect(() => {
+      if (!this.showSplitScreen()) return;
+      this.hasQuestionScope(); this.quizFormStageId(); this.quizFormSubjectId(); this.quizFormSemester();
+      untracked(() => void this.availableQuestionList.reload());
+    });
+    // The wizard's bank list follows its Subject / Stage / Semester filters (the search box reloads once typing pauses).
+    effect(() => {
+      if (this.homeworkWizardStep() !== 3 || !this.homeworkSourceBank()) return;
+      this.homeworkBankSubjectFilter(); this.homeworkBankStageFilter(); this.homeworkBankSemesterFilter();
+      untracked(() => void this.homeworkBankList.reload());
+    });
+    // Assigned and selected questions are named, and their durations added up, from their own details.
+    effect(() => {
+      const ids = [...this.assignedQuestionIds(), ...this.homeworkSelectedQuestionIds()];
+      untracked(() => void this.ensureQuestionsKnown(ids));
+    });
+
     this.loadAllQuizzes();
     this.loadAllTeacherQuizzes();
     this.loadStagesAndClasses();
@@ -799,33 +779,45 @@ export class QuizzesAdminComponent {
     return pages;
   }
 
+  // Each search box waits for typing to pause, so a word is one request rather than one per keystroke.
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly quizSearchSoon = debounced(this.destroyRef);
+  private readonly teacherQuizSearchSoon = debounced(this.destroyRef);
+  private readonly questionSearchSoon = debounced(this.destroyRef);
+  private readonly homeworkBankSearchSoon = debounced(this.destroyRef);
+  private readonly homeworkSearchSoon = debounced(this.destroyRef);
+
+  onHomeworkBankSearchChange(query: string): void {
+    this.homeworkBankSearch.set(query);
+    this.homeworkBankSearchSoon(() => void this.homeworkBankList.reload());
+  }
+
   // Pagination methods for Quizzes
   onQuizSearchChange(query: string): void {
     this.quizSearchQuery.set(query);
     this.currentQuizPage.set(1);
+    this.quizSearchSoon(() => void this.quizList.reload());
   }
-
-
-
 
   onTeacherQuizSearchChange(query: string): void {
     this.teacherQuizSearchQuery.set(query);
+    this.teacherQuizSearchSoon(() => void this.teacherQuizList.reload());
   }
 
-  /**
-   * Search for Questions — filters the loaded page only, so no refetch. Use the
-   * Subject / Stage / Grade filters to narrow the bank itself.
-   */
+  /** Search the bank's question text, on the server, once typing pauses. */
   onQuestionSearchChange(query: string): void {
     this.questionSearchQuery.set(query);
+    this.isQuestionIdLookup.set(false);
+    // An id lookup made before typing paused owns the table: this reload was scheduled before it.
+    this.questionSearchSoon(() => {
+      if (!this.isQuestionIdLookup()) void this.reloadQuestionsBank();
+    });
   }
 
-  /**
-   * The search box narrows the page on screen (see {@link visibleHomeworkRows}),
-   * so it changes nothing on the server and must not disturb the pager.
-   */
+  /** Search the assignments (their title or their quiz's name) on the server, once typing pauses. */
   onHomeworkSearchChange(query: string): void {
     this.homeworkSearchQuery.set(query);
+    this.homeworkSearchSoon(() => void this.homeworkList.reload());
   }
 
   /**
@@ -967,30 +959,26 @@ export class QuizzesAdminComponent {
     return this.subjects().find(s => s.id === subjectId)?.color;
   }
 
-  /**
-   * Load the full bank for the quiz builder / homework wizard, once.
-   *
-   * Both panels filter the bank as the admin picks a Stage + Subject + Semester,
-   * which is a client-side filter over data they need in full. Kept out of the
-   * constructor so landing on this page — or paging the bank tab — never pulls
-   * the whole collection.
-   */
-  private async ensureAllQuestionsLoaded(): Promise<void> {
-    if (this.allQuestionsLoaded) return;
-    this.allQuestionsLoaded = true;
+  /** Fetch, by id, the given questions this screen has not seen yet (see {@link questionById}). */
+  private async ensureQuestionsKnown(ids: number[]): Promise<void> {
+    const known = this.questionById();
+    const missing = ids.filter(id => !known.has(id));
+    if (missing.length === 0) return;
     try {
-      this.allQuestions.set(await this.quizAdminService.listQuestions());
-    } catch (error) {
-      // Let the next open retry rather than leaving the panel permanently empty.
-      this.allQuestionsLoaded = false;
-      throw error;
+      const found = await this.quizAdminService.getQuestionsByIds(missing);
+      this.fetchedQuestions.update(map => {
+        const next = new Map(map);
+        for (const q of found) next.set(q.id, q);
+        return next;
+      });
+    } catch {
+      this.notification.error('Failed to load the selected questions.');
     }
   }
 
-  /** Drop the cached bank so the next builder/wizard open re-reads it. */
-  private invalidateAllQuestions(): void {
-    this.allQuestionsLoaded = false;
-    this.allQuestions.set([]);
+  /** Forget fetched questions after the bank changed, so names and durations are re-read. */
+  private invalidateKnownQuestions(): void {
+    this.fetchedQuestions.set(new Map());
   }
 
   /** Current server-side filter set for the bank tab. */
@@ -999,7 +987,8 @@ export class QuizzesAdminComponent {
       subjectId: this.questionFilterSubjectId() || undefined,
       stageId: this.questionFilterStageId() || undefined,
       gradeId: this.questionFilterGradeId() || undefined,
-      tagId: this.questionFilterTagId() || undefined
+      tagId: this.questionFilterTagId() || undefined,
+      search: this.questionSearchQuery() || undefined
     };
   }
 
@@ -1011,7 +1000,7 @@ export class QuizzesAdminComponent {
    * between — one query each. That is the cost of Firestore cursors having no
    * offset; the numbered pager stays consistent with the other tabs in exchange.
    */
-  async loadQuestionsPage(page = 1): Promise<void> {
+  async loadQuestionsPage(page = 1, run = this.questionGeneration): Promise<void> {
     this.isLoadingQuestions.set(true);
     try {
       const filters = this.questionFilters();
@@ -1022,6 +1011,7 @@ export class QuizzesAdminComponent {
         const step = await this.quizAdminService.listQuestionsPage(
           this.questionPageSize, this.questionCursors[known - 1], filters
         );
+        if (run !== this.questionGeneration) return;
         if (!step.nextCursor) break;
         this.questionCursors[known] = step.nextCursor;
       }
@@ -1030,20 +1020,24 @@ export class QuizzesAdminComponent {
       const result = await this.quizAdminService.listQuestionsPage(
         this.questionPageSize, this.questionCursors[target - 1], filters
       );
+      if (run !== this.questionGeneration) return;
       this.questionCursors[target] = result.nextCursor;
       this.questionPageItems.set(result.items);
       this.currentQuestionPage.set(target);
     } finally {
-      this.isLoadingQuestions.set(false);
+      if (run === this.questionGeneration) this.isLoadingQuestions.set(false);
     }
   }
 
-  /** Re-read the total and reset to page 1 — after a filter change or a write. */
+  /** Re-read the total and reset to page 1 — after a filter or search change, or a write. */
   async reloadQuestionsBank(): Promise<void> {
+    const run = ++this.questionGeneration;
     this.isQuestionIdLookup.set(false);
     this.questionCursors = [undefined];
-    this.totalQuestionsCount.set(await this.quizAdminService.countQuestions(this.questionFilters()));
-    await this.loadQuestionsPage(1);
+    const total = await this.quizAdminService.countQuestions(this.questionFilters());
+    if (run !== this.questionGeneration) return;
+    this.totalQuestionsCount.set(total);
+    await this.loadQuestionsPage(1, run);
   }
 
   onQuestionFilterChange(field: 'subject' | 'stage' | 'grade' | 'tag', value: string): void {
@@ -1113,6 +1107,7 @@ export class QuizzesAdminComponent {
         );
         return;
       }
+      this.questionGeneration++;                         // a search reload still in flight must not replace this row
       this.questionSearchQuery.set('');
       this.questionPageItems.set([question]);
       this.totalQuestionsCount.set(1);
@@ -1132,7 +1127,7 @@ export class QuizzesAdminComponent {
    * and the cached full bank the builder and wizard read from.
    */
   private async refreshQuestions(): Promise<void> {
-    this.invalidateAllQuestions();
+    this.invalidateKnownQuestions();
     await this.reloadQuestionsBank();
   }
 
@@ -1143,9 +1138,7 @@ export class QuizzesAdminComponent {
   }
 
   async setQuizForm(quiz: QuizAdminItem): Promise<void> {
-    // Needed before the assigned-questions panel can resolve saved ids to names.
-    await this.ensureAllQuestionsLoaded();
-    // Fetch full quiz data including config
+    // Fetch full quiz data including config (the assigned questions' details follow — see the constructor)
     const fullQuiz = await this.quizAdminService.getQuizWithConfig(quiz.id);
     if (!fullQuiz) return;
 
@@ -1713,8 +1706,8 @@ export class QuizzesAdminComponent {
 
   /** The subject every selected question shares, as far as the loaded rows tell; '' when they differ or are unknown. */
   private selectionSubjectId(): string {
-    const known = new Map([...this.allQuestions(), ...this.questionPageItems()].map(q => [q.id, q.subjectId ?? '']));
-    const subjects = new Set(this.selectedQuestionIds().map(id => known.get(id)));
+    const known = this.questionById();
+    const subjects = new Set(this.selectedQuestionIds().map(id => known.get(id)?.subjectId ?? ''));
     const [only] = [...subjects];
     return subjects.size === 1 && only ? only : '';
   }
@@ -1932,10 +1925,6 @@ export class QuizzesAdminComponent {
 
   // Split-screen quiz creation methods
   async startCreateQuiz(): Promise<void> {
-    // The Available Questions panel filters the whole bank client-side, so this
-    // is where the full read is paid for — on opening the builder, not on
-    // landing on the page.
-    await this.ensureAllQuestionsLoaded();
     await this.clearQuizForm();
     this.showSplitScreen.set(true);
     this.assignedQuestionIds.set([]);
@@ -2017,11 +2006,6 @@ export class QuizzesAdminComponent {
     if (step === 1) {
       await this.loadBaseQuizQuestions();
     }
-    // Step 3 lists the bank filtered by subject/stage/semester, so it needs the
-    // full set in memory.
-    if (step === 2) {
-      await this.ensureAllQuestionsLoaded();
-    }
     this.homeworkWizardStep.set(Math.min(this.homeworkWizardSteps.length, step + 1));
   }
 
@@ -2053,7 +2037,9 @@ export class QuizzesAdminComponent {
       return;
     }
     const full = await this.quizAdminService.getQuizWithConfig(quizId);
-    this.homeworkBaseQuizQuestionIds.set((full?.Question ?? []).filter(id => Number.isFinite(id)));
+    const ids = (full?.Question ?? []).filter(id => Number.isFinite(id));
+    this.homeworkBaseQuizQuestionIds.set(ids);
+    await this.ensureQuestionsKnown(ids);
   }
 
   // ---- Wizard question selection -----------------------------------------
@@ -2161,9 +2147,7 @@ export class QuizzesAdminComponent {
     this.homeworkBankSearch.set('');
     this.homeworkWizardStep.set(1);
     void this.loadBaseQuizQuestions();
-    // Editing shows the saved selection by name straight away, which resolves
-    // against the full bank.
-    void this.ensureAllQuestionsLoaded();
+    // The saved selection is named by fetching those questions (see the constructor).
     this.activeTab.set('homework');
   }
 
