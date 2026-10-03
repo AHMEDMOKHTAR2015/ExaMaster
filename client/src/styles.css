@@ -3165,6 +3165,9 @@ router-outlet {
    missed, so a weak subject reads as mostly red before any number is read. */
 .subject-perf {
   margin-bottom: var(--gap-card);
+  border-radius: calc(var(--r-2xl) - .25rem);
+    border: 1px solid var(--border);
+    padding: 1.125rem 1.25rem;
   
 }
 
