@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ClickOutsideDirective } from '../../../directives';
 import { ParticipationRecord, ParticipationAnswer, AssignmentKind } from '../../../models';
 import { participationScorePercent } from '../../../shared/participation-score';
+import { maxMark } from '../../../shared/question-scoring';
 import { ParticipationService } from '../../../services/admin/quizzes/participation.service';
 
 /**
@@ -122,12 +123,12 @@ export class ParticipationAnswersPopupComponent {
     return this.ownAttempt() ? 'participationAnswers.yourAnswer' : 'participationAnswers.studentAnswered';
   }
 
-  /** Whole-percent display value for an answer's share of the quiz. */
+  /** The points a reviewed answer was marked out of (see `maxMark`). */
   weightLabel(answer: ParticipationAnswer): number {
-    return Math.round(answer.weightPercent ?? 0);
+    return maxMark(answer.weightPercent ?? 0);
   }
 
-  /** Whole-percent display value for the mark a teacher awarded. */
+  /** The points a teacher awarded. */
   awardedLabel(answer: ParticipationAnswer): number {
     return Math.round(answer.manualGrade?.awardedPercent ?? 0);
   }

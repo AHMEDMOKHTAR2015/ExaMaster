@@ -5,10 +5,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace QuizMaster.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class StudentSubjectPerformance : Migration
+    public partial class StudentSubjectPerformanceAssignmentKind : Migration
     {
-        // Kept as a constant: the next version's Down restores it.
-        internal const string Procedure = """
+        // QuizCount / HomeworkCount now follow the assignment's Kind, as My Participations and the KPI tiles do: a quiz a
+        // teacher assigns is submitted as Participation.Type = Homework, but the student sees (and counts) it as a quiz.
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("""
                 CREATE OR ALTER PROCEDURE dbo.GetStudentSubjectPerformance
                     @SignInUid nvarchar(128),
                     @Months int = 12
@@ -30,7 +34,10 @@ namespace QuizMaster.Persistence.Migrations
                     WITH Submission AS (
                         SELECT
                             COALESCE(assignment.SubjectId, teacherQuiz.SubjectId, bankQuiz.SubjectId) AS SubjectId,
-                            participation.Type,
+                            -- the kind the student sees (My Participations): an assignment says what it is (a quiz can be
+                            -- assigned); a submission with no assignment, or whose assignment is gone, is a quiz
+                            CASE WHEN participation.HomeworkId IS NOT NULL AND (assignment.Kind IS NULL OR assignment.Kind <> N'Quiz')
+                                THEN N'Homework' ELSE N'Quiz' END AS Kind,
                             participation.EndedOn,
                             CASE WHEN participation.PendingReviewCount = 0 THEN CAST(participation.ScorePercent AS float) END AS GradedScore
                         FROM dbo.Participation AS participation
@@ -48,8 +55,8 @@ namespace QuizMaster.Persistence.Migrations
                     BySubject AS (
                         SELECT
                             SubjectId,
-                            SUM(CASE WHEN Type = N'Quiz' THEN 1 ELSE 0 END) AS QuizCount,
-                            SUM(CASE WHEN Type = N'Homework' THEN 1 ELSE 0 END) AS HomeworkCount,
+                            SUM(CASE WHEN Kind = N'Quiz' THEN 1 ELSE 0 END) AS QuizCount,
+                            SUM(CASE WHEN Kind = N'Homework' THEN 1 ELSE 0 END) AS HomeworkCount,
                             SUM(CASE WHEN GradedScore IS NULL THEN 1 ELSE 0 END) AS AwaitingReviewCount,
                             CAST(FLOOR(AVG(GradedScore) + 0.5) AS int) AS ScorePercent,
                             CAST(FLOOR(AVG(CASE WHEN EndedOn < @Midpoint THEN GradedScore END) + 0.5) AS int) AS EarlierPercent,
@@ -79,26 +86,13 @@ namespace QuizMaster.Persistence.Migrations
                     JOIN dbo.Subject AS subject ON subject.Id = bySubject.SubjectId AND subject.TenantId = @TenantId
                     ORDER BY CASE WHEN bySubject.ScorePercent IS NULL THEN 1 ELSE 0 END, bySubject.ScorePercent DESC, subject.Name;
                 END
-                """;
-
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            // A student's standing per subject over the last @Months: the average score of their quizzes and homework.
-            // It runs outside EF, so the tenant query filter does not apply: every read below is pinned to the student's
-            // own tenant explicitly. Called by GetMySubjectPerformanceQueryHandler with the caller's own sign-in uid.
-            //  - subject: the assignment's subject, else the quiz's (the client's effectiveSubjectId);
-            //  - a submission still waiting for a teacher's mark is counted but not scored (its score rises as it is marked);
-            //  - a rejected submission is ignored: its retake replaces it;
-            //  - rounding is JavaScript's Math.round (FLOOR(x + 0.5)), as QuizScoring.RoundPercent;
-            //  - EarlierPercent / RecentPercent: the first and second half of the period, for the trend.
-            migrationBuilder.Sql(Procedure);
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP PROCEDURE IF EXISTS dbo.GetStudentSubjectPerformance;");
+            migrationBuilder.Sql(StudentSubjectPerformance.Procedure);
         }
     }
 }

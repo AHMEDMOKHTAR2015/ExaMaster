@@ -3165,6 +3165,7 @@ router-outlet {
    missed, so a weak subject reads as mostly red before any number is read. */
 .subject-perf {
   margin-bottom: var(--gap-card);
+  
 }
 
 .subject-perf__head {
@@ -3182,6 +3183,7 @@ router-outlet {
   margin: 0.125rem 0 0;
   font-size: var(--font-sm);
   color: var(--ink-3);
+      padding: 0.9rem;
 }
 
 .subject-perf__note {

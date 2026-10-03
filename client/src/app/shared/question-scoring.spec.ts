@@ -11,8 +11,11 @@ import {
   WeightableQuestion,
   carriesAuthoredWeight,
   computeQuizWeighting,
+  earnedFromMark,
+  maxMark,
   requiresManualReview,
   roundPercent,
+  scorePercentOf,
   sumEarnedPercent,
   validateExplainWeights,
   weightOf,
@@ -191,5 +194,35 @@ describe('roundPercent', () => {
   it('rounds to the nearest whole percent', () => {
     expect(roundPercent(66.6)).toBe(67);
     expect(roundPercent(33.3)).toBe(33);
+  });
+});
+
+// The same cases as the API's QuizScoringTests: a teacher's mark is points, worth
+// its proportion of the question's real share (QuizScoring.MaxMark / EarnedFromMark).
+describe('teacher marks', () => {
+  it('are out of the share rounded, and at least one point', () => {
+    expect(maxMark(40)).toBe(40);
+    expect(maxMark(100 / 29)).toBe(3);
+    expect(maxMark(2.5)).toBe(3);
+    expect(maxMark(0.4)).toBe(1);
+  });
+
+  it('earn their proportion of the real share', () => {
+    expect(earnedFromMark(3, 100 / 29)).toBeCloseTo(100 / 29, 9);
+    expect(earnedFromMark(2, 100 / 29)).toBeCloseTo((100 / 29) * 2 / 3, 9);
+    expect(earnedFromMark(0, 100 / 29)).toBe(0);
+    expect(earnedFromMark(30, 40)).toBe(30);
+  });
+
+  it('give full marks a score of 100, however the shares round', () => {
+    const fullMarks = (questionCount: number) =>
+      Array.from({ length: questionCount }, () => ({ earnedPercent: earnedFromMark(maxMark(100 / questionCount), 100 / questionCount) }));
+
+    expect(scorePercentOf(fullMarks(29))).toBe(100);   // points counted as percent gave 94
+    expect(scorePercentOf(fullMarks(40))).toBe(100);   // ... and 112
+  });
+
+  it('never let a score exceed 100', () => {
+    expect(scorePercentOf([{ earnedPercent: 60 }, { earnedPercent: 40.0000001 }, { earnedPercent: null }])).toBe(100);
   });
 });

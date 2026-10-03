@@ -25,8 +25,8 @@ import { plainTextFromHtml } from './explain-question';
 import {
   QuizWeighting,
   computeQuizWeighting,
-  roundPercent,
-  sumEarnedPercent,
+  maxMark,
+  scorePercentOf,
   weightOf
 } from './question-scoring';
 
@@ -147,10 +147,10 @@ export function buildAnswerDetail(q: Question, weighting: QuizWeighting): Partic
  * starting point for the teacher's mark.
  *
  * Credit is per blank rather than all-or-nothing: a three-blank question with
- * two exact matches suggests two thirds of its weight, which is the fairer
- * opening position and the one a teacher most often only has to nudge. They can
- * set any value from 0 to the question's full weight regardless — that freedom
- * is the entire point of routing these through review.
+ * two exact matches suggests two thirds of its points (`maxMark`), which is the
+ * fairer opening position and the one a teacher most often only has to nudge.
+ * They can set any value from 0 to the question's full points regardless — that
+ * freedom is the entire point of routing these through review.
  *
  * Returns 0 for an answer with no blanks, and for anything that is not a
  * Complete answer, so callers can apply it unconditionally.
@@ -159,7 +159,7 @@ export function suggestedCompleteAward(answer: ParticipationAnswer): number {
   const blanks = answer.blanks ?? [];
   if (blanks.length === 0) return 0;
   const matched = blanks.filter(b => b.isCorrect).length;
-  return Math.round(((answer.weightPercent ?? 0) * matched) / blanks.length);
+  return Math.round((maxMark(answer.weightPercent ?? 0) * matched) / blanks.length);
 }
 
 /**
@@ -211,7 +211,7 @@ export function gradeQuiz(questions: Question[]): QuizGrade {
   return {
     answers,
     score,
-    scorePercent: roundPercent(sumEarnedPercent(answers)),
+    scorePercent: scorePercentOf(answers),
     correctCount: score,
     wrongCount: autoGraded.length - score,
     pendingReviewCount: answers.filter(a => a.requiresReview && !a.manualGrade).length

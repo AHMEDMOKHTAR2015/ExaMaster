@@ -8,6 +8,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { TeacherReviewQueueService } from '../../../services/teacher-review-queue.service';
 import { ParticipationAnswer, ParticipationRecord, AssignmentKind } from '../../../models';
 import { suggestedCompleteAward } from '../../../shared/grade-quiz';
+import { maxMark } from '../../../shared/question-scoring';
 import { ParticipationAnswersPopupComponent } from '../../admin-dashboard/views/participation-answers-popup.component';
 import { QuizManagementStateService, ValidationItem } from '../quiz-management-state.service';
 
@@ -158,9 +159,9 @@ export class ValidationTabComponent {
     this.reviewDrafts.set(new Map());
   }
 
-  /** Whole-percent cap for one reviewed answer — its share of the quiz. */
+  /** The most points for one reviewed answer: its share of the quiz rounded (see `maxMark`). */
   maxAwardFor(answer: ParticipationAnswer): number {
-    return Math.round(answer.weightPercent ?? 0);
+    return maxMark(answer.weightPercent ?? 0);
   }
 
   awardFor(answer: ParticipationAnswer): number {

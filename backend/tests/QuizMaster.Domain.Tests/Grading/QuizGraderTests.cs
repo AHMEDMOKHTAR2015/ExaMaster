@@ -83,6 +83,17 @@ public class QuizGraderTests
     }
 
     [Fact]
+    public void Complete_suggests_points_out_of_the_answers_maximum()
+    {
+        // 40 questions: each is worth 2.5%, marked out of 3 points; one of two blanks matches = half of 3 = 1.5 → 2 points
+        // (half of the 2.5% share would round to 1, which as points would be a third of the question, not half)
+        IQuestionDefinition[] questions = [.. Enumerable.Range(1, 39).Select(id => Choose(id)), Complete(40, "Paris", "France")];
+        var answer = QuizGrader.Grade(questions, [Typed(40, "Paris", "Germany")]).Answers.Single(graded => graded.QuestionId == 40);
+
+        Assert.Equal(2, QuizGrader.SuggestedCompleteAward(answer));
+    }
+
+    [Fact]
     public void Complete_records_an_empty_blank_as_null()
     {
         var answer = GradeOne(Complete());

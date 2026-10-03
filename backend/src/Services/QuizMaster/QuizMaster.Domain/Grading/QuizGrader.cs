@@ -18,7 +18,7 @@ public static class QuizGrader
         return new QuizGrade(
             answers,
             score,
-            QuizScoring.RoundPercent(QuizScoring.SumEarnedPercent(answers.Select(answer => answer.EarnedPercent))),
+            QuizScoring.ScorePercent(answers.Select(answer => answer.EarnedPercent)),
             CorrectCount: score,
             WrongCount: autoGraded.Count - score,
             PendingReviewCount: answers.Count(answer => answer.RequiresReview));
@@ -28,7 +28,8 @@ public static class QuizGrader
     public static bool IsFullyAnswered(IReadOnlyList<IQuestionDefinition> questions, IReadOnlyCollection<QuestionResponse> responses)
         => Hydrate(questions, responses).All(IsAnswered);
 
-    // What the exact-match grader would award a Complete answer, pro rata across its blanks, as the teacher's starting mark.
+    // What the exact-match grader would award a Complete answer, pro rata across its blanks, as the teacher's starting mark:
+    // in points, out of the answer's maximum (QuizScoring.MaxMark), like the mark the teacher then confirms or adjusts.
     public static int SuggestedCompleteAward(GradedAnswer answer)
     {
         var blanks = answer.Blanks ?? [];
@@ -36,7 +37,7 @@ public static class QuizGrader
             return 0;
 
         var matched = blanks.Count(blank => blank.IsCorrect);
-        return QuizScoring.RoundPercent(answer.WeightPercent * matched / blanks.Count);
+        return QuizScoring.RoundPercent(QuizScoring.MaxMark(answer.WeightPercent) * matched / (double)blanks.Count);
     }
 
     // Strips everything that would reveal the correct answer, keeping the verdict and the student's own response.

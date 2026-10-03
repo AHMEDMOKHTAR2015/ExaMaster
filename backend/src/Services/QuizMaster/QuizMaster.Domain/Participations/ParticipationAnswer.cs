@@ -27,7 +27,8 @@ public class ParticipationAnswer : Entity
     // The question's subject tags when it was sat (a snapshot: retagging the question later does not rewrite history).
     public IReadOnlyList<int> TagIds { get; private set; } = [];
 
-    // The teacher's mark (Explain, Complete), once recorded.
+    // The teacher's mark (Explain, Complete), once recorded: POINTS out of MaxAward, kept exactly as given (the name predates
+    // points). What it earns towards the score is EarnedPercent, its proportion of the real share.
     public double? AwardedPercent { get; private set; }
     public string? GradeComment { get; private set; }
     public int? GradedById { get; private set; }
@@ -35,8 +36,8 @@ public class ParticipationAnswer : Entity
 
     public bool IsMarked => GradedOn is not null;
 
-    // Whole-percent cap for a teacher's mark: the answer's share of the quiz.
-    public int MaxAward => QuizScoring.RoundPercent(WeightPercent);
+    // The most points a teacher can give: the answer's share of the quiz rounded, at least 1 (QuizScoring.MaxMark).
+    public int MaxAward => QuizScoring.MaxMark(WeightPercent);
 
     internal static ParticipationAnswer From(GradedAnswer answer, int position, IReadOnlyList<int> tagIds) => new()
     {
@@ -65,7 +66,7 @@ public class ParticipationAnswer : Entity
             throw new DomainException($"The mark for question {QuestionId} must be between 0 and {MaxAward}.");
 
         AwardedPercent = awardedPercent;
-        EarnedPercent = awardedPercent;
+        EarnedPercent = QuizScoring.EarnedFromMark(awardedPercent, WeightPercent);
         IsCorrect = awardedPercent >= MaxAward && awardedPercent > 0;  // a fully-credited answer reads as correct everywhere
         GradeComment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
         GradedById = action.CreatedById;

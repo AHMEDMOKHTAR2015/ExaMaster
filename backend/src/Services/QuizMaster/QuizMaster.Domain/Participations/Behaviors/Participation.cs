@@ -91,7 +91,7 @@ public partial class Participation
             answer.Mark(mark.AwardedPercent, mark.Comment, action);
         }
 
-        ScorePercent = QuizScoring.RoundPercent(QuizScoring.SumEarnedPercent(_answers.Select(answer => answer.EarnedPercent)));
+        ScorePercent = QuizScoring.ScorePercent(_answers.Select(answer => answer.EarnedPercent));
         PendingReviewCount = _answers.Count(answer => answer.RequiresReview && !answer.IsMarked);
 
         var trimmedFeedback = string.IsNullOrWhiteSpace(feedback) ? null : feedback.Trim();

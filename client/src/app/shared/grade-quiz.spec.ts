@@ -175,6 +175,10 @@ describe('buildAnswerDetail — Complete', () => {
     // Sole question in the fixture quiz, so it is worth the whole 100; one of
     // two blanks matched, so the teacher's field opens at half.
     expect(suggestedCompleteAward(detail)).toBe(Math.round((detail.weightPercent ?? 0) / 2));
+
+    // In a 40-question quiz the answer is worth 2.5% and marked out of 3 points:
+    // half of 3 points, not half of 2.5% (which would open at a third).
+    expect(suggestedCompleteAward({ ...detail, weightPercent: 2.5 })).toBe(2);
   });
 
   it('suggests nothing for an Explain answer, which has no match to go on', () => {

@@ -130,6 +130,29 @@ public class QuizScoringTests
     public void Sums_graded_shares_and_ignores_ungraded_ones()
         => Assert.Equal(20, QuizScoring.SumEarnedPercent([20, 0, null]));
 
+    // A teacher marks in whole points, out of the share rounded: a question can always be credited, however small.
+    [Theory]
+    [InlineData(40, 40)]
+    [InlineData(3.448, 3)]
+    [InlineData(2.5, 3)]
+    [InlineData(0.4, 1)]
+    [InlineData(0, 1)]
+    public void Maximum_points_are_the_share_rounded_and_at_least_one(double weightPercent, int expected)
+        => Assert.Equal(expected, QuizScoring.MaxMark(weightPercent));
+
+    [Theory]
+    [InlineData(3, 3.448, 3.448)]      // full points = the full real share
+    [InlineData(0, 3.448, 0)]
+    [InlineData(1, 2.5, 2.5 / 3)]
+    [InlineData(30, 40, 30)]          // a whole-number share: points and percent coincide, as before
+    [InlineData(1, 0.4, 0.4)]
+    public void Points_convert_to_their_proportion_of_the_real_share(double mark, double weightPercent, double expected)
+        => Assert.Equal(expected, QuizScoring.EarnedFromMark(mark, weightPercent), precision: 9);
+
+    [Fact]
+    public void A_score_never_exceeds_100()
+        => Assert.Equal(100, QuizScoring.ScorePercent([60, 40.0000001, null]));
+
     [Theory]
     [InlineData(66.6, 67)]
     [InlineData(33.3, 33)]

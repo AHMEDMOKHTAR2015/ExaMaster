@@ -149,6 +149,81 @@ public class ParticipationTests
         Assert.Throws<DomainException>(() => participation.Review([new ReviewMark(42, 10)], ValidationStatus.Approved, null, review));
     }
 
+    // A quiz of `autoCount` Choose questions (all answered correctly) followed by `completeCount` Complete questions:
+    // the shape of a real teacher quiz, whose shares of 100% are rarely whole numbers.
+    private static Participation SubmitAutoAndComplete(int autoCount, int completeCount)
+    {
+        var questions = Enumerable.Range(1, autoCount).Select(id => (IQuestionDefinition)Choose(id))
+            .Concat(Enumerable.Range(autoCount + 1, completeCount).Select(id => (IQuestionDefinition)Complete(id, "Paris")))
+            .ToArray();
+        var responses = Enumerable.Range(1, autoCount).Select(id => Selected(id, 2))
+            .Concat(Enumerable.Range(autoCount + 1, completeCount).Select(id => Typed(id, "Paris")))
+            .ToList();
+        return Submit(Quiz(questions), responses);
+    }
+
+    private static void MarkEveryReviewedAnswer(Participation participation, Func<ParticipationAnswer, double> mark)
+        => participation.Review(
+            participation.Answers.Where(answer => answer.RequiresReview).Select(answer => new ReviewMark(answer.QuestionId, mark(answer))).ToList(),
+            ValidationStatus.Approved, null, Action(QuizMasterActionType.ReviewSubmission, TeacherId));
+
+    [Fact]
+    public void Full_marks_on_every_answer_score_100_when_shares_round_down()
+    {
+        // 29 questions: each is worth 3.45%, and a teacher marks out of 3. Points used to count as percent: 94%.
+        var participation = SubmitAutoAndComplete(autoCount: 16, completeCount: 13);
+
+        MarkEveryReviewedAnswer(participation, answer => answer.MaxAward);
+
+        Assert.Equal(3, participation.Answers.First(answer => answer.RequiresReview).MaxAward);
+        Assert.Equal(100, participation.ScorePercent);
+    }
+
+    [Fact]
+    public void Full_marks_on_every_answer_score_100_when_shares_round_up()
+    {
+        // 40 questions: each is worth 2.5%, and a teacher marks out of 3. Points used to count as percent: 112%.
+        var participation = SubmitAutoAndComplete(autoCount: 16, completeCount: 24);
+
+        MarkEveryReviewedAnswer(participation, answer => answer.MaxAward);
+
+        Assert.Equal(3, participation.Answers.First(answer => answer.RequiresReview).MaxAward);
+        Assert.Equal(100, participation.ScorePercent);
+    }
+
+    [Fact]
+    public void A_mark_earns_its_proportion_of_the_answers_real_share()
+    {
+        var participation = SubmitAutoAndComplete(autoCount: 16, completeCount: 13);
+
+        // 2 of 3 points on a 3.45% question earns two thirds of 3.45%, not 2%
+        MarkEveryReviewedAnswer(participation, answer => answer.QuestionId == 17 ? 2 : answer.MaxAward);
+
+        var marked = participation.Answers.Single(answer => answer.QuestionId == 17);
+        Assert.Equal(2, marked.AwardedPercent);                         // the teacher's points are kept as given
+        Assert.Equal(100.0 / 29 * 2 / 3, marked.EarnedPercent!.Value, precision: 9);
+        Assert.False(marked.IsCorrect);
+        Assert.Equal(99, participation.ScorePercent);                   // 100 − 1.15 = 98.85
+    }
+
+    [Fact]
+    public void A_zero_mark_earns_nothing_and_the_rest_of_the_quiz_still_counts_in_full()
+    {
+        var participation = SubmitAutoAndComplete(autoCount: 16, completeCount: 13);
+
+        MarkEveryReviewedAnswer(participation, answer => answer.QuestionId == 17 ? 0 : answer.MaxAward);
+
+        Assert.Equal(97, participation.ScorePercent);                   // 28 of 29 questions: 96.55
+    }
+
+    [Fact]
+    public void Marks_cannot_exceed_the_answers_maximum_points()
+    {
+        var participation = SubmitAutoAndComplete(autoCount: 16, completeCount: 13);
+
+        Assert.Throws<DomainException>(() => MarkEveryReviewedAnswer(participation, _ => 4));
+    }
+
     [Fact]
     public void Results_stay_hidden_until_the_assignment_is_due()
     {

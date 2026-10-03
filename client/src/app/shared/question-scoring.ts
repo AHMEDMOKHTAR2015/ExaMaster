@@ -178,3 +178,23 @@ export function sumEarnedPercent(answers: { earnedPercent?: number | null }[]): 
 export function roundPercent(value: number): number {
   return Math.round(value);
 }
+
+/** A submission's score: its graded shares added up, rounded, and never above 100. */
+export function scorePercentOf(answers: { earnedPercent?: number | null }[]): number {
+  return Math.min(100, roundPercent(sumEarnedPercent(answers)));
+}
+
+/**
+ * The most points a teacher can give a reviewed answer: its share of the quiz
+ * rounded, and at least 1 so even a tiny question can be credited. The server
+ * (`QuizScoring.MaxMark`) converts the points back to the real share — 3/3 on a
+ * 3.45% question earns 3.45% — so these are points, not percent.
+ */
+export function maxMark(weightPercent: number): number {
+  return Math.max(1, roundPercent(weightPercent));
+}
+
+/** What `mark` points earn towards the score: that proportion of the real share (`QuizScoring.EarnedFromMark`). */
+export function earnedFromMark(mark: number, weightPercent: number): number {
+  return (weightPercent * mark) / maxMark(weightPercent);
+}

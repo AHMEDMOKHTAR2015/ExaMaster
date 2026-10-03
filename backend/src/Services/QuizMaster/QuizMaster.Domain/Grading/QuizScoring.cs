@@ -95,6 +95,17 @@ public static class QuizScoring
     // Graded shares only: an answer still awaiting a teacher (null) does not drag the score down.
     public static double SumEarnedPercent(IEnumerable<double?> earnedPercents) => earnedPercents.Sum(earned => earned ?? 0);
 
+    // The submission's score: its graded shares added up, rounded, and never above 100.
+    public static int ScorePercent(IEnumerable<double?> earnedPercents) => Math.Min(100, RoundPercent(SumEarnedPercent(earnedPercents)));
+
+    //insight - a teacher marks a reviewed answer in whole POINTS, out of its share rounded (a 3.45% question is marked out of 3),
+    // and the points are converted back to the REAL share: 3/3 earns 3.45%, 2/3 earns 2.30%. Counting points as percent
+    // made full marks score 94% on a 29-question quiz and 112% on a 40-question one. At least 1 point, so a question
+    // worth under half a percent can still be credited.
+    public static int MaxMark(double weightPercent) => Math.Max(1, RoundPercent(weightPercent));
+
+    public static double EarnedFromMark(double mark, double weightPercent) => weightPercent * mark / MaxMark(weightPercent);
+
     // JavaScript's Math.round (half rounds up), NOT .NET's default banker's rounding: scores must match the app's.
     public static int RoundPercent(double value) => (int)Math.Floor(value + 0.5);
 
