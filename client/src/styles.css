@@ -10432,6 +10432,7 @@ button.list-row:hover {
 
 .tbl--questions td.tbl__question-cell {
   vertical-align: top;
+      padding: 0.8rem;
 }
 
 .cell-tag {
