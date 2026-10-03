@@ -55,7 +55,8 @@ BODY=$(jq -nc --argjson quiz "$QUIZ" --argjson q0 "${Q[0]}" --argjson q1 "${Q[1]
      {questionId: $q3, responseText: "<p>The axis is tilted.</p>"}]}')
 check "submit practice quiz" 201 "$(call dev-student POST /submissions "$BODY")"
 check "two auto-graded answers right, weighted 53%" "2 53 2" "$(json '"\(.score) \(.scorePercent) \(.pendingReviewCount)"')"
-check "Complete suggestion is pro rata (1 of 2 blanks)" 13 "$(json '.answers[2].suggestedAward')"
+# worth 26.67% (Explain takes 20, three questions share 80), so marked out of 27 points: half of 27 = 13.5 → 14 points
+check "Complete suggestion is pro rata (1 of 2 blanks)" 14 "$(json '.answers[2].suggestedAward')"
 PID=$(json .participationId)
 
 echo "== who may read and review it"
