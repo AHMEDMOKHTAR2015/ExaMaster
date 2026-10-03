@@ -128,6 +128,11 @@
         @switch (view()) {
           @case ('signIn') {
             <div class="auth-view">
+
+              <div class="auth-card__brand">
+                <h1 class="auth-card__title" data-view-heading="signIn" tabindex="-1">{{ 'auth.welcome' | translate }}</h1>
+                <p class="auth-card__sub">{{ 'auth.signInToAccount' | translate }}</p>
+              </div>
               
               <img class="auth-card__illustration" src="assets/illustrations/login-hero.svg" alt="" />
 

@@ -136,6 +136,7 @@
     "select": "-- اختر الفصل --"
   },
   "auth": {
+    "welcome": "مرحباً بك",
     "subtitle": "اختبر معرفتك، وتتبع تقدمك",
     "tabs": {
       "login": "تسجيل الدخول",
@@ -1506,6 +1507,26 @@
       "completedHomework": "الواجبات المكتملة",
       "averageScore": "متوسط الدرجات",
       "bestScore": "أفضل نتيجة"
+    },
+    "subjectPerformance": {
+      "title": "موادي",
+      "subtitle": "مستواك في كل مادة خلال آخر 12 شهرًا",
+      "loading": "جارٍ تحميل موادك…",
+      "loadFailed": "تعذّر تحميل مستوى المواد.",
+      "empty": "أكمل اختبارًا أو واجبًا لترى مستواك في كل مادة.",
+      "counts": "الاختبارات: {{quizzes}} · الواجبات: {{homework}}",
+      "awaitingReview": "بانتظار التصحيح: {{count}}",
+      "awaitingMarks": "بانتظار التصحيح",
+      "trendUp": "في تحسّن +{{points}}",
+      "trendDown": "في تراجع −{{points}}",
+      "trendSteady": "ثابت",
+      "trendHint": "آخر 6 أشهر مقارنة بالأشهر الستة التي قبلها",
+      "levels": {
+        "excellent": "ممتاز",
+        "good": "جيد",
+        "fair": "مقبول",
+        "weak": "يحتاج إلى تحسين"
+      }
     },
     "tabs": {
       "quizzes": "الاختبارات",

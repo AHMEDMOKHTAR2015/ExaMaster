@@ -3,6 +3,8 @@
     "name": "ExaMaster",
     "tagline": "Learning Platform",
     "loading": "Loading ExaMaster..."
+    
+    
   },
   "nav": {
     "menu": "Menu",
@@ -136,6 +138,7 @@
     "select": "-- Select Semester --"
   },
   "auth": {
+    "welcome":"Welcome Back",
     "subtitle": "Test your knowledge, track your progress",
     "tabs": {
       "login": "Login",
@@ -1505,6 +1508,26 @@
       "completedHomework": "Completed Homework",
       "averageScore": "Average Score",
       "bestScore": "Best Score"
+    },
+    "subjectPerformance": {
+      "title": "My Subjects",
+      "subtitle": "Your level in each subject over the past 12 months",
+      "loading": "Loading your subjects…",
+      "loadFailed": "Couldn't load your subject levels.",
+      "empty": "Finish a quiz or homework to see your level in each subject.",
+      "counts": "Quizzes: {{quizzes}} · Homework: {{homework}}",
+      "awaitingReview": "Awaiting marks: {{count}}",
+      "awaitingMarks": "Awaiting marks",
+      "trendUp": "Improving +{{points}}",
+      "trendDown": "Slipping −{{points}}",
+      "trendSteady": "Steady",
+      "trendHint": "Last 6 months compared with the 6 months before",
+      "levels": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "fair": "Fair",
+        "weak": "Needs work"
+      }
     },
     "tabs": {
       "quizzes": "Quizzes",

@@ -235,6 +235,14 @@ export interface ApiParticipationSummary {
   startedOn: string; endedOn: string; validationStatus: ApiValidationStatus | null;
 }
 
+/** A student's standing in one subject over the past year (GET /me/subject-performance). */
+export interface ApiSubjectPerformance {
+  subjectId: number; subjectName: string; subjectColor: string | null;
+  quizCount: number; homeworkCount: number; awaitingReviewCount: number;
+  scorePercent: number | null; earlierPercent: number | null; recentPercent: number | null;
+  level: 'Excellent' | 'Good' | 'Fair' | 'Weak' | null;
+}
+
 /** One attempt in full (GET /participations/{id}): what was answered, and the teacher's verdict. */
 export interface ApiParticipation extends Omit<ApiParticipationSummary, 'childName' | 'validationStatus'> {
   parentId: number | null; stageId: number | null; gradeId: number | null;

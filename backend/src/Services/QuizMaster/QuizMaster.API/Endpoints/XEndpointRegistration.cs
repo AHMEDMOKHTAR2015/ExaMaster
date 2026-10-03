@@ -160,6 +160,7 @@ public static class EndpointRegistration
         // Dashboard
         GetDashboardStatsEndpoint.Map(api);
         GetClassStatsEndpoint.Map(api);
+        GetMySubjectPerformanceEndpoint.Map(api);
 
         return app;
     }

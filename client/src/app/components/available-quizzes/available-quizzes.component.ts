@@ -24,6 +24,7 @@ import { BaseComponent } from '../../shared/base';
 import { UserProfileComponent } from '../user-profile/user-profile.component';
 import { QuizListComponent } from '../quiz-list/quiz-list.component';
 import { AssignmentThumbnailComponent } from './assignment-thumbnail.component';
+import { SubjectPerformanceComponent } from './subject-performance.component';
 import { QuestionOptionsComponent } from '../../question-options/question-options.component';
 import { QuestionCompleteComponent } from '../../question-complete/question-complete.component';
 import { QuestionExplainComponent } from '../../question-explain/question-explain.component';
@@ -59,6 +60,7 @@ interface PendingStart {
         UserProfileComponent,
         QuizListComponent,
         AssignmentThumbnailComponent,
+        SubjectPerformanceComponent,
         QuestionOptionsComponent,
         QuestionCompleteComponent,
         QuestionExplainComponent,

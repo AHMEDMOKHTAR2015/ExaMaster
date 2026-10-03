@@ -9,7 +9,8 @@ namespace QuizMaster.Application;
 // a deactivated account, a suspended organization or a lapsed registration key gets no roles, and therefore reaches nothing role-protected.
 public class UserClaimsTransformation(QuizMasterDbContext _dbContext) : IClaimsTransformation
 {
-    private const string AccountUidClaim = "sub";
+    // the access token's subject: the account's sign-in uid (User.SignInUid)
+    public const string AccountUidClaim = "sub";
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
