@@ -959,9 +959,9 @@
             </th>
             <th class="tbl__id">{{ 'questionsBank.table.id' | translate }}</th>
             <th>{{ 'questionsBank.table.question' | translate }}</th>
-            <th>{{ 'questionsBank.table.subject' | translate }}</th>
-            <th>{{ 'questionsBank.table.stage' | translate }}</th>
-            <th>{{ 'questionsBank.table.grade' | translate }}</th>
+            <th class="tbl__fit">{{ 'questionsBank.table.subject' | translate }}</th>
+            <th class="tbl__fit">{{ 'questionsBank.table.stage' | translate }}</th>
+            <th class="tbl__fit">{{ 'questionsBank.table.grade' | translate }}</th>
             <th class="tbl__actions">{{ 'questionsBank.table.actions' | translate }}</th>
           </tr>
         </thead>
@@ -988,7 +988,7 @@
                   }
                 </div>
               </td>
-              <td>
+              <td class="tbl__fit">
                 @if (row.subjectName) {
                   <span class="cell-tag">
                     <span class="cell-dot" [style.background]="row.subjectColor || 'var(--ink-4)'"></span>
@@ -998,14 +998,14 @@
                   <span class="cell-unassigned">{{ 'questionsBank.table.unassignedSubject' | translate }}</span>
                 }
               </td>
-              <td>
+              <td class="tbl__fit">
                 @if (row.stageName) {
                   {{ row.stageName }}
                 } @else {
                   <span class="cell-unassigned">{{ 'questionsBank.table.unassignedStage' | translate }}</span>
                 }
               </td>
-              <td>
+              <td class="tbl__fit">
                 @if (row.gradeName) {
                   {{ row.gradeName }}
                 } @else {

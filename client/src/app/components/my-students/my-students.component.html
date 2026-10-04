@@ -49,9 +49,9 @@
             <th>{{ 'myStudents.table.stage' | translate }}</th>
             <th>{{ 'myStudents.table.grade' | translate }}</th>
             <th>{{ 'myStudents.table.group' | translate }}</th>
-            <th [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.quizzes' | translate }}</th>
-            <th [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.homework' | translate }}</th>
-            <th>{{ 'myStudents.table.lastSubmission' | translate }}</th>
+            <th class="tbl__center" [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.quizzes' | translate }}</th>
+            <th class="tbl__center" [title]="'myStudents.table.countsHint' | translate">{{ 'myStudents.table.homework' | translate }}</th>
+            <th class="tbl__center">{{ 'myStudents.table.lastSubmission' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -72,9 +72,9 @@
               <td>{{ student.stageName || ('common.na' | translate) }}</td>
               <td>{{ student.gradeName || ('common.na' | translate) }}</td>
               <td>{{ student.className }}</td>
-              <td><span class="badge badge--brand">{{ student.quizCount }}</span></td>
-              <td><span class="badge badge--brand">{{ student.homeworkCount }}</span></td>
-              <td>
+              <td class="tbl__center"><span class="badge badge--brand">{{ student.quizCount }}</span></td>
+              <td class="tbl__center"><span class="badge badge--brand">{{ student.homeworkCount }}</span></td>
+              <td class="tbl__center">
                 @if (student.lastSubmittedAt) {
                   {{ student.lastSubmittedAt | date: 'mediumDate' }}
                 } @else {

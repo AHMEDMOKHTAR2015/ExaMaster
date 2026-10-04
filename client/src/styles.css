@@ -3160,6 +3160,19 @@ router-outlet {
   padding-top: 0.875rem;
 }
 
+/* ---- My Students (teacher) ----
+   Body cells carry no padding of their own (`.tbl tbody td`), so this table
+   gives its cells the header's padding: rows get breathing room above and
+   below, and each value sits under its heading. The counts and the date are
+   centred under theirs. Scoped here: the base rule serves every other table. */
+.tbl--my-students tbody td {
+  padding: 0.75rem 1.125rem;
+}
+
+.tbl--my-students .tbl__center {
+  text-align: center;
+}
+
 /* ---- My Subjects (student dashboard, under the KPI row) ----
    One donut per subject: green is what the student earned, red what they
    missed, so a weak subject reads as mostly red before any number is read. */
@@ -10392,17 +10405,29 @@ button.list-row:hover {
   min-width: 0;
 }
 
+/* The classification columns (Subject, Stage, Grade) shrink to their content and
+   stay on one line, like the actions column; the question column takes every
+   pixel left over. A fixed cap on the question text used to stop it at 460px
+   while the browser still spread the spare width over the other columns, which
+   left a band of empty space between Question and Subject on a wide screen. */
+.tbl--questions .tbl__fit {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Body cells carry no side padding of their own (`.tbl tbody td`), which the
+   spare width used to hide; once these columns shrink to their content, the
+   header's own inline padding is what keeps the values apart and under their
+   headings. Scoped to this table: the base rule serves every other one. */
+.tbl--questions td.tbl__fit {
+  padding-inline: 1.125rem;
+}
+
 /* The question text can be long; it wraps, and the classification columns stay
    on one line so the table still scans down each column. */
 .tbl--questions .tbl__question {
   color: var(--ink-2);
   line-height: 1.45;
-  /* `min(…, 100%)` rather than a flat 460px: the cap stops applying on its own
-     once the column is narrower than that, which is what the old
-     `max-width: none` breakpoint was for. On a wide screen the cap is what
-     leaves room for the other columns; on a narrow one the 100% takes over and
-     the text simply wraps more. */
-  max-width: min(28.75rem, 100%);
   /* A single unbroken token — a long URL, a run of Arabic without spaces —
      would otherwise set a min-content floor the column cannot go below, and the
      table would start overflowing again for that one row. */
