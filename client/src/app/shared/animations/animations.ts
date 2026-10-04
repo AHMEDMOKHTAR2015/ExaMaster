@@ -196,3 +196,17 @@ export const crossFade = trigger('crossFade', [
     ], { optional: true })
   ])
 ]);
+
+// Turn one question page into the next (the quiz runner's Next / Previous): the
+// page on screen fades out over 160ms while it is kept in place. The next page
+// slides in by itself — a CSS animation (`questionSlideIn` in styles.css) that
+// runs whenever a page is inserted and waits those 160ms. Both pages share one
+// grid cell meanwhile (`.question-pages`), so neither leaves the layout and the
+// buttons below do not jump; nothing animates `display`, which Chrome flips
+// partway through a fade. Only the page itself (`.question-page`) is queried,
+// not the question components inside it.
+export const questionPageSwap = trigger('questionPageSwap', [
+  transition((from, to) => from !== 'void' && to !== 'void' && from !== to, [
+    query('.question-page:leave', animate('160ms ease-in', style({ opacity: 0 })), { optional: true })
+  ])
+]);

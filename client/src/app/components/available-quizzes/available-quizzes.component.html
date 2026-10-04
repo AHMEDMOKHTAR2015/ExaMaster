@@ -61,9 +61,15 @@
 
   <app-subject-performance />
 } @else {
-  <div class="page__head">
+  <div class="page__head page__head--quiz">
     <div class="quiz-header__media">
-      <img class="quiz-header__illustration" src="assets/illustrations/quiz-in-progress.svg" alt="" />
+      <!-- One picture at a time, keyed by its file: a new question type swaps it,
+           the old one fading out while the new one fades in over it. -->
+      <div class="quiz-header__illustration-frame">
+        @for (src of [headerIllustration()]; track src) {
+          <img class="quiz-header__illustration" [src]="src" alt="" @fadeIn />
+        }
+      </div>
       <div>
         <h1 class="page__title">
           @if (showQuiz()) {
@@ -187,6 +193,12 @@
               </div>
             </div>
           } @else if (runner.currentPageQuestions().length > 0) {
+            <!-- One page at a time, keyed by where it starts: Next / Previous fade
+                 the page out and the next one in (questionPageSwap); the buttons
+                 below stay where they are. -->
+            <div class="question-pages" [@questionPageSwap]="runner.currentQuestionIndex()">
+            @for (pageStart of [runner.currentQuestionIndex()]; track pageStart) {
+            <div class="question-page">
             @if (quiz.config?.showPager) {
               <div class="question-number">{{ 'availableQuizzes.question' | translate : { current: runner.pageQuestionLabel(), total: runner.questionCount() } }}</div>
             }
@@ -218,6 +230,9 @@
                 }
               </div>
             }
+            </div>
+            }
+            </div>
 
             <div class="button-container">
               @if (quiz.config?.allowBack && runner.currentQuestionIndex() > 0) {

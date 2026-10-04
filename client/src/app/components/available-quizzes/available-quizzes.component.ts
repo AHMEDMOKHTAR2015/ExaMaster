@@ -29,7 +29,8 @@ import { QuestionOptionsComponent } from '../../question-options/question-option
 import { QuestionCompleteComponent } from '../../question-complete/question-complete.component';
 import { QuestionExplainComponent } from '../../question-explain/question-explain.component';
 import { QuizResultComponent } from '../../quiz-result/quiz-result.component';
-import { fadeIn, slideInLeft, slideInRight } from '../../shared/animations';
+import { fadeIn, slideInLeft, slideInRight, questionPageSwap } from '../../shared/animations';
+import { questionIllustration, QUIZ_IN_PROGRESS_ILLUSTRATION } from '../../shared/question-illustration';
 import { filterAvailableQuizzesForUser, isOverdue } from '../../shared/quiz-filters';
 import { resolveSubjectTeaching, SubjectTeaching } from '../../shared/teaching';
 import { indexQuizzesById, effectiveSubjectId } from '../../shared/quiz-management';
@@ -67,7 +68,7 @@ interface PendingStart {
         QuizResultComponent
     ],
     templateUrl: './available-quizzes.component.html',
-    animations: [fadeIn, slideInLeft, slideInRight]
+    animations: [fadeIn, slideInLeft, slideInRight, questionPageSwap]
 })
 export class AvailableQuizzesComponent extends BaseComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
@@ -140,6 +141,17 @@ export class AvailableQuizzesComponent extends BaseComponent implements OnInit, 
 
   readonly activeQuizId = signal<number | null>(null);
   readonly showQuiz = computed(() => this.activeQuizId() !== null);
+
+  /**
+   * The quiz header's picture: the type of the question on screen while the
+   * student answers (the page's first, when a page shows several), the generic
+   * quiz picture while it loads and on the review and result screens. Read as a
+   * one-item list by the template, so a change of picture cross-fades.
+   */
+  readonly headerIllustration = computed(() => {
+    if (!this.showQuiz() || this.runner.mode() !== 'quiz') return QUIZ_IN_PROGRESS_ILLUSTRATION;
+    return questionIllustration(this.runner.currentPageQuestions()[0]?.questionTypeId);
+  });
 
   readonly availableQuizzes = computed(() =>
     filterAvailableQuizzesForUser(this.allQuizzes(), this.completedQuizIds(), this.user())

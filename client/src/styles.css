@@ -926,7 +926,7 @@ button.nav-item:disabled:hover {
   gap: 1.5rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
-  border-radius: calc(var(--r-2xl) - 0.25rem);
+  border-radius: calc(var(--r-lg) - 0.25rem);
   border: 1px solid var(--border);
   padding: 1.125rem 1.25rem;
   
@@ -960,10 +960,47 @@ button.nav-item:disabled:hover {
   gap: 1rem;
 }
 
-.quiz-header__illustration {
-  width: 6rem;
-  height: auto;
+/* The quiz header's own look: a radial wash from a pale centre to the brand
+   blue at the edges, with the picture and title centred on the pale part.
+   A modifier, not a change to .page__head: thirteen other pages share that one.
+   The flat colour first is the fallback where the gradient is not supported. */
+.page__head--quiz {
+  background: #DDF0FF;
+background: radial-gradient(circle farthest-side at center center, #DDF0FF 10%, #22577E 350%);
+  justify-content: center;
+  text-align: center;
+}
+
+.page__head--quiz .quiz-header__media {
+  justify-content: center;
+}
+
+/* The title's usual text gradient fades to a light blue that vanishes on this
+   header's darker sides (a long title, or any title on a phone, reaches them),
+   so here it is one solid dark navy, readable across the whole wash. */
+.page__head--quiz .page__title {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: #0f2f4d;
+}
+
+/* A fixed frame for the header's picture: the question-type pictures are wide
+   and the generic one nearly square, so each is fitted inside rather than
+   sized to itself — swapping them never shifts the title. Both pictures share
+   the frame while one fades out and the next fades in (see available-quizzes). */
+.quiz-header__illustration-frame {
+  position: relative;
+  width: 7.5rem;
+  height: 5.5rem;
   flex-shrink: 0;
+}
+
+.quiz-header__illustration {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .page__actions {
@@ -3098,6 +3135,65 @@ router-outlet {
 /* Separates stacked questions when a quiz's Page Size shows more than one
    per screen. A single-question page (the default) renders one item with no
    sibling, so this is invisible unless Page Size > 1. */
+/* The quiz runner's page, and the next one while they swap (questionPageSwap):
+   both in one grid cell, the leaving page fading out over the entering one, so
+   neither leaves the layout mid-swap. `min-width: 0` lets a wide answer (the
+   rich-text editor) shrink with the column rather than widen the grid. */
+.question-pages {
+  display: grid;
+}
+
+/* A new question slides in from the reading side as it fades in — once, when
+   it appears (every Next / Previous inserts a new page). It waits 160ms for the
+   leaving page to fade out first, invisible meanwhile (`backwards`), and keeps
+   no styles afterwards: a lingering transform would make the page the
+   containing block of any fixed-position popup inside a question. */
+.question-pages > .question-page {
+  grid-area: 1 / 1;
+  min-width: 0;
+  animation-name: questionSlideIn;
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation-delay: 0.16s;
+  animation-iteration-count: 1;
+  animation-fill-mode: backwards;
+}
+
+/* Arabic reads from the right, so the question arrives from the right. */
+[dir="rtl"] .question-pages > .question-page {
+  animation-name: questionSlideInRtl;
+}
+
+@keyframes questionSlideIn {
+  from {
+    transform: translateX(-2.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes questionSlideInRtl {
+  from {
+    transform: translateX(2.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Motion is a nicety; for someone whose system asks for less, the question
+   simply appears. */
+@media (prefers-reduced-motion: reduce) {
+  .question-pages > .question-page {
+    animation: none;
+  }
+}
+
 .question-page-item:not(:last-child) {
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
