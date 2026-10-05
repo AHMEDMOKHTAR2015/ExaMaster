@@ -270,7 +270,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-size: 90%; /* 1rem = 16px — the conversion base for every rem value in this file */
+  font-size: 95%; /* 1rem = 16px — the conversion base for every rem value in this file */
 }
 
 body {
@@ -1922,15 +1922,15 @@ router-outlet {
   animation: spin 0.8s linear infinite;
 }
 
-/* Auth (login/register) centered card layout */
+/* Auth (login/register) centered card layout, on a full-page photo: scaled to
+   cover the whole viewport at any shape (cropping rather than stretching), never
+   tiled, with a pale colour underneath while it loads. */
 .auth-shell {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 2.5rem 1.25rem;
-	background-size: 50px 87.5px;
-	background-position: 0 0, 0 0, 25px 43.75px, 25px 43.75px, 0 0, 25px 43.75px;
-	background-color: var(--surface);
+  background: var(--surface-2) url('assets/LoginBackground.jpeg') center / cover no-repeat;
 }
 
 .auth-card__brand {
@@ -2180,8 +2180,9 @@ router-outlet {
   max-width: 27.5rem;
   display: grid;
   grid-template-columns: 1fr;
-  
-  border: 1px solid var(--border);
+  /* Its own surface: the panels are transparent, and over the page photo the
+     form needs a solid card to stay readable. */
+  background: var(--surface);
   border-radius: var(--r-xs); 
   box-shadow: var(--shadow-lg);
   overflow: hidden;

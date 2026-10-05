@@ -45,6 +45,24 @@
 
 
 /* ============================================================
+   Base type size
+   ============================================================
+
+   Phones and narrow tablets (the same 900px switch as the drawer and tab bar)
+   run the whole interface a step smaller than the desktop's 95%. Set on `html`,
+   so 1rem itself shrinks — every rem-sized spacing, radius and font in both
+   stylesheets scales down with it. Not on `body`: as on the desktop, body text
+   takes its size from `--font-body` (styles.css), which is in rem and so
+   follows this down; overriding it here would bypass that token. */
+
+@media (max-width: 900px) {
+  html {
+    font-size: 85%;
+  }
+}
+
+
+/* ============================================================
    Shell — the drawer
    ============================================================ */
 
@@ -280,6 +298,58 @@
       var(--dashboard-hero-art) left center / auto 76% no-repeat padding-box,
       linear-gradient(var(--surface), var(--surface)) padding-box,
       linear-gradient(to left, #4274A8 0%, #D0DBE9 100%) border-box;
+  }
+}
+
+
+/* ============================================================
+   KPI rows — two tiles to a row on a phone
+   ============================================================
+
+   One tile per row turns a dashboard's headline numbers into a long scroll of
+   mostly empty cards. On a phone they pair up instead: the `.kpis` grid gets
+   two columns, and `.kpis--four` (the administrator's row, which goes one per
+   row below 860px via its container query) gets half-width tiles — this rule
+   comes later at the same specificity, so it wins on a phone and leaves tablets
+   alone. An odd tile out spans the row rather than leaving a hole. At half
+   width the tile itself tightens: less padding, a smaller icon, and less
+   letter-spacing so a long label ("PARTICIPATIONS") still fits beside it. */
+
+@media (max-width: 640px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpis--four > * {
+    flex-basis: calc((100% - var(--gap-card)) / 2);
+  }
+
+  .kpis > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .kpis--four > :last-child:nth-child(odd) {
+    flex-basis: 100%;
+  }
+
+  .kpis .stat {
+    padding: 0.875rem;
+    gap: 0.5rem;
+  }
+
+  .kpis .stat__head {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .kpis .stat__label {
+    min-width: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .kpis .stat__icon {
+    width: 2rem;
+    height: 2rem;
   }
 }
 
@@ -599,14 +669,14 @@
   .auth-shell {
     min-height: 100dvh;
     padding: 2rem var(--pad-page-inline) 1.5rem;
-    background-image: none;
-    background-color: var(--surface-2);
   }
 
-  /* No card outline on a phone: the frame sits flat on the page instead of floating on it */
+  /* No outline or shadow on a phone, but the card keeps rounded corners: it sits
+     on the page photo, which shows around it, and square edges against the photo
+     read as cropped rather than flat. */
   .auth-frame {
     border: 0;
-    border-radius: 0;
+    border-radius: var(--r-md);
     box-shadow: none;
   }
 
