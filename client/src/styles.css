@@ -9983,6 +9983,27 @@ button.list-row:hover {
   margin: 0;
 }
 
+/* Quiz list row (Quizzes & Homework: bank and teacher-created): picture, id,
+   name with its tags and the actions across the top; the description is the
+   row's footer — last, full width, under a hairline — rather than a column
+   squeezed between the tags and the buttons. A quiz without one has no footer.
+   styles.mobile.css lets the name shrink on narrow screens. */
+.quiz-list-item {
+  flex-wrap: wrap;
+}
+
+.quiz-list-item .item-desc {
+  order: 1;
+  flex-basis: 100%;
+  margin-inline-start: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--divider);
+}
+
+.quiz-list-item .item-desc:empty {
+  display: none;
+}
+
 /* Quiz list item — name + stage/class tags */
 .quiz-info {
   display: flex;

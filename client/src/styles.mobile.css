@@ -433,6 +433,30 @@
 
 
 /* ============================================================
+   Quiz list rows (Quizzes & Homework: bank and teacher-created)
+   ============================================================
+
+   At every width the description is the row's footer (styles.css). On a wide
+   screen the name keeps its natural width; here it must be allowed to shrink,
+   or its tags cannot wrap and push the buttons past the card — and the page
+   sideways with them. */
+
+@media (max-width: 900px) {
+  /* The name takes what is left of the line, but never less than 12rem: when
+     the actions would squeeze it below that (Edit and Delete), they drop to
+     their own line instead, still at the row's end. */
+  .quiz-list-item .quiz-info {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+
+  .quiz-list-item .actions {
+    padding: 0;
+  }
+}
+
+
+/* ============================================================
    Dialogs
    ============================================================ */
 
