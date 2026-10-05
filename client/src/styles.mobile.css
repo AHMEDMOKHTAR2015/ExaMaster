@@ -303,7 +303,7 @@
 
 
 /* ============================================================
-   KPI rows — two tiles to a row on a phone
+   KPI rows and Quick Actions — two tiles to a row on a phone
    ============================================================
 
    One tile per row turns a dashboard's headline numbers into a long scroll of
@@ -351,6 +351,22 @@
     width: 2rem;
     height: 2rem;
   }
+
+  /* The administrator's Quick Actions pair up the same way: their grid asks for
+     180px tracks, which a phone's panel only fits once. A two-line label
+     ("Quizzes & Homework") is centred under its icon rather than left-aligned. */
+  .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .action-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .action-card {
+    padding: 0.875rem 0.625rem;
+    text-align: center;
+  }
 }
 
 
@@ -365,7 +381,13 @@
      itself keeps the overflow where it belongs and keeps the tab labels
      readable; wrapping them would give a two-line strip whose second row reads
      as a different control. */
-  .tabs {
+  /* `.tab-nav` is the Quizzes & Homework screen's strip (five tabs, the widest
+     in the app): same problem, same answer. Its labels also stay on one line —
+     wrapped, "Teacher-Created Quizzes" stood three lines tall — and the active
+     underline, which hangs 1px below its tab, is pulled inside the strip so the
+     scroll box does not clip it. */
+  .tabs,
+  .tab-nav {
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
@@ -373,12 +395,22 @@
     scrollbar-width: none;
   }
 
-  .tabs::-webkit-scrollbar {
+  .tabs::-webkit-scrollbar,
+  .tab-nav::-webkit-scrollbar {
     display: none;
   }
 
-  .tabs button {
+  .tabs button,
+  .tab-nav .tab-btn {
     flex: 0 0 auto;
+  }
+
+  .tab-nav .tab-btn {
+    white-space: nowrap;
+  }
+
+  .tab-nav .tab-btn.active::after {
+    bottom: 0;
   }
 
   /* Toolbar search fields carry a `min-width` of 220-240px so they stay usable
