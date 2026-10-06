@@ -314,15 +314,41 @@
    drops that layer and the panel loses its outline. */
 
 @media (max-width: 900px) {
+  /* The artwork gets a fixed slice of the inline-end edge, sized by width
+     (capped, so a tablet's panel does not grow a poster), and the text wraps
+     before it instead of running underneath. One custom property feeds both:
+     `background-size` resolves its percentage against the panel, `max-width`
+     against the panel's content box, so the text stops a little early. */
   .dashboard-hero--teacher,
   .dashboard-hero--student,
   .dashboard-hero--applicationAdmin,
   .dashboard-hero--userAdmin {
+    --dashboard-hero-art-width: min(38%, 12rem);
     min-height: 6.25rem;
-   
+    background:
+      linear-gradient(to right, #E8EDF2 0%, var(--surface) 40%, transparent 65%)
+        left top / 100% 100% no-repeat padding-box,
+      var(--dashboard-hero-art) right 0.75rem center / var(--dashboard-hero-art-width) auto no-repeat padding-box,
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(to right, #4274A8 0%, #D0DBE9 100%) border-box;
   }
 
-  
+  [dir="rtl"] .dashboard-hero--teacher,
+  [dir="rtl"] .dashboard-hero--student,
+  [dir="rtl"] .dashboard-hero--applicationAdmin,
+  [dir="rtl"] .dashboard-hero--userAdmin {
+    background:
+      linear-gradient(to left, var(--brand-50) 0%, #F1F3F9 65%, transparent 95%)
+        right top / 100% 100% no-repeat padding-box,
+      var(--dashboard-hero-art) left 0.75rem center / var(--dashboard-hero-art-width) auto no-repeat padding-box,
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(to left, #4274A8 0%, #D0DBE9 100%) border-box;
+  }
+
+  :is(.dashboard-hero--teacher, .dashboard-hero--student, .dashboard-hero--applicationAdmin, .dashboard-hero--userAdmin)
+    > :is(.dashboard-hero__intro, .dashboard-hero__actions) {
+    max-width: calc(100% - var(--dashboard-hero-art-width) - 1rem);
+  }
 }
 
 

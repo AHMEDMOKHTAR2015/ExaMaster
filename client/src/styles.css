@@ -3583,35 +3583,43 @@ router-outlet {
   margin-bottom: 1rem;
 }
 
+/* Each answered question as a small card: the question in a brand header,
+   the student's answer in the body beneath it. Stacked rather than side by
+   side, so a long question no longer squeezes into a one-word column beside
+   an answer that refused to shrink. */
 .review-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
   width: 100%;
+  padding: 0;
   text-align: start;
-  padding: 0.75rem 0.875rem;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
+  overflow: hidden;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .review-item:hover {
-  background: var(--surface-3);
+  border-color: var(--brand-600);
+  box-shadow: var(--shadow-sm);
 }
 
 .review-item__question {
+  padding: 0.625rem 0.875rem;
+  background: var(--brand-600);
+  color: var(--surface);
   font-weight: 600;
   font-size: var(--font-sm);
-  color: var(--ink-1);
+  overflow-wrap: anywhere;
 }
 
 .review-item__answer {
+  padding: 0.75rem 0.875rem;
   font-size: var(--font-sm);
   color: var(--ink-2);
-  flex-shrink: 0;
+  overflow-wrap: anywhere;
 }
 
 .review-item__answer--missing {
@@ -12044,25 +12052,14 @@ button.list-row:hover {
 }
 
 @container (max-width: 520px) {
-  /* Score leads on a narrow card; the body takes the line beneath it. */
+  /* A narrow card keeps its leading row — avatar (a parent's view), title and
+     score side by side, the title wrapping between them — and a student's own
+     card moves "View answers" to a full-width footer beneath. */
   .participation-card__body {
-    order: 1;
-    flex-basis: 100%;
-  }
-
-  .participation-card__score {
-    order: 0;
-    margin-inline-start: auto;
-  }
-
-  /* A student's own attempt: title beside the score, "View answers" as the
-     card's footer across its full width. */
-  .participation-card--own .participation-card__body {
-    order: 0;
     flex: 1 1 0;
   }
 
-  .participation-card--own .participation-card__score {
+  .participation-card__score {
     order: 1;
   }
 
