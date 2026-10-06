@@ -3,7 +3,8 @@ import { AppNotification, AppNotificationType } from '../models';
 import { AuthService } from './auth';
 import { ApiClient } from './api/api-client.service';
 
-type ApiNotificationType = 'SubmissionApproved' | 'SubmissionRejected' | 'SubmissionCompleted' | 'SubmissionNeedsReview' | 'SubmissionReceived';
+type ApiNotificationType = 'SubmissionApproved' | 'SubmissionRejected' | 'SubmissionCompleted' | 'SubmissionNeedsReview' | 'SubmissionReceived'
+  | 'ChildSubmissionApproved' | 'ChildSubmissionRejected';
 
 interface ApiNotification {
   id: number; type: ApiNotificationType; isRead: boolean; createdOn: string;
@@ -17,14 +18,17 @@ const TYPES: Record<ApiNotificationType, AppNotificationType> = {
   SubmissionRejected: 'homework-revision',
   SubmissionCompleted: 'submission-completed',
   SubmissionNeedsReview: 'submission-needs-review',
-  SubmissionReceived: 'submission-received'
+  SubmissionReceived: 'submission-received',
+  ChildSubmissionApproved: 'child-approved',
+  ChildSubmissionRejected: 'child-revision'
 };
 
 /**
  * The signed-in account's inbox (`/me/notifications`), newest 50.
  *
  * The server writes every notification itself — a submission tells the parent
- * and, every time, the reviewer; a review tells the student — so this only reads and marks.
+ * and, every time, the reviewer; a review tells the student and the parent — so
+ * this only reads and marks.
  * It reads when someone signs in, whenever the live channel says the inbox
  * changed (`RealtimeService`), straight after marking, and every
  * {@link POLL_MS} as a safety net for when the live channel cannot connect.

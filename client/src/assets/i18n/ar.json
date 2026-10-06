@@ -30,7 +30,9 @@
       "quizzes": "الاختبارات",
       "history": "السجل",
       "alerts": "التنبيهات",
-      "profile": "الملف الشخصي"
+      "profile": "الملف الشخصي",
+      "students": "الطلاب",
+      "requests": "الطلبات"
     },
     "myParticipations": "مشاركاتي",
     "username": "اسم المستخدم",
@@ -62,14 +64,19 @@
       "revision": "مطلوب إعادة تسليم",
       "completed": "تم إنهاء التسليم",
       "needsReview": "إجابات بانتظار المراجعة",
-      "received": "تم استلام تسليم"
+      "received": "تم استلام تسليم",
+      "childApproved": "اعتمد المعلم التسليم",
+      "childRevision": "طلب المعلم إعادة التسليم"
     },
     "messages": {
       "approved": "تم اعتماد تسليمك لـ \"{{ title }}\".",
       "revision": "\"{{ title }}\" يحتاج إلى مراجعة — يرجى إعادة التسليم.",
       "completed": "أنهى {{ childName }} \"{{ title }}\": {{ correct }} إجابة صحيحة / {{ wrong }} إجابة خاطئة، خلال {{ time }}. حالة المراجعة: {{ status }}.",
+      "completedNeedsReview": "أنهى {{ childName }} \"{{ title }}\": {{ correct }} إجابة صحيحة / {{ wrong }} إجابة خاطئة، خلال {{ time }}. {{ count }} إجابة بانتظار مراجعة المعلم.",
       "needsReview": "أنهى {{ childName }} \"{{ title }}\" — {{ count }} إجابة بانتظار مراجعتك.",
-      "received": "سلّم {{ childName }} \"{{ title }}\": {{ correct }} إجابة صحيحة / {{ wrong }} إجابة خاطئة، خلال {{ time }}. تم التصحيح تلقائيًا."
+      "received": "سلّم {{ childName }} \"{{ title }}\": {{ correct }} إجابة صحيحة / {{ wrong }} إجابة خاطئة، خلال {{ time }}. تم التصحيح تلقائيًا.",
+      "childApproved": "راجع المعلم \"{{ title }}\" الخاص بـ {{ childName }} واعتمده.",
+      "childRevision": "راجع المعلم \"{{ title }}\" الخاص بـ {{ childName }} وطلب إعادة التسليم."
     },
     "reviewStatus": {
       "approved": "تم الاعتماد",

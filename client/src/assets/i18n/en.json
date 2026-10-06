@@ -32,7 +32,9 @@
       "quizzes": "Quizzes",
       "history": "History",
       "alerts": "Alerts",
-      "profile": "Profile"
+      "profile": "Profile",
+      "students": "Students",
+      "requests": "Requests"
     },
     "myParticipations": "My Participations",
     "username": "Username",
@@ -64,14 +66,19 @@
       "revision": "Revision requested",
       "completed": "Submission completed",
       "needsReview": "Answers awaiting review",
-      "received": "Submission received"
+      "received": "Submission received",
+      "childApproved": "Teacher approved",
+      "childRevision": "Teacher asked for a revision"
     },
     "messages": {
       "approved": "Your submission for \"{{ title }}\" was approved.",
       "revision": "\"{{ title }}\" needs revision — please resubmit.",
       "completed": "{{ childName }} completed \"{{ title }}\": {{ correct }} correct / {{ wrong }} wrong, in {{ time }}. Teacher review: {{ status }}.",
+      "completedNeedsReview": "{{ childName }} completed \"{{ title }}\": {{ correct }} correct / {{ wrong }} wrong, in {{ time }}. {{ count }} answer(s) are waiting for the teacher's review.",
       "needsReview": "{{ childName }} completed \"{{ title }}\" — {{ count }} answer(s) need your review.",
-      "received": "{{ childName }} submitted \"{{ title }}\": {{ correct }} correct / {{ wrong }} wrong, in {{ time }}. Marked automatically."
+      "received": "{{ childName }} submitted \"{{ title }}\": {{ correct }} correct / {{ wrong }} wrong, in {{ time }}. Marked automatically.",
+      "childApproved": "The teacher reviewed {{ childName }}'s \"{{ title }}\" and approved it.",
+      "childRevision": "The teacher reviewed {{ childName }}'s \"{{ title }}\" and asked for a revision."
     },
     "reviewStatus": {
       "approved": "Approved",
@@ -388,13 +395,13 @@
       "noTeacherProfileDesc": "Your login is not linked to a teacher record. Please contact the school administrator."
     },
     "title": {
-      "applicationAdmin": "Application Admin Dashboard",
+      "applicationAdmin": "Admin Dashboard",
       "userAdmin": "Parent Dashboard",
       "teacher": "Teacher Dashboard",
       "default": "Dashboard"
     },
     "subtitle": {
-      "applicationAdmin": "Manage users, quizzes, and view global analytics",
+      "applicationAdmin": "Manage users, quizzes, and view analytics",
       "userAdmin": "Manage your children and track their progress",
       "teacher": "View your students and assign quizzes & homework",
       "default": "You do not have admin access"

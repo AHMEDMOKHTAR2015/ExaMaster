@@ -21,16 +21,25 @@ public partial class Notification
         return notifications;
     }
 
-    public static Notification ForVerdict(Participation participation, string childName, IQuizMasterAction action)
+    // The student hears the verdict, and so does their parent, who was told at submission that a review was coming.
+    public static IReadOnlyList<Notification> ForVerdict(Participation participation, string childName, IQuizMasterAction action)
     {
-        var type = participation.ValidationStatus switch
+        var (studentType, parentType) = participation.ValidationStatus switch
         {
-            ValidationStatus.Approved => NotificationType.SubmissionApproved,
-            ValidationStatus.Rejected => NotificationType.SubmissionRejected,
+            ValidationStatus.Approved => (NotificationType.SubmissionApproved, NotificationType.ChildSubmissionApproved),
+            ValidationStatus.Rejected => (NotificationType.SubmissionRejected, NotificationType.ChildSubmissionRejected),
             _ => throw new DomainException("Only a reviewed submission has a verdict to announce.")
         };
 
-        return Create(participation.ChildId, type, participation, childName, participation.ValidationFeedback, action);
+        var notifications = new List<Notification>
+        {
+            Create(participation.ChildId, studentType, participation, childName, participation.ValidationFeedback, action)
+        };
+
+        if (participation.ParentId is { } parentId)
+            notifications.Add(Create(parentId, parentType, participation, childName, participation.ValidationFeedback, action));
+
+        return notifications;
     }
 
     // Only the recipient changes it (the endpoints are /me/…), so nothing else to check.

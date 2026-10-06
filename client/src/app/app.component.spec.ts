@@ -3,6 +3,7 @@ import { TestBed, waitForAsync } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { AppComponent } from './app.component';
+import { AppNotification } from './models';
 import { RealtimeService } from './services/realtime/realtime.service';
 import { AuthService } from './services/auth';
 import { LanguageService } from './services/language.service';
@@ -129,6 +130,36 @@ describe('AppComponent', () => {
       app.onEscape();
 
       expect(app.isSidebarOpen()).toBe(false);
+    });
+  });
+
+  // A parent is told at submission whether answers wait for the teacher, then hears the verdict itself.
+  describe('parent notifications', () => {
+    const base: AppNotification = {
+      id: '1', type: 'submission-completed', read: false, createdAt: 0,
+      assignmentTitle: 'Unit 4', assignmentId: '9', participationId: '9',
+      childName: 'Sara', correctCount: 3, wrongCount: 1, pendingReviewCount: 0, timeTakenSeconds: 90
+    };
+
+    it('says how many answers wait for the teacher when some do', () => {
+      const app = TestBed.createComponent(AppComponent).componentInstance;
+      const waiting = { ...base, pendingReviewCount: 2 };
+
+      expect(app.notifMessageKey(waiting)).toBe('notifications.messages.completedNeedsReview');
+      expect(app.notifMessageParams(waiting)['count']).toBe(2);
+      expect(app.notifMessageKey(base)).toBe('notifications.messages.completed');
+    });
+
+    it('announces the verdict on their child\'s work', () => {
+      const app = TestBed.createComponent(AppComponent).componentInstance;
+      const approved: AppNotification = { ...base, type: 'child-approved', feedback: 'Well done' };
+      const revision: AppNotification = { ...base, type: 'child-revision' };
+
+      expect([app.notifTitleKey(approved), app.notifMessageKey(approved), app.notifTone(approved)])
+        .toEqual(['notifications.types.childApproved', 'notifications.messages.childApproved', 'approved']);
+      expect([app.notifTitleKey(revision), app.notifMessageKey(revision), app.notifTone(revision)])
+        .toEqual(['notifications.types.childRevision', 'notifications.messages.childRevision', 'revision']);
+      expect(app.notifMessageParams(approved)).toEqual({ childName: 'Sara', title: 'Unit 4' });
     });
   });
 });

@@ -83,7 +83,8 @@ check "score rises to 88% with nothing pending" "88 0" "$(json '"\(.participatio
 
 echo "== notifications, sent by the server"
 call dev-parent GET /me/notifications >/dev/null
-check "the parent hears their child finished" "SubmissionCompleted Sara Student $PID 1" "$(json '"\(.notifications[0].type) \(.notifications[0].childName) \(.notifications[0].participationId) \(.unreadCount)"')"
+check "the parent hears their child finished" "SubmissionCompleted Sara Student $PID" "$(json '"\(.notifications[1].type) \(.notifications[1].childName) \(.notifications[1].participationId)"')"
+check "and then the teacher's verdict" "ChildSubmissionApproved $PID 2" "$(json '"\(.notifications[0].type) \(.notifications[0].participationId) \(.unreadCount)"')"
 call dev-teacher GET /me/notifications >/dev/null
 check "the reviewer hears two answers need marking" "SubmissionNeedsReview 2" "$(json '"\(.notifications[0].type) \(.notifications[0].pendingReviewCount)"')"
 call dev-student GET /me/notifications >/dev/null
@@ -92,6 +93,8 @@ NID=$(json '.notifications[0].id')
 check "re-saving the same verdict" 200 "$(call dev-teacher POST /participations/$PID:review '{"status":"Approved","marks":[]}')"
 call dev-student GET /me/notifications >/dev/null
 check "does not notify the student twice" 1 "$(json '.notifications | length')"
+call dev-parent GET /me/notifications >/dev/null
+check "nor the parent" 2 "$(json '.notifications | length')"
 check "nobody else can mark it read" 404 "$(call dev-student-2 POST /me/notifications/$NID:read)"
 check "the student marks it read" 200 "$(call dev-student POST /me/notifications/$NID:read)"
 call dev-student GET /me/notifications >/dev/null

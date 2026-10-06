@@ -66,14 +66,37 @@ public class NotificationTests
     [InlineData(ValidationStatus.Rejected, NotificationType.SubmissionRejected)]
     public void A_verdict_is_announced_to_the_student_with_the_teachers_feedback(ValidationStatus status, NotificationType expected)
     {
-        var participation = Submit(Quiz(Choose(1)), [Selected(1, 2)]);
-        participation.Review([], status, "  See me  ", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
-
-        var notification = Notification.ForVerdict(participation, "Sara", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
+        var notification = Assert.Single(Verdict(Submit(Quiz(Choose(1)), [Selected(1, 2)]), status), n => n.RecipientId == StudentId);
 
         Assert.Equal(expected, notification.Type);
-        Assert.Equal(StudentId, notification.RecipientId);
         Assert.Equal("See me", notification.Feedback);
+    }
+
+    [Theory]
+    [InlineData(ValidationStatus.Approved, NotificationType.ChildSubmissionApproved)]
+    [InlineData(ValidationStatus.Rejected, NotificationType.ChildSubmissionRejected)]
+    public void The_parent_hears_the_verdict_on_their_childs_work(ValidationStatus status, NotificationType expected)
+    {
+        var notification = Assert.Single(Verdict(Submit(Quiz(Choose(1)), [Selected(1, 2)]), status), n => n.RecipientId == ParentId);
+
+        Assert.Equal(expected, notification.Type);
+        Assert.Equal((StudentId, "Sara", "Unit 4", "See me"), (notification.ChildId, notification.ChildName, notification.Title, notification.Feedback));
+    }
+
+    [Fact]
+    public void A_student_without_a_parent_alone_hears_the_verdict()
+    {
+        var orphan = User.Create(1, "uid-orphan", "orphan@school.test", "Orphan", [UserRoleType.STUDENT], Action(QuizMasterActionType.Seed, 0)).WithId(77);
+        orphan.PlaceInClass(StudentsClass, Action(QuizMasterActionType.PlaceStudent, AdminId));
+
+        var notification = Assert.Single(Verdict(Submit(Quiz(Choose(1)), [Selected(1, 2)], student: orphan), ValidationStatus.Approved));
+        Assert.Equal((NotificationType.SubmissionApproved, 77), (notification.Type, notification.RecipientId));
+    }
+
+    private static IReadOnlyList<Notification> Verdict(Participation participation, ValidationStatus status)
+    {
+        participation.Review([], status, "  See me  ", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
+        return Notification.ForVerdict(participation, "Sara", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
     }
 
     [Fact]

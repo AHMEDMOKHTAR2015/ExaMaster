@@ -152,12 +152,23 @@ export class AppComponent {
   readonly isStudentNav = computed(() => this.homeRoute() === STUDENT_HOME_ROUTE);
 
   /**
-   * Whether this role gets the bottom tab bar below 900px (student: 3 tabs,
-   * parent: 4). Teacher and application admin keep the drawer only — no
-   * artboard covers a tab bar for either, and their nav trees are too deep
-   * for four items to represent honestly.
+   * Which bottom tab bar this person gets below 900px, or none. Students and
+   * parents get their own destinations. Staff navigate deeper trees than four
+   * tabs can hold, so their bar carries their three most-used destinations and
+   * a Menu tab that opens the drawer for the rest; the platform administrator's
+   * carries their two plus Menu. When someone holds several roles the broadest
+   * wins (platform, then application admin, then teacher).
    */
-  readonly showTabbar = computed(() => this.isStudentNav() || this.isParentAdminOnly());
+  readonly tabbarSet = computed<'student' | 'parent' | 'applicationAdmin' | 'teacher' | 'platform' | null>(() => {
+    if (this.isPlatformAdmin()) return 'platform';
+    if (this.isApplicationAdmin()) return 'applicationAdmin';
+    if (this.isTeacher()) return 'teacher';
+    if (this.isStudentNav()) return 'student';
+    if (this.isParentAdminOnly()) return 'parent';
+    return null;
+  });
+
+  readonly showTabbar = computed(() => this.tabbarSet() !== null);
 
   /** Target for the sidebar "Dashboard" nav item — same split as `homeRoute`. */
   readonly dashboardRoute = computed(() => {
@@ -268,6 +279,8 @@ export class AppComponent {
       case 'submission-needs-review': return 'notifications.types.needsReview';
       case 'submission-received': return 'notifications.types.received';
       case 'homework-approved': return 'notifications.types.approved';
+      case 'child-approved': return 'notifications.types.childApproved';
+      case 'child-revision': return 'notifications.types.childRevision';
       default: return 'notifications.types.revision';
     }
   }
@@ -278,17 +291,23 @@ export class AppComponent {
       case 'submission-completed':
       case 'submission-received': return 'completed';
       case 'submission-needs-review': return 'review';
-      case 'homework-approved': return 'approved';
+      case 'homework-approved':
+      case 'child-approved': return 'approved';
       default: return 'revision';
     }
   }
 
   notifMessageKey(n: AppNotification): string {
     switch (n.type) {
-      case 'submission-completed': return 'notifications.messages.completed';
+      // A parent told answers wait for the teacher hears the verdict later (child-approved / child-revision).
+      case 'submission-completed': return (n.pendingReviewCount ?? 0) > 0
+        ? 'notifications.messages.completedNeedsReview'
+        : 'notifications.messages.completed';
       case 'submission-needs-review': return 'notifications.messages.needsReview';
       case 'submission-received': return 'notifications.messages.received';
       case 'homework-approved': return 'notifications.messages.approved';
+      case 'child-approved': return 'notifications.messages.childApproved';
+      case 'child-revision': return 'notifications.messages.childRevision';
       default: return 'notifications.messages.revision';
     }
   }
@@ -310,12 +329,16 @@ export class AppComponent {
         time: this.formatDuration(n.timeTakenSeconds)
       };
     }
+    if (n.type === 'child-approved' || n.type === 'child-revision') {
+      return { childName: n.childName ?? '', title: n.assignmentTitle };
+    }
     if (n.type !== 'submission-completed') return { title: n.assignmentTitle };
     return {
       childName: n.childName ?? '',
       title: n.assignmentTitle,
       correct: n.correctCount ?? 0,
       wrong: n.wrongCount ?? 0,
+      count: n.pendingReviewCount ?? 0,
       time: this.formatDuration(n.timeTakenSeconds),
       status: this.translate.instant(`notifications.reviewStatus.${n.reviewStatus ?? 'pending'}`)
     };

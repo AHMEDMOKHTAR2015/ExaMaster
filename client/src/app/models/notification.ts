@@ -3,7 +3,9 @@ export type AppNotificationType =
   | 'homework-revision'
   | 'submission-completed'
   | 'submission-needs-review'
-  | 'submission-received';
+  | 'submission-received'
+  | 'child-approved'
+  | 'child-revision';
 
 /** Teacher's review state of a submission, as surfaced to a parent notification. */
 export type SubmissionReviewStatus = 'approved' | 'revision-requested' | 'pending';
@@ -22,7 +24,8 @@ export interface AppNotification {
    * Present on 'submission-completed' notifications sent to a parent and on
    * 'submission-needs-review' / 'submission-received' notifications sent to a
    * teacher (every submission reaches its reviewer; the type says whether any
-   * answer waits for their mark).
+   * answer waits for their mark), and on 'child-approved' / 'child-revision',
+   * the teacher's verdict as told to the parent.
    */
   childId?: string;
   childName?: string;
