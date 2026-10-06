@@ -6,7 +6,7 @@ import { ApiSubjectPerformance } from './api/api-models';
 function row(overrides: Partial<ApiSubjectPerformance>): ApiSubjectPerformance {
   return {
     subjectId: 1, subjectName: 'Math', subjectColor: '#1565C0', quizCount: 2, homeworkCount: 1, awaitingReviewCount: 0,
-    scorePercent: 72, earlierPercent: 60, recentPercent: 80, level: 'Good', ...overrides
+    pointsEarned: 216, pointsPossible: 300, scorePercent: 72, earlierPercent: 60, recentPercent: 80, level: 'Good', ...overrides
   };
 }
 
@@ -35,7 +35,7 @@ describe('SubjectPerformanceService', () => {
     const [subject] = await TestBed.inject(SubjectPerformanceService).listMine();
     expect(subject).toEqual({
       subjectId: '1', subjectName: 'Math', subjectColor: '#1565C0', quizCount: 2, homeworkCount: 1,
-      awaitingReviewCount: 0, scorePercent: 72, level: 'good', trendPoints: 20
+      awaitingReviewCount: 0, pointsEarned: 216, pointsPossible: 300, scorePercent: 72, level: 'good', trendPoints: 20
     });
   });
 

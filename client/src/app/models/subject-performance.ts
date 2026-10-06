@@ -12,6 +12,9 @@ export interface SubjectPerformance {
   quizCount: number;
   homeworkCount: number;
   awaitingReviewCount: number;
+  /** Points gained across the subject's graded quizzes and homework, each worth 100. */
+  pointsEarned: number;
+  pointsPossible: number;
   scorePercent?: number;
   level?: SubjectLevel;
   /** Recent half-year average minus the half-year before it; absent unless both halves have graded work. */

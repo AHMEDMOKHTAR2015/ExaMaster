@@ -6,6 +6,7 @@ public record GetMySubjectPerformanceQuery : IQuery<IReadOnlyList<SubjectPerform
 
 // ScorePercent and Level are null while every submission in the subject still waits for a teacher's mark.
 // EarlierPercent / RecentPercent: the first and second half of the year (null when that half has no graded work).
+// PointsEarned / PointsPossible: the subject's graded quizzes and homework, each worth 100 points.
 public record SubjectPerformanceDto(
     int SubjectId,
     string SubjectName,
@@ -13,6 +14,8 @@ public record SubjectPerformanceDto(
     int QuizCount,
     int HomeworkCount,
     int AwaitingReviewCount,
+    int PointsEarned,
+    int PointsPossible,
     int? ScorePercent,
     int? EarlierPercent,
     int? RecentPercent,

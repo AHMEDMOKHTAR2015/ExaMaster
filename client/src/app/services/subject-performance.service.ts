@@ -26,6 +26,8 @@ function toSubjectPerformance(row: ApiSubjectPerformance): SubjectPerformance {
     quizCount: row.quizCount,
     homeworkCount: row.homeworkCount,
     awaitingReviewCount: row.awaitingReviewCount,
+    pointsEarned: row.pointsEarned,
+    pointsPossible: row.pointsPossible,
     scorePercent: row.scorePercent ?? undefined,
     level: row.level ? (row.level.toLowerCase() as SubjectLevel) : undefined,
     trendPoints: row.earlierPercent !== null && row.recentPercent !== null

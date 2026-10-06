@@ -71,9 +71,11 @@ interface RingArcs {
                   <span class="subject-perf__level">{{ 'availableQuizzes.subjectPerformance.awaitingMarks' | translate }}</span>
                 }
 
-                <span class="subject-perf__meta">
-                  {{ 'availableQuizzes.subjectPerformance.counts' | translate : { quizzes: subject.quizCount, homework: subject.homeworkCount } }}
-                </span>
+                @if (subject.pointsPossible > 0) {
+                  <span class="subject-perf__meta">
+                    {{ 'availableQuizzes.subjectPerformance.points' | translate : { earned: subject.pointsEarned, possible: subject.pointsPossible } }}
+                  </span>
+                }
 
                 @if (subject.trendPoints !== undefined) {
                   <span class="subject-perf__trend"

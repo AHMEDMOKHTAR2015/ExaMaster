@@ -80,6 +80,8 @@ BODY=$(jq -nc --argjson q3 "${Q[3]}" '{status: "Approved", marks: [{questionId: 
 check "a mark above the answer's weight is refused" 400 "$(call dev-teacher POST /participations/$PID:review "$BODY")"
 call dev-student GET /participations/$PID >/dev/null
 check "score rises to 88% with nothing pending" "88 0" "$(json '"\(.participation.scorePercent) \(.participation.pendingReviewCount)"')"
+call dev-student GET /me/subject-performance >/dev/null
+check "the subject's points: one graded quiz, worth 100" "88 100 88" "$(json '.[] | select(.subjectName=="Science") | "\(.pointsEarned) \(.pointsPossible) \(.scorePercent)"')"
 
 echo "== notifications, sent by the server"
 call dev-parent GET /me/notifications >/dev/null

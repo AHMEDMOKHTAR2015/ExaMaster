@@ -1547,7 +1547,7 @@
       "loading": "جارٍ تحميل موادك…",
       "loadFailed": "تعذّر تحميل مستوى المواد.",
       "empty": "أكمل اختبارًا أو واجبًا لترى مستواك في كل مادة.",
-      "counts": "الاختبارات: {{quizzes}} · الواجبات: {{homework}}",
+      "points": "النقاط: {{earned}} / {{possible}}",
       "awaitingReview": "بانتظار التصحيح: {{count}}",
       "awaitingMarks": "بانتظار التصحيح",
       "trendUp": "في تحسّن +{{points}}",

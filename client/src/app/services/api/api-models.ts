@@ -254,6 +254,7 @@ export interface ApiMyStudent {
 export interface ApiSubjectPerformance {
   subjectId: number; subjectName: string; subjectColor: string | null;
   quizCount: number; homeworkCount: number; awaitingReviewCount: number;
+  pointsEarned: number; pointsPossible: number;
   scorePercent: number | null; earlierPercent: number | null; recentPercent: number | null;
   level: 'Excellent' | 'Good' | 'Fair' | 'Weak' | null;
 }

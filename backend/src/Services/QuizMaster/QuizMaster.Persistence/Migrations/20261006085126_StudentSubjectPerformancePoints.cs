@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace QuizMaster.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class StudentSubjectPerformanceAssignmentKind : Migration
+    public partial class StudentSubjectPerformancePoints : Migration
     {
+        // PointsEarned / PointsPossible: what the student gained in a subject across its graded quizzes and homework,
+        // each worth 100 points, shown on the dashboard in place of the quiz and homework counts.
         internal const string Procedure = """
                 CREATE OR ALTER PROCEDURE dbo.GetStudentSubjectPerformance
                     @SignInUid nvarchar(128),
@@ -54,6 +56,10 @@ namespace QuizMaster.Persistence.Migrations
                             SUM(CASE WHEN Kind = N'Homework' THEN 1 ELSE 0 END) AS HomeworkCount,
                             SUM(CASE WHEN GradedScore IS NULL THEN 1 ELSE 0 END) AS AwaitingReviewCount,
                             CAST(FLOOR(AVG(GradedScore) + 0.5) AS int) AS ScorePercent,
+                            -- every quiz or homework is worth 100 points (the weighting grading uses); only graded
+                            -- work counts, so PointsEarned / PointsPossible is the same average the donut shows
+                            CAST(ISNULL(SUM(CASE WHEN GradedScore IS NOT NULL THEN FLOOR(GradedScore + 0.5) END), 0) AS int) AS PointsEarned,
+                            SUM(CASE WHEN GradedScore IS NOT NULL THEN 100 ELSE 0 END) AS PointsPossible,
                             CAST(FLOOR(AVG(CASE WHEN EndedOn < @Midpoint THEN GradedScore END) + 0.5) AS int) AS EarlierPercent,
                             CAST(FLOOR(AVG(CASE WHEN EndedOn >= @Midpoint THEN GradedScore END) + 0.5) AS int) AS RecentPercent
                         FROM Submission
@@ -67,6 +73,8 @@ namespace QuizMaster.Persistence.Migrations
                         bySubject.QuizCount,
                         bySubject.HomeworkCount,
                         bySubject.AwaitingReviewCount,
+                        bySubject.PointsEarned,
+                        bySubject.PointsPossible,
                         bySubject.ScorePercent,
                         bySubject.EarlierPercent,
                         bySubject.RecentPercent,
@@ -83,8 +91,6 @@ namespace QuizMaster.Persistence.Migrations
                 END
                 """;
 
-        // QuizCount / HomeworkCount now follow the assignment's Kind, as My Participations and the KPI tiles do: a quiz a
-        // teacher assigns is submitted as Participation.Type = Homework, but the student sees (and counts) it as a quiz.
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -94,7 +100,7 @@ namespace QuizMaster.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(StudentSubjectPerformance.Procedure);
+            migrationBuilder.Sql(StudentSubjectPerformanceAssignmentKind.Procedure);
         }
     }
 }

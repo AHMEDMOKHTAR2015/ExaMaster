@@ -12054,6 +12054,23 @@ button.list-row:hover {
     order: 0;
     margin-inline-start: auto;
   }
+
+  /* A student's own attempt: title beside the score, "View answers" as the
+     card's footer across its full width. */
+  .participation-card--own .participation-card__body {
+    order: 0;
+    flex: 1 1 0;
+  }
+
+  .participation-card--own .participation-card__score {
+    order: 1;
+  }
+
+  .participation-card--own .participation-card__action {
+    order: 2;
+    flex-basis: 100%;
+    justify-content: center;
+  }
 }
 
 /* ============================================================

@@ -1548,7 +1548,7 @@
       "loading": "Loading your subjects…",
       "loadFailed": "Couldn't load your subject levels.",
       "empty": "Finish a quiz or homework to see your level in each subject.",
-      "counts": "Quizzes: {{quizzes}} · Homework: {{homework}}",
+      "points": "Points: {{earned}} / {{possible}}",
       "awaitingReview": "Awaiting marks: {{count}}",
       "awaitingMarks": "Awaiting marks",
       "trendUp": "Improving +{{points}}",

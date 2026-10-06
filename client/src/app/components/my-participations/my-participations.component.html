@@ -50,7 +50,7 @@
                 <span>{{ record.endedAt | date:'medium' }}</span>
               </div>
             </div>
-            <button type="button" class="btn btn--ghost btn--sm" (click)="selected.set(record)">
+            <button type="button" class="btn btn--ghost btn--sm participation-card__action" (click)="selected.set(record)">
               {{ 'myParticipations.viewAnswers' | translate }}
             </button>
             <div class="participation-card__score" [ngClass]="'participation-card__score--' + scoreTier(record)">
