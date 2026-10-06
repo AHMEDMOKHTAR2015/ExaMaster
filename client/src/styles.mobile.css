@@ -780,10 +780,14 @@
   /* No outline or shadow on a phone, but the card keeps rounded corners: it sits
      on the page photo, which shows around it, and square edges against the photo
      read as cropped rather than flat. */
+  /* The glass deepens towards the bottom, where the photo pales to near white
+     and would leave the light text below without contrast. */
   .auth-frame {
-    border: 0;
-    border-radius: var(--r-md);
-    box-shadow: none;
+    
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 45%, rgb(0 76 129 / 95%));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    padding: 0.8125rem 0.875rem;
   }
 
   
@@ -799,6 +803,7 @@
     min-width: 3.25rem;
     justify-content: center;
     margin-bottom: 0.375rem;
+    border-radius: var(--r-pill);
   }
 
   .auth-logo--card {
@@ -821,9 +826,46 @@
     gap: 0.875rem;
   }
 
-  .auth-submit {
-    height: 1.25rem;
+  /* On the glass frame the submit buttons (Sign In, Send request) take the
+     sidebar's translucent wash rather than the brand gradient. Phone only: on
+     the desktop's white card this wash would be invisible. */
+  .auth-submit,
+  .auth-submit:hover {
+    background: var(--sidebar-hover-bg);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: var(--surface);
     border-radius: var(--r-sm);
+  }
+
+  /* On the glass frame the card's own text reads against the photo, not a
+     white card, so it turns light. The faint shadow keeps it legible where the
+     photo pales towards the bottom. Fields, buttons and the request-access
+     option boxes keep their own surfaces, so their text is left alone. */
+  .auth-card {
+    --auth-on-glass: var(--surface);
+    --auth-on-glass-soft: rgba(255, 255, 255, 0.85);
+  }
+
+  .auth-card :is(.auth-card__title, .field__label, .auth-check, .auth-link, .auth-back, .auth-done__text, .auth-legal a),
+  .auth-card :is(.auth-card__sub, .field__hint, .field__optional, .auth-forgot-hint, .auth-alt__prompt, .auth-legal, .auth-done__hint) {
+    text-shadow: 0 1px 2px rgba(15, 47, 77, 0.35);
+  }
+
+  .auth-card :is(.auth-card__title, .field__label, .auth-check, .auth-link, .auth-back, .auth-done__text, .auth-legal a) {
+    color: var(--auth-on-glass);
+  }
+
+  .auth-card :is(.auth-card__sub, .field__hint, .field__optional, .auth-forgot-hint, .auth-alt__prompt, .auth-legal, .auth-done__hint) {
+    color: var(--auth-on-glass-soft);
+  }
+
+  .auth-card :is(.auth-link, .auth-back, .auth-legal a):hover {
+    color: var(--auth-on-glass);
+    text-decoration: underline;
+  }
+
+  .auth-card .auth-alt {
+    border-top-color: rgba(255, 255, 255, 0.35);
   }
 }
 
