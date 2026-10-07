@@ -28,16 +28,18 @@
             </div>
           </div>
           <span class="muted">{{ 'quizManagement.assignments.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}</span>
-          <button class="btn btn--sm" (click)="trackAssignment(assignment)">{{ 'quizManagement.assignments.track' | translate }}</button>
-          <button class="btn btn--sm btn--ghost" (click)="state.openAssignmentForm(state.getAssignmentKind(assignment), assignment)">{{ 'common.edit' | translate }}</button>
-          <button class="btn btn--sm btn--ghost" (click)="state.toggleAssignmentActive(assignment)">
-            {{ assignment.active ? ('quizManagement.assignments.deactivate' | translate) : ('quizManagement.assignments.reactivate' | translate) }}
-          </button>
-          <!-- Last, and the only red button in the row: the reversible action
-               should be the one that falls under the cursor first. -->
-          <button class="btn btn--sm btn--danger" (click)="state.deleteAssignment(assignment)">
-            {{ 'common.delete' | translate }}
-          </button>
+          <div class="assignment-row__actions">
+            <button class="btn btn--sm" (click)="trackAssignment(assignment)">{{ 'quizManagement.assignments.track' | translate }}</button>
+            <button class="btn btn--sm btn--ghost" (click)="state.openAssignmentForm(state.getAssignmentKind(assignment), assignment)">{{ 'common.edit' | translate }}</button>
+            <button class="btn btn--sm btn--ghost" (click)="state.toggleAssignmentActive(assignment)">
+              {{ assignment.active ? ('quizManagement.assignments.deactivate' | translate) : ('quizManagement.assignments.reactivate' | translate) }}
+            </button>
+            <!-- Last, and the only red button in the row: the reversible action
+                 should be the one that falls under the cursor first. -->
+            <button class="btn btn--sm btn--danger" (click)="state.deleteAssignment(assignment)">
+              {{ 'common.delete' | translate }}
+            </button>
+          </div>
         </div>
       } @empty {
         <div class="empty">

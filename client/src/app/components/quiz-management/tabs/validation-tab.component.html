@@ -12,28 +12,58 @@
   <div class="card__body">
     <div class="stack stack--sm">
       @for (item of filteredValidationItems(); track item.record.id) {
-        <div class="list-row">
+        <div class="list-row validation-row">
           <div class="avatar avatar--sm avatar--brand">{{ state.studentInitial(item.studentName) }}</div>
           <div class="list-row__main">
             <div class="cell-stack__main">{{ item.studentName }}</div>
-            <div class="quiz-management__cell-stack__sub">
-              {{ item.title }}
-              @if (item.assignment) {
-                · {{ state.getClassName(item.assignment.classId) }}
+            <!-- What the submission is, one labelled fact per line rather than a
+                 dot-joined run: assigned work names the assignment (and the quiz
+                 it uses, when that reads differently) and its group; a quiz a
+                 student started from the shared bank says so, which is why it is
+                 in this reviewer's queue with no group or due date. -->
+            <dl class="submission-facts">
+              @if (item.record.homeworkId) {
+                <div>
+                  <dt>{{ (item.kind === 'homework' ? 'quizManagement.validation.facts.homework' : 'quizManagement.validation.facts.assignedQuiz') | translate }}</dt>
+                  <dd dir="auto">{{ item.title }}</dd>
+                </div>
+                @if (item.record.quizName && item.record.quizName !== item.title) {
+                  <div>
+                    <dt>{{ 'quizManagement.validation.facts.quiz' | translate }}</dt>
+                    <dd dir="auto">{{ item.record.quizName }}</dd>
+                  </div>
+                }
+                @if (item.assignment) {
+                  <div>
+                    <dt>{{ 'quizManagement.validation.facts.group' | translate }}</dt>
+                    <dd>{{ state.getClassName(item.assignment.classId) }}</dd>
+                  </div>
+                }
               } @else {
-                <!-- No assignment: this is a quiz from the shared bank that a
-                     student started themselves, routed here by the reviewer the
-                     admin set on it. Labelled so the teacher knows why it is in
-                     their queue without a class or due date to explain it. -->
-                · <span class="badge badge--muted">{{ 'quizManagement.validation.fromBank' | translate }}</span>
+                <div>
+                  <dt>{{ 'quizManagement.validation.facts.quiz' | translate }}</dt>
+                  <dd dir="auto">{{ item.title }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'quizManagement.validation.facts.source' | translate }}</dt>
+                  <dd>{{ 'quizManagement.validation.facts.quizBank' | translate }}</dd>
+                </div>
               }
-              · {{ 'quizManagement.validation.finished' | translate : { date: (item.record.endedAt | date:'short') } }}
-            </div>
+              <div>
+                <dt>{{ 'quizManagement.validation.facts.submitted' | translate }}</dt>
+                <dd>{{ item.record.endedAt | date:'short' }}</dd>
+              </div>
+            </dl>
+            <!-- The list's summaries carry the verdict but not when or by whom it
+                 was given (validatedAt 0), so the line shows only when it is known
+                 rather than as "Reviewed 1/1/70 by". The badge still says the verdict. -->
             @if (item.record.validation; as v) {
+              @if (v.validatedAt) {
               <div class="quiz-management__cell-stack__sub">
                 {{ 'quizManagement.validation.reviewedOn' | translate : { date: (v.validatedAt | date:'short'), name: v.validatedByName || '' } }}
                 @if (v.feedback) { — {{ v.feedback }} }
               </div>
+              }
             }
           </div>
           <span class="badge badge--brand">{{ state.scorePercentOf(item.record) }}%</span>
@@ -43,14 +73,16 @@
             </span>
           }
           @if (item.record.validation; as v) {
-            <span class="badge" [ngClass]="v.status === 'approved' ? 'badge--success' : 'badge--warning'">
+            <span class="badge validation-row__status" [ngClass]="v.status === 'approved' ? 'badge--success' : 'badge--warning'">
               {{ v.status === 'approved' ? ('quizManagement.validation.approved' | translate) : ('quizManagement.validation.needsRevision' | translate) }}
             </span>
           } @else {
-            <span class="badge badge--muted">{{ 'quizManagement.validation.pending' | translate }}</span>
+            <span class="badge badge--muted validation-row__status">{{ 'quizManagement.validation.pending' | translate }}</span>
           }
-          <button class="btn btn--sm" (click)="openAnswers(item.record, item.studentName, item.kind)">{{ 'quizManagement.validation.review' | translate }}</button>
-          <button class="btn btn--sm btn--primary" (click)="openValidation(item)">{{ 'quizManagement.validation.validate' | translate }}</button>
+          <div class="validation-row__actions">
+            <button class="btn btn--sm" (click)="openAnswers(item.record, item.studentName, item.kind)">{{ 'quizManagement.validation.review' | translate }}</button>
+            <button class="btn btn--sm btn--primary" (click)="openValidation(item)">{{ 'quizManagement.validation.validate' | translate }}</button>
+          </div>
         </div>
       } @empty {
         @if (queue.isLoading()) {

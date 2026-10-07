@@ -649,9 +649,16 @@
       "awaitingMark": "{{ count }} to mark",
       "noSubmissions": "No submissions to review",
       "noSubmissionsDesc": "Completed quizzes and homework for the filtered subjects/semesters will appear here.",
-      "finished": "Finished {{ date }}",
       "reviewedOn": "Reviewed {{ date }} by {{ name }}",
-      "fromBank": "From quiz bank"
+      "facts": {
+        "homework": "Homework",
+        "assignedQuiz": "Assigned quiz",
+        "quiz": "Quiz",
+        "group": "Group",
+        "source": "Source",
+        "quizBank": "Quiz bank",
+        "submitted": "Submitted"
+      }
     },
     "form": {
       "newAssignment": "New assignment",
@@ -700,6 +707,12 @@
       "noQuizzesDesc": "Use \"New Quiz\" to write your own questions and assign them to your groups."
     },
     "builder": {
+      "tabs": {
+        "label": "Quiz builder sections",
+        "content": "Quiz Content",
+        "config": "Quiz Configuration",
+        "sources": "Question Sources"
+      },
       "eyebrow": "Custom quiz",
       "newTitle": "New Quiz",
       "editTitle": "Edit Quiz",

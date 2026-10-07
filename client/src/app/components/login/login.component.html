@@ -121,8 +121,41 @@
          in place: one fades out, then the next fades in (crossFade). -->
     <div class="auth-card">
       <button class="btn btn--ghost btn--sm auth-lang" (click)="lang.toggle()" [title]="'lang.switchTo' | translate">
+        <svg class="auth-lang__globe" viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         {{ 'lang.label' | translate }}
       </button>
+
+      <!-- Phone header (below 900px; hidden on desktop, where the story panel
+           plays this part): the brand, the headline, and a decorative quiz
+           progress trail — two steps done, one current, two ahead. -->
+      <header class="auth-hero">
+        <div class="auth-hero__brand">
+          <span class="auth-hero__logo"><img src="assets/icon.png" alt="" /></span>
+          <span class="auth-hero__name">
+            {{ 'app.name' | translate }}
+            <small>{{ 'app.tagline' | translate }}</small>
+          </span>
+        </div>
+        <p class="auth-hero__headline">{{ 'auth.subtitle' | translate }}</p>
+        <div class="auth-steps" aria-hidden="true">
+          <span class="auth-steps__dot auth-steps__dot--done">
+            <svg viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="auth-steps__line auth-steps__line--done"></span>
+          <span class="auth-steps__dot auth-steps__dot--done">
+            <svg viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="auth-steps__line auth-steps__line--current"></span>
+          <span class="auth-steps__dot auth-steps__dot--current">3</span>
+          <span class="auth-steps__line"></span>
+          <span class="auth-steps__dot">4</span>
+          <span class="auth-steps__line"></span>
+          <span class="auth-steps__dot">5</span>
+        </div>
+      </header>
 
       <div class="auth-views" [@crossFade]="view()" [@.disabled]="reduceMotion" (@crossFade.done)="onViewShown($event)">
         @switch (view()) {
@@ -194,6 +227,7 @@
                     <span>{{ 'common.working' | translate }}</span>
                   } @else {
                     <span>{{ 'auth.actions.signIn' | translate }}</span>
+                    <svg class="auth-submit__arrow" viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   }
                 </button>
               </form>

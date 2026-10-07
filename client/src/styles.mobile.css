@@ -768,104 +768,424 @@
    Login
    ============================================================ */
 
-/* The phone login: density only, same tokens as the desktop card. Ported
-   from the "Mobile app design project" Claude Design artboard 1e — every
-   colour it draws already resolves to an existing token. */
+/* The phone login, after the "Mobile — sign in" artboard: a navy header panel
+   (the sidebar's gradient) holding the brand, the language switch, the
+   headline and a quiz-progress trail; below it, on the plain page, the form
+   with bordered white fields, a solid Sign in, a "New here?" divider, an
+   outlined Request access, and the terms last. Palette tokens throughout.
+   Desktop keeps its split card (the min-width block below). */
 @media (max-width: 900px) {
   .auth-shell {
     min-height: 100dvh;
-    padding: 2rem var(--pad-page-inline) 1.5rem;
+    padding: 0;
+    place-items: stretch;
+    background: var(--surface-2);
   }
 
-  /* No outline or shadow on a phone, but the card keeps rounded corners: it sits
-     on the page photo, which shows around it, and square edges against the photo
-     read as cropped rather than flat. */
-  /* The glass deepens towards the bottom, where the photo pales to near white
-     and would leave the light text below without contrast. */
   .auth-frame {
-    
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 45%, rgb(0 76 129 / 95%));
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    padding: 0.8125rem 0.875rem;
+    max-width: none;
+    min-height: 100dvh;
+    border-radius: 0;
+    background: var(--surface-2);
+    box-shadow: none;
   }
-
-  
 
   .auth-card {
-    --field-bg: var(--surface-2);
+    --field-bg: var(--surface);
+    justify-content: flex-start;
+    padding: 0;
   }
 
-  .auth-lang {
-    position: static;
-    order: -1;
-    align-self: flex-end;
-    min-width: 3.25rem;
-    justify-content: center;
-    margin-bottom: 0.375rem;
-    border-radius: var(--r-pill);
+  /* ---- Header panel ---- */
+  .auth-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem 1.5rem 2rem;
+    border-radius: 0 0 1.5rem 1.5rem;
+    background: var(--sidebar-bg-gradient);
+    color: var(--sidebar-ink);
   }
 
-  .auth-logo--card {
+  .auth-hero__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 2.75rem;
+    /* Room for the language switch pinned in the corner. */
+    padding-inline-end: 6.5rem;
+  }
+
+  .auth-hero__logo {
+    flex-shrink: 0;
+    width: 3.25rem;
+    height: 3.25rem;
     display: grid;
+    place-items: center;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+  }
+
+  .auth-hero__logo img {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+  }
+
+  .auth-hero__name {
+    display: flex;
+    flex-direction: column;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .auth-hero__name small {
+    font-size: var(--font-xs);
+    font-weight: 400;
+    color: var(--sidebar-ink-soft);
+  }
+
+  .auth-hero__headline {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* The trail: done steps filled white, the current one amber, the rest faint. */
+  .auth-steps {
+    display: flex;
+    align-items: center;
+  }
+
+  .auth-steps__dot {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: grid;
+    place-items: center;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    color: var(--sidebar-ink-soft);
+    font-size: 0.6875rem;
+    font-weight: 700;
+  }
+
+  .auth-steps__dot--done {
+    background: var(--surface);
+    border-color: var(--surface);
+    color: var(--sidebar-bg);
+  }
+
+  .auth-steps__dot--current {
+    border-color: var(--amber-500);
+    color: var(--amber-200);
+  }
+
+  .auth-steps__line {
+    flex: 1;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .auth-steps__line--done {
+    background: var(--surface);
+  }
+
+  .auth-steps__line--current {
+    background: var(--amber-500);
+  }
+
+  /* Language switch: outlined, with a globe, in the panel's corner. */
+  .auth-card .auth-lang {
+    position: absolute;
+    top: 1.5rem;
+    inset-inline-end: 1.5rem;
+    z-index: 1;
+    height: 2.75rem;
+    padding: 0 0.875rem;
+    gap: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--sidebar-ink);
+    font-size: var(--font-sm);
+  }
+
+  .auth-card .auth-lang:hover {
+    background: var(--sidebar-hover-bg);
+  }
+
+  .auth-lang__globe {
+    display: block;
+  }
+
+  /* ---- Form ---- */
+  .auth-views {
+    flex: 1;
+    padding: 2rem 1.5rem 1.75rem;
   }
 
   .auth-card__brand {
-    margin-bottom: 0.875rem;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin: 0 0 1.5rem;
   }
 
+  .auth-card__title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--ink-2);
+  }
+
+  .auth-card__sub {
+    text-align: start;
+    font-size: var(--font-body);
+    color: var(--ink-3);
+  }
+
+  /* The trail above stands in for the illustration on a phone. */
   .auth-card__illustration {
-    width: 100%;
-    max-height: 8.25rem;
-    object-fit: contain;
-    margin-bottom: 1.125rem;
+    display: none;
   }
 
   .auth-form {
-    padding-top: 0.9875rem;
-    gap: 0.875rem;
+    padding-top: 0;
+    gap: 1.25rem;
   }
 
-  /* On the glass frame the submit buttons (Sign In, Send request) take the
-     sidebar's translucent wash rather than the brand gradient. Phone only: on
-     the desktop's white card this wash would be invisible. */
+  .auth-card .field {
+    gap: 0.5rem;
+  }
+
+  .auth-card .field__label {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+
+  .auth-card .input {
+    background: var(--surface);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--r-md);
+    color: var(--ink-2);
+    font-size: 1rem;
+  }
+
+  .auth-card input.input {
+    height: 3.25rem;
+  }
+
+  .auth-card .input:focus {
+    border-color: var(--brand-700);
+    box-shadow: var(--focus-ring);
+  }
+
+  .auth-card .input-wrap svg.leading {
+    color: var(--ink-3);
+  }
+
+  .auth-card .input-eye {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .auth-card :is(.auth-check, .auth-link) {
+    min-height: 2.75rem;
+    font-size: var(--font-sm);
+  }
+
+  .auth-card .auth-check {
+    color: var(--ink-2);
+  }
+
+  .auth-card .auth-check input {
+    accent-color: var(--brand-700);
+  }
+
+  .auth-card .auth-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--brand-700);
+  }
+
   .auth-submit,
   .auth-submit:hover {
-    background: var(--sidebar-hover-bg);
-    border-color: rgba(255, 255, 255, 0.35);
-    color: var(--surface);
-    border-radius: var(--r-sm);
+    height: 3.375rem;
+    gap: 0.625rem;
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--brand-700);
+    color: var(--ink-on-accent);
+    font-size: 1rem;
+    font-weight: 700;
+    filter: none;
   }
 
-  /* On the glass frame the card's own text reads against the photo, not a
-     white card, so it turns light. The faint shadow keeps it legible where the
-     photo pales towards the bottom. Fields, buttons and the request-access
-     option boxes keep their own surfaces, so their text is left alone. */
-  .auth-card {
-    --auth-on-glass: var(--surface);
-    --auth-on-glass-soft: rgba(255, 255, 255, 0.85);
+  .auth-submit:hover {
+    background: #1A4B6B;
   }
 
-  .auth-card :is(.auth-card__title, .field__label, .auth-check, .auth-link, .auth-back, .auth-done__text, .auth-legal a),
-  .auth-card :is(.auth-card__sub, .field__hint, .field__optional, .auth-forgot-hint, .auth-alt__prompt, .auth-legal, .auth-done__hint) {
-    text-shadow: 0 1px 2px rgba(15, 47, 77, 0.35);
+  .auth-submit__arrow {
+    display: block;
   }
 
-  .auth-card :is(.auth-card__title, .field__label, .auth-check, .auth-link, .auth-back, .auth-done__text, .auth-legal a) {
-    color: var(--auth-on-glass);
+  [dir="rtl"] .auth-submit__arrow {
+    transform: scaleX(-1);
   }
 
-  .auth-card :is(.auth-card__sub, .field__hint, .field__optional, .auth-forgot-hint, .auth-alt__prompt, .auth-legal, .auth-done__hint) {
-    color: var(--auth-on-glass-soft);
-  }
-
-  .auth-card :is(.auth-link, .auth-back, .auth-legal a):hover {
-    color: var(--auth-on-glass);
-    text-decoration: underline;
-  }
-
+  /* "New here?" between two rules, then Request access outlined. */
   .auth-card .auth-alt {
-    border-top-color: rgba(255, 255, 255, 0.35);
+    margin-top: 1.5rem;
+    padding-top: 0;
+    border-top: 0;
+    gap: 1.5rem;
+  }
+
+  .auth-card .auth-alt__prompt {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+
+  .auth-card .auth-alt__prompt::before,
+  .auth-card .auth-alt__prompt::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .auth-card .auth-alt__btn {
+    height: 3.375rem;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .auth-card .auth-alt__btn:hover {
+    border-color: var(--brand-300);
+    background: var(--brand-50);
+  }
+
+  /* The terms close the page, after Request access. */
+  .auth-card .auth-legal {
+    order: 1;
+    margin-top: 1.75rem;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+
+  .auth-card .auth-legal a {
+    color: var(--brand-700);
+    font-weight: 600;
+  }
+}
+
+/* Quiz Management's filters pair up on a phone — Subject beside Semester,
+   Group beside Type — and Search keeps the full row beneath them. Without
+   this every select takes a whole line and the filters fill the screen. */
+@media (max-width: 640px) {
+  .filter-bar {
+    column-gap: 0.75rem;
+  }
+
+  .filter-bar .field {
+    flex: 1 1 calc(50% - 0.375rem);
+  }
+
+  .filter-bar .field--grow {
+    flex-basis: 100%;
+  }
+}
+
+/* Quiz Management's tabs stay one row and scroll sideways instead of wrapping
+   onto a second line. Scoped to its toolbar: the teacher dashboard's
+   .tab-switch has two tabs and never needs it. */
+@media (max-width: 900px) {
+  .quiz-management__toolbar > .tab-switch {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .quiz-management__toolbar > .tab-switch::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quiz-management__toolbar .tab-switch__btn {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+/* A submission's verdict (Approved / Needs revision / Pending) sits in the
+   card's top-right corner on a phone; the student's name stops short of it.
+   Desktop keeps it inline: the row is one line there, and a corner badge
+   would sit on the Review / Validate buttons. */
+@media (max-width: 640px) {
+  .validation-row {
+    position: relative;
+  }
+
+  .validation-row__status {
+    position: absolute;
+    top: 0.625rem;
+    inset-inline-end: 0.625rem;
+  }
+
+  .validation-row .cell-stack__main {
+    padding-inline-end: 6.5rem;
+  }
+
+  /* Review / Validate as the card's footer: their own line under a divider,
+     still together at the end edge. */
+  .validation-row__actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--divider);
+  }
+}
+
+/* A list row's trailing buttons as its footer on a phone: their own line
+   under a divider, still together at the end edge. */
+@media (max-width: 640px) {
+  .list-row__actions {
+    flex-basis: 100%;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--divider);
+  }
+}
+
+/* An assignment row's four actions become its footer on a phone: their own
+   line under a divider, sharing the full width equally. */
+@media (max-width: 640px) {
+  .assignment-row__actions {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--divider);
+  }
+
+  .assignment-row__actions > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 0.25rem;
   }
 }
 
@@ -1045,12 +1365,28 @@
    Quiz builder
    ============================================================ */
 
-/* Below this the two columns would each be too narrow to be worth splitting. */
+/* The builder's fields: two to a row on a tablet, one on a phone; its tab
+   strip scrolls sideways rather than wrapping. */
 @media (max-width: 900px) {
+  .form-section.builder-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-  .builder-top .form-section {
-    margin-top: 0;
-    height: auto;
+  .builder-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .builder-tabs .tab-switch__btn {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-section.builder-fields {
+    grid-template-columns: 1fr;
   }
 }
 

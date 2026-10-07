@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -89,7 +90,7 @@ const EXPLAIN_AUTHORING_MESSAGES: Record<string, string> = {
 @Component({
     selector: 'app-my-quizzes-tab',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent, TagToggleListComponent],
+    imports: [FormsModule, NgTemplateOutlet, TranslatePipe, LoadingButtonDirective, RichTextEditorComponent, TagToggleListComponent],
     templateUrl: './my-quizzes-tab.component.html'
 })
 export class MyQuizzesTabComponent implements OnInit {
@@ -104,6 +105,21 @@ export class MyQuizzesTabComponent implements OnInit {
 
   // ---- Custom quiz builder ---------------------------------------------------
   readonly showQuizBuilder = signal(false);
+  /** Which of the builder's three tabs is showing; every open starts on Quiz Content. */
+  readonly builderTab = signal<'content' | 'config' | 'sources'>('content');
+  /**
+   * Questions written from scratch on Question Sources since the builder opened:
+   * that tab shows their editors under its buttons, so a new question is filled
+   * in where it was added. They are ordinary builder questions, listed on Quiz
+   * Content too.
+   */
+  readonly sourcesNewQuestionIds = signal<number[]>([]);
+  readonly sourcesNewQuestions = computed(() => {
+    const ids = new Set(this.sourcesNewQuestionIds());
+    return this.builderQuestions()
+      .map((question, index) => ({ question, index }))
+      .filter(({ question }) => ids.has(question.id));
+  });
   readonly editingQuizId = signal<string | null>(null);
   readonly builderName = signal('');
   readonly builderDescription = signal('');
@@ -338,6 +354,8 @@ export class MyQuizzesTabComponent implements OnInit {
       (quiz?.questions ?? []).map(q => this.toBuilderQuestion(q))
     );
     this.builderError.set('');
+    this.builderTab.set('content');
+    this.sourcesNewQuestionIds.set([]);
     this.showQuizBuilder.set(true);
   }
 
@@ -556,6 +574,25 @@ export class MyQuizzesTabComponent implements OnInit {
       options: [{ id: 1, name: '' }, { id: 2, name: '' }]
     };
     this.builderQuestions.update(qs => [...qs, question]);
+    this.sourcesNewQuestionIds.update(ids => [...ids, id]);
+  }
+
+  /** The builder's label key for a question type, as its own type selector words it. */
+  questionTypeKey(questionTypeId: number): string {
+    switch (questionTypeId) {
+      case QUESTION_TYPE.COMPLETE: return 'quizManagement.builder.typeComplete';
+      case QUESTION_TYPE.RIGHT_WRONG: return 'quizManagement.builder.typeRightWrong';
+      case QUESTION_TYPE.EXPLAIN: return 'quizManagement.builder.typeExplain';
+      default: return 'quizManagement.builder.typeChoose';
+    }
+  }
+
+  /** A bank question's tags by name. The picker lists the chosen subject's questions, so these are its tags. */
+  bankTagNames(question: QuestionAdminItem): string[] {
+    const tags = this.builderSubjectTags();
+    return (question.tagIds ?? [])
+      .map(id => tags.find(tag => tag.id === id)?.name)
+      .filter((name): name is string => !!name);
   }
 
   /** The tags a question of this quiz can carry: its subject's. */

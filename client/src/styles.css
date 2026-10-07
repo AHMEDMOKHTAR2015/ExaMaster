@@ -2422,6 +2422,15 @@ router-outlet {
   animation-play-state: running;
 }
 
+/* Phone-only pieces of the login (styles.mobile.css turns them on): the header
+   panel with its progress trail, the language button's globe, and the arrow
+   on Sign in. */
+.auth-hero,
+.auth-lang__globe,
+.auth-submit__arrow {
+  display: none;
+}
+
 .auth-lang {
   position: absolute;
   top: 1.125rem;
@@ -2501,6 +2510,13 @@ router-outlet {
 [dir="rtl"] .input--trailing {
   padding-right: 0.875rem;
   padding-left: 2.625rem;
+}
+
+/* Both icons (the password field: lock + eye). The trailing rule above resets
+   the right padding the leading icon needs in RTL, which put the lock on top
+   of the placeholder; this restores it. */
+[dir="rtl"] .input--leading.input--trailing {
+  padding-right: 2.5rem;
 }
 
 .input-eye {
@@ -5121,6 +5137,36 @@ router-outlet {
   margin-inline-start: auto;
 }
 
+/* An assignment row's Track / Edit / Deactivate / Delete, grouped so a phone
+   can move them to a footer row (styles.mobile.css); inline here, spaced as
+   the row's own children were. */
+.assignment-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+/* A submission's Review / Validate, kept together at the row's end edge: when
+   the row wraps on a narrow screen they stay side by side on the right
+   instead of spreading across the line. */
+.validation-row__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+}
+
+/* A list row's trailing buttons, kept together at its end edge: when the row
+   wraps on a narrow screen they stay side by side on the right, evenly
+   spaced, instead of spreading across the line. */
+.list-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+}
+
 /* ---- List rows (shared shape with the dashboard views) ------------------- */
 .list-row {
   display: flex;
@@ -5161,6 +5207,30 @@ button.list-row {
   font-size: var(--font-sm);
   color: var(--ink-3);
   margin-top: 0.625rem;
+}
+
+/* A submission's facts in the review queue: label, then value, one per line. */
+.submission-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  font-size: var(--font-sm);
+}
+
+.submission-facts > div {
+  display: contents;
+}
+
+.submission-facts dt {
+  color: var(--ink-4);
+}
+
+.submission-facts dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 /* ---- Results roll-ups ---------------------------------------------------- */
@@ -5265,58 +5335,75 @@ button.list-row {
 /* Student multi-select inside the assignment form */
 
 /* ---- Custom quiz builder popup ------------------------------------------- */
-.builder-popup {
-  /* Wide enough for the two-column head (fields + configuration) to breathe;
-     `max-width` keeps it inside the viewport on smaller screens. */
-  width: 67.5rem;
-  max-width: 100%;
+/* The whole page: three tabs of form (content, configuration, question
+   sources) want the room, and a fixed height keeps the dialog from jumping as
+   the tabs change length. `.popup.` because the sizing block near the end of
+   this file sets `.popup { width: min(35rem, 100%) }` at equal weight. */
+.popup.builder-popup {
+  width: 100%;
+  max-width: none;
+  height: calc(100vh - 2 * clamp(0.75rem, 3vw, 1.5rem));
+  height: calc(100dvh - 2 * clamp(0.75rem, 3vw, 1.5rem));
 }
 
 .builder-popup .popup__body {
+  flex: 1;
   padding: 1.375rem 1.5rem;
 }
 
-/**
- * Head of the quiz builder: the quiz's own fields beside its runtime
- * configuration, instead of stacked. Ordered by source, not by physical side,
- * so `dir="rtl"` mirrors it for free.
- *
- * The configuration column is fixed rather than fractional — its contents are
- * a known set of short toggles, so letting it grow with the dialog just spreads
- * them out, while the fields column benefits from every extra pixel.
- */
-.builder-top {
-  /* Flex, not grid: a main column beside a fixed-width side panel has to be
-     able to break onto two lines by itself, and a grid template can only be
-     changed by a query. Each child states the width it wants and the row wraps
-     when they no longer both fit. */
+.builder-tabs {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 1.125rem;
-  align-items: start;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 1.125rem;
 }
 
-.builder-top > :first-child { flex: 1 1 min(26.25rem, 100%); }
-.builder-top > :last-child  { flex: 1 1 min(23.75rem, 100%); }
-
-/* The section sits in its own column now, so the stacked spacing is redundant. */
-.builder-top .form-section {
+/* Quiz Content: three fields to a row, the description across all three.
+   `.form-section.` because `.form-section` (later in this file) is a flex column. */
+.form-section.builder-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem 1rem;
   margin-top: 0;
-  height: 100%;
 }
 
-/* Two across in the narrower column; the global rule assumes full dialog width. */
-.builder-top .config-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(var(--col-min), 100%), 1fr));
+.builder-fields .field--full {
+  grid-column: 1 / -1;
 }
 
+.builder-divider {
+  margin: 1.375rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--divider);
+}
 
-/**
- * Hand the configuration back to the global single-column rule on phones.
- * Needed explicitly: `.builder-top .config-grid` outranks the bare
- * `.config-grid` in the global 720px media query, so without this the toggles
- * would stay two-across where everything around them has already stacked.
- */
+/* Question Sources: the three ways in, side by side above whichever picker is open. */
+.builder-sources__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Quiz Configuration: the single settings share the full row width (wrapping
+   when it gets narrow) and each pair keeps a full row of its own. The shared
+   `.config-grid` is auto-fit, whose spare tracks never collapse beside a
+   full-width pair, which left a gap at the end of the first row. */
+.builder-panel .config-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.builder-panel .config-grid > .config-item {
+  flex: 1 1 10rem;
+}
+
+.builder-panel .config-grid > .config-pair {
+  flex-basis: 100%;
+}
+
+.builder-panel > .qb-questions:first-child {
+  margin-top: 0;
+}
 
 .qb-questions {
   margin-top: 1.125rem;
@@ -5496,7 +5583,6 @@ button.list-row {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
-  max-height: 13.75rem;
   overflow-y: auto;
 }
 
@@ -5526,6 +5612,23 @@ button.list-row {
 .qb-bank-item__text {
   font-size: var(--font-sm);
   color: var(--ink-1);
+}
+
+/* A bank question in the picker: its type and tags, a rule, then its text. */
+.qb-bank-item__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qb-bank-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--divider);
 }
 
 /* ==========================================================================

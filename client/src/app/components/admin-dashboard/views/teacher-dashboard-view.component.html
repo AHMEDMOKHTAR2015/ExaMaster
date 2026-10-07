@@ -300,7 +300,7 @@
                   }
                 </div>
               </div>
-                   
+              <div class="list-row__actions">
                 <button class="btn btn--sm" (click)="openTracking(assignment)">{{ 'teacherDashboard.trackProgress' | translate }}</button>
                 <button class="btn btn--sm btn--ghost" (click)="toggleAssignmentActive(assignment)">
                   {{ assignment.active ? ('quizManagement.assignments.deactivate' | translate) : ('quizManagement.assignments.reactivate' | translate) }}
@@ -310,9 +310,8 @@
                 <button class="btn btn--sm btn--danger" (click)="deleteAssignment(assignment)">
                   {{ 'common.delete' | translate }}
                 </button>
-              
+              </div>
             </div>
-            
           } @empty {
             <div class="empty">
               <div class="empty__title">{{ 'teacherDashboard.noAssignmentsYet' | translate }}</div>
