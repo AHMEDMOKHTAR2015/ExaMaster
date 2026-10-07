@@ -9,7 +9,7 @@ public class AccessRequestTests
 
     private static AccessRequest Parent(AccessRequestHints? hints = null)
         => AccessRequest.Submit(AccessRequestKind.Parent, " Mona ", " Adel ", "0100 123 4567", "01001234567@MOBILE.local", "hash",
-            hints ?? new(SchoolName: "Acme School"), Visitor);
+            hints ?? new(SchoolName: "Acme School", ChildrenCount: 2), Visitor);
 
     private static AccessRequest Child(AccessRequestHints? hints = null)
         => AccessRequest.Submit(AccessRequestKind.Child, "Omar", "Adel", "0111", "0111@mobile.local", "hash",
@@ -18,12 +18,24 @@ public class AccessRequestTests
     [Fact]
     public void A_new_request_waits_for_a_decision()
     {
-        var request = Parent(new AccessRequestHints(ContactEmail: " Mona@Example.com ", SchoolName: " Acme School ", Note: " Two kids "));
+        var request = Parent(new AccessRequestHints(ContactEmail: " Mona@Example.com ", SchoolName: " Acme School ", Note: " Two kids ", ChildrenCount: 2));
 
         Assert.Equal(AccessRequestStatus.Pending, request.Status);
         Assert.Equal(("Mona", "Adel", "01001234567@mobile.local"), (request.FirstName, request.LastName, request.SignInEmail));
-        Assert.Equal(("mona@example.com", "Acme School", "Two kids"), (request.ContactEmail, request.SchoolName, request.Note));
+        Assert.Equal(("mona@example.com", "Acme School", "Two kids", 2), (request.ContactEmail, request.SchoolName, request.Note, request.ChildrenCount));
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(51)]
+    public void A_parent_says_how_many_children_they_will_follow(int? childrenCount)
+        => Assert.Equal(AccessRequest.ChildrenCountMessage,
+            Assert.Throws<DomainException>(() => Parent(new AccessRequestHints(SchoolName: "Acme", ChildrenCount: childrenCount))).Message);
+
+    [Fact]
+    public void A_child_gives_no_children_count()
+        => Assert.Throws<DomainException>(() => Child(new AccessRequestHints(SchoolName: "Acme", GradeName: "Grade 3", ChildrenCount: 1)));
 
     [Fact]
     public void Only_a_child_names_a_grade_or_a_parent()

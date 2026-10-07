@@ -712,7 +712,7 @@ export class MyQuizzesTabComponent implements OnInit {
     const subjectId = this.builderSubjectId();
     const questions = this.builderQuestions();
 
-    if (!name) { this.builderError.set('Quiz name is required.'); return; }
+    if (!name) { this.builderError.set('Work item name is required.'); return; }
     if (!subjectId) { this.builderError.set('Please select a subject.'); return; }
     if (questions.length === 0) { this.builderError.set('Add at least one question.'); return; }
 
@@ -808,7 +808,7 @@ export class MyQuizzesTabComponent implements OnInit {
     const weightError = validateExplainWeights(builtQuestions);
     if (weightError) {
       this.builderError.set(weightError === 'over-100'
-        ? 'The Explain questions in this quiz add up to more than 100% of the score. Lower their shares.'
+        ? 'The Explain questions in this work item add up to more than 100% of the score. Lower their shares.'
         : 'The Explain questions already use the full 100%, leaving the other questions worth nothing. Lower their shares.');
       return;
     }
@@ -858,8 +858,8 @@ export class MyQuizzesTabComponent implements OnInit {
       this.showQuizBuilder.set(false);
       await this.state.loadCustomQuizzes();
     } catch (error) {
-      console.error('Failed to save custom quiz:', error);
-      this.builderError.set('Failed to save the quiz. Please try again.');
+      console.error('Failed to save work item:', error);
+      this.builderError.set('Failed to save the work item. Please try again.');
     } finally {
       this.isSavingQuiz.set(false);
     }
@@ -868,16 +868,16 @@ export class MyQuizzesTabComponent implements OnInit {
   async deleteCustomQuiz(quiz: TeacherQuiz): Promise<void> {
     const inUse = this.state.assignments().some(a => a.customQuizId === quiz.id);
     if (inUse) {
-      this.notification.error('This quiz is used by an existing assignment. Remove that assignment first.');
+      this.notification.error('This work item is used by an existing assignment. Remove that assignment first.');
       return;
     }
     if (!confirm(`Delete "${quiz.name}"? This cannot be undone.`)) return;
     try {
       await this.teacherQuizService.remove(quiz.id);
-      this.notification.success('Quiz deleted.');
+      this.notification.success('Work item deleted.');
       await this.state.loadCustomQuizzes();
     } catch {
-      this.notification.error('Failed to delete the quiz.');
+      this.notification.error('Failed to delete the work item.');
     }
   }
 

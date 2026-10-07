@@ -40,7 +40,8 @@
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
               <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            {{ 'nav.createQuiz' | translate }}
+            <!-- An administrator creates a bank quiz; a teacher, a work item of their own. -->
+            {{ (isApplicationAdmin() ? 'nav.createQuiz' : 'nav.createWorkItem') | translate }}
           </a>
         </div>
       }

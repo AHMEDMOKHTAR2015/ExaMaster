@@ -34,7 +34,7 @@ public class ListAccessRequestsQueryHandler(QuizMasterDbContext _dbContext)
 
         var items = page.Select(request => new AccessRequestDto(
             request.Id, request.Kind, request.FirstName, request.LastName, request.MobileNumber,
-            request.ContactEmail, request.SchoolName, request.GradeName, request.ParentName, request.ParentMobileNumber,
+            request.ContactEmail, request.ChildrenCount, request.SchoolName, request.GradeName, request.ParentName, request.ParentMobileNumber,
             request.Note, request.Status, request.CreatedOn, request.DecidedOn, request.RejectionReason,
             request.ApprovedTenantId, request.ApprovedTenantId is { } tenantId ? tenantNames.GetValueOrDefault(tenantId) : null,
             request.ApprovedUserId)).ToList();

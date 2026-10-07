@@ -8,6 +8,7 @@ public record AccessRequestDto(
     string LastName,
     string MobileNumber,
     string? ContactEmail,
+    int? ChildrenCount,                     // a parent's: how many children they want to follow
     string SchoolName,
     string? GradeName,
     string? ParentName,

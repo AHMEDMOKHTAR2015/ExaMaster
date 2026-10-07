@@ -36,28 +36,30 @@ describe('AccessRequestService', () => {
   it("sends a parent's request without a child's hints", async () => {
     const sent = service.submit({
       kind: 'parent', firstName: ' Mona ', lastName: 'Adel', mobileNumber: '0100 123', password: 'secret1',
-      email: ' mona@example.com ', schoolName: ' Acme School ', gradeName: 'Grade 3', parentName: 'Someone', note: '  '
+      email: ' mona@example.com ', schoolName: ' Acme School ', gradeName: 'Grade 3', parentName: 'Someone', note: '  ',
+      childrenCount: 2
     });
 
     const request = http.expectOne(`${environment.apiUrl}/access-requests`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       kind: 'Parent', firstName: 'Mona', lastName: 'Adel', mobileNumber: '0100 123', password: 'secret1',
-      email: 'mona@example.com', schoolName: 'Acme School', gradeName: null, parentName: null, parentMobileNumber: null, note: null
+      email: 'mona@example.com', childrenCount: 2, schoolName: 'Acme School', gradeName: null, parentName: null, parentMobileNumber: null, note: null
     });
     request.flush({ id: 1 });
     await sent;
   });
 
-  it("sends a child's request without a contact email", async () => {
+  it("sends a child's request without a contact email or a children count", async () => {
     const sent = service.submit({
       kind: 'child', firstName: 'Omar', lastName: 'Adel', mobileNumber: '0111', password: 'secret1',
-      email: 'kid@example.com', schoolName: 'Acme School', gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100'
+      email: 'kid@example.com', schoolName: 'Acme School', gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100',
+      childrenCount: 3
     });
 
     const request = http.expectOne(`${environment.apiUrl}/access-requests`);
     expect(request.request.body).toEqual(jasmine.objectContaining({
-      kind: 'Child', email: null, gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100'
+      kind: 'Child', email: null, childrenCount: null, gradeName: 'Grade 3', parentName: 'Mona Adel', parentMobileNumber: '0100'
     }));
     request.flush({ id: 2 });
     await sent;
@@ -71,7 +73,7 @@ describe('AccessRequestService', () => {
     expect(request.request.params.get('kind')).toBe('Child');
     request.flush({
       items: [{
-        id: 7, kind: 'Child', firstName: 'Omar', lastName: 'Adel', mobileNumber: '0111', contactEmail: null,
+        id: 7, kind: 'Child', firstName: 'Omar', lastName: 'Adel', mobileNumber: '0111', contactEmail: null, childrenCount: null,
         schoolName: 'Acme', gradeName: null, parentName: null, parentMobileNumber: null, note: null,
         status: 'Approved', createdOn: '2026-10-01T08:00:00Z', decidedOn: '2026-10-01T09:00:00Z', rejectionReason: null,
         approvedTenantId: 3, approvedTenantName: 'Acme School', approvedUserId: 42

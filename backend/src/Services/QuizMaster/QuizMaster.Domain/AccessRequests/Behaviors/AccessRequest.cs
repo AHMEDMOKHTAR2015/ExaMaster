@@ -4,6 +4,8 @@ public partial class AccessRequest
 {
     public const string SchoolRequiredMessage = "Enter the name of your school.";
     public const string GradeRequiredMessage = "Enter the grade you are in.";
+    public const string ChildrenCountMessage = "Enter how many children you want to follow (1 to 50).";
+    public const int MaxChildrenCount = 50;                      // the same cap the reviewer's family key takes
 
     public static AccessRequest Submit(
         AccessRequestKind kind, string firstName, string lastName, string mobileNumber, string signInEmail, string passwordHash,
@@ -23,6 +25,8 @@ public partial class AccessRequest
             throw new DomainException("Only a child's request names a grade or a parent.");
         if (isChild && hints.ContactEmail is not null)
             throw new DomainException("A child's request carries no contact email.");
+        if (isChild && hints.ChildrenCount is not null)
+            throw new DomainException("A child's request carries no children count.");
 
         //insight - required although never matched against anything: without them the reviewer has no way to tell which
         // organization (and, for a student, which class) the request belongs in
@@ -30,6 +34,9 @@ public partial class AccessRequest
             throw new DomainException(SchoolRequiredMessage);
         if (isChild && string.IsNullOrWhiteSpace(hints.GradeName))
             throw new DomainException(GradeRequiredMessage);
+        // a parent says how many children they will follow, so the reviewer can size their family key
+        if (!isChild && hints.ChildrenCount is not (>= 1 and <= MaxChildrenCount))
+            throw new DomainException(ChildrenCountMessage);
 
         return new AccessRequest
         {
@@ -40,6 +47,7 @@ public partial class AccessRequest
             SignInEmail = signInEmail.Trim().ToLowerInvariant(),
             PasswordHash = passwordHash,
             ContactEmail = Clean(hints.ContactEmail)?.ToLowerInvariant(),
+            ChildrenCount = hints.ChildrenCount,
             SchoolName = hints.SchoolName.Trim(),
             GradeName = Clean(hints.GradeName),
             ParentName = Clean(hints.ParentName),
@@ -94,4 +102,4 @@ public partial class AccessRequest
 // What the visitor said about themselves that only a person can act on.
 public sealed record AccessRequestHints(
     string SchoolName, string? ContactEmail = null, string? GradeName = null,
-    string? ParentName = null, string? ParentMobileNumber = null, string? Note = null);
+    string? ParentName = null, string? ParentMobileNumber = null, string? Note = null, int? ChildrenCount = null);

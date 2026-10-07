@@ -16,7 +16,8 @@ public record SubmitAccessRequestCommand(
     string? GradeName = null,
     string? ParentName = null,
     string? ParentMobileNumber = null,
-    string? Note = null) : QuizMasterCommand
+    string? Note = null,
+    int? ChildrenCount = null) : QuizMasterCommand
 {
     public override QuizMasterActionType ActionType => QuizMasterActionType.SubmitAccessRequest;
 }
@@ -42,6 +43,12 @@ public class SubmitAccessRequestCommandValidator : AbstractValidator<SubmitAcces
 
         RuleFor(c => c.GradeName).MaximumLengthWithMessage(MaxLength.C128, nameof(SubmitAccessRequestCommand.GradeName));
         RuleFor(c => c.GradeName).Must(grade => !string.IsNullOrWhiteSpace(grade)).WithMessage(AccessRequest.GradeRequiredMessage)
+            .When(c => c.Kind == AccessRequestKind.Child);
+        // a parent's: how many children they want to follow
+        RuleFor(c => c.ChildrenCount).NotNull().WithMessage(AccessRequest.ChildrenCountMessage)
+            .InclusiveBetween(1, AccessRequest.MaxChildrenCount).WithMessage(AccessRequest.ChildrenCountMessage)
+            .When(c => c.Kind == AccessRequestKind.Parent);
+        RuleFor(c => c.ChildrenCount).Null().WithMessage("A child's request carries no children count.")
             .When(c => c.Kind == AccessRequestKind.Child);
         RuleFor(c => c.ParentName).MaximumLengthWithMessage(MaxLength.C256, nameof(SubmitAccessRequestCommand.ParentName));
         RuleFor(c => c.ParentMobileNumber).MaximumLengthWithMessage(MaxLength.C32, nameof(SubmitAccessRequestCommand.ParentMobileNumber));

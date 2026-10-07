@@ -28,7 +28,7 @@ export const QUIZ_MANAGEMENT_ROUTES: Routes = [
         path: 'my-quizzes',
         loadComponent: () => import('./tabs/my-quizzes-tab.component')
           .then(m => m.MyQuizzesTabComponent),
-        title: 'My Quizzes - QuizMaster'
+        title: 'My Work Items - QuizMaster'
       },
       {
         path: 'participation',

@@ -16,6 +16,8 @@ export interface AccessRequest {
   lastName: string;
   mobileNumber: string;
   contactEmail?: string;
+  /** A parent's request: how many children they want to follow. Absent on one stored before it was asked. */
+  childrenCount?: number;
   /** Always asked for; absent only on a request stored before it was required. */
   schoolName?: string;
   /** A student's request only. */
@@ -43,6 +45,8 @@ export interface AccessRequestInput {
   password: string;
   schoolName: string;
   email?: string;
+  /** Required for a parent: how many children they want to follow, 1–50. */
+  childrenCount?: number;
   /** Required for a student. */
   gradeName?: string;
   parentName?: string;

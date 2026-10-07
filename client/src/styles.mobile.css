@@ -1474,7 +1474,7 @@
        a 44px invisible target reads as a mis-hit when the tap lands "next to"
        the mark it can see. */
     --control-box: 1.375rem;
-    --tap-min: 2.75rem;
+    --tap-min: 2rem;
   }
 
   /* The shared button system. Covers most of the app in four selectors. */

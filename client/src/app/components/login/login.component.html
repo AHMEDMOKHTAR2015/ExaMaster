@@ -335,6 +335,18 @@
                   </div>
                 </div>
 
+                @if (requestKind() === 'parent') {
+                  <!-- How many children the parent will follow: the reviewer's starting point for their family key. -->
+                  <div class="auth-form__pair">
+                    <div class="field">
+                      <label class="field__label" for="req-children">{{ 'auth.requestAccess.childrenCount' | translate }}</label>
+                      <input id="req-children" class="input input--full" type="number" inputmode="numeric" name="childrenCount" min="1" max="50" step="1" required
+                             [placeholder]="'auth.requestAccess.childrenCountPlaceholder' | translate"
+                             [ngModel]="request().childrenCount" (ngModelChange)="setChildrenCount($event)" [disabled]="isSubmittingRequest()" />
+                    </div>
+                  </div>
+                }
+
                 @if (requestKind() === 'child') {
                   <div class="auth-form__pair">
                     <div class="field">

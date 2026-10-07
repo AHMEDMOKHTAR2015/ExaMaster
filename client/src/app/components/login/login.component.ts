@@ -25,8 +25,9 @@ const EMPTY_REQUEST: RequestForm = {
   email: '', schoolName: '', gradeName: '', parentName: '', parentMobileNumber: '', note: ''
 };
 
-/** Mirrors the API's rules (SignInEmail, PasswordPolicy), so most mistakes are caught before a round trip. */
+/** Mirrors the API's rules (SignInEmail, PasswordPolicy, AccessRequest), so most mistakes are caught before a round trip. */
 const MIN_MOBILE_DIGITS = 4;
+const MAX_CHILDREN_COUNT = 50;
 
 /**
  * Sign in, or — for a visitor with no account and no registration key — ask
@@ -138,6 +139,11 @@ export class LoginComponent extends BaseComponent {
     this.view.set('signIn');
   }
 
+  /** A number input hands over '' or null while it is empty; the form keeps "not given yet" as undefined. */
+  setChildrenCount(value: number | string | null): void {
+    this.setRequestField('childrenCount', value === null || value === '' ? undefined : Number(value));
+  }
+
   setRequestField<K extends keyof RequestForm>(field: K, value: RequestForm[K]): void {
     this.request.update(form => ({ ...form, [field]: value }));
   }
@@ -181,6 +187,10 @@ export class LoginComponent extends BaseComponent {
     if (form.mobileNumber.replace(/\D/g, '').length < MIN_MOBILE_DIGITS) return 'auth.requestAccess.errors.mobile';
     if (!form.schoolName?.trim()) return 'auth.requestAccess.errors.school';
     if (this.requestKind() === 'child' && !form.gradeName?.trim()) return 'auth.requestAccess.errors.grade';
+    if (this.requestKind() === 'parent') {
+      const count = form.childrenCount;
+      if (count === undefined || !Number.isInteger(count) || count < 1 || count > MAX_CHILDREN_COUNT) return 'auth.requestAccess.errors.childrenCount';
+    }
     if (form.password.length < MIN_PASSWORD_LENGTH) return 'auth.requestAccess.errors.password';
     if (form.password !== form.confirmPassword) return 'auth.requestAccess.errors.passwordMismatch';
     if (this.requestKind() === 'parent' && form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {

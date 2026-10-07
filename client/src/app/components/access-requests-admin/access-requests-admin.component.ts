@@ -183,7 +183,8 @@ export class AccessRequestsAdminComponent extends BaseComponent implements OnIni
     this.isRejecting.set(false);
     this.rejectReason.set('');
     this.tenantId.set(null);
-    this.maxChildren.set(DEFAULT_MAX_CHILDREN);
+    // a parent's own count is the starting point; the reviewer can still change it
+    this.maxChildren.set(request.childrenCount ?? DEFAULT_MAX_CHILDREN);
     this.classes.set([]);
     this.classId.set(null);
     this.parents.set([]);

@@ -159,7 +159,7 @@ export const routes: Routes = [
     loadChildren: () => import('./components/quiz-management/quiz-management.routes')
       .then(m => m.QUIZ_MANAGEMENT_ROUTES),
     canActivate: [teacherGuard],
-    title: 'Quiz Management - QuizMaster'
+    title: 'Work Management - QuizMaster'
   },
   {
     path: '**',

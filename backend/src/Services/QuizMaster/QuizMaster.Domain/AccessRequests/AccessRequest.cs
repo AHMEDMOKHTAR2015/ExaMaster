@@ -23,9 +23,11 @@ public partial class AccessRequest : AggregateRoot
     public string PasswordHash { get; private set; } = null!;
 
     // Hints for the reviewer: free text, never checked against anything. Every request names a school; a child's also
-    // names a grade, which is why GradeName stays nullable (a parent's request has none). Requests stored before the
-    // school was required carry an empty one.
+    // names a grade, which is why GradeName stays nullable (a parent's request has none), and a parent's says how many
+    // children they want to follow (the reviewer's starting point for the family key's slots). Requests stored before
+    // the school was required carry an empty one; before the children count, none.
     public string? ContactEmail { get; private set; }            // a parent's
+    public int? ChildrenCount { get; private set; }              // a parent's: how many children they want to follow
     public string SchoolName { get; private set; } = null!;
     public string? GradeName { get; private set; }               // a child's; required for one
     public string? ParentName { get; private set; }              // a child's

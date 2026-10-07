@@ -29,7 +29,8 @@
                 </div>
                 @if (item.record.quizName && item.record.quizName !== item.title) {
                   <div>
-                    <dt>{{ 'quizManagement.validation.facts.quiz' | translate }}</dt>
+                    <!-- quizId is the bank quiz's id; 0 means the assignment uses the teacher's own work item. -->
+                    <dt>{{ (item.record.quizId ? 'quizManagement.validation.facts.quiz' : 'quizManagement.validation.facts.workItem') | translate }}</dt>
                     <dd dir="auto">{{ item.record.quizName }}</dd>
                   </div>
                 }

@@ -94,6 +94,7 @@
               <td dir="ltr" class="request-mobile">{{ request.mobileNumber }}</td>
               <td class="request-hints">
                 @if (request.schoolName) { <span>{{ request.schoolName }}</span> }
+                @if (request.childrenCount) { <span>{{ 'accessRequests.details.childrenShort' | translate: { count: request.childrenCount } }}</span> }
                 @if (request.gradeName) { <span>{{ request.gradeName }}</span> }
                 @if (request.parentName || request.parentMobileNumber) {
                   <span>{{ 'accessRequests.details.parentShort' | translate }}: {{ request.parentName }} {{ request.parentMobileNumber }}</span>
@@ -161,6 +162,9 @@
               <div><dt>{{ 'common.email' | translate }}</dt><dd>{{ request.contactEmail }}</dd></div>
             }
             <div><dt>{{ 'accessRequests.details.school' | translate }}</dt><dd>{{ request.schoolName || '—' }}</dd></div>
+            @if (request.kind === 'parent') {
+              <div><dt>{{ 'accessRequests.details.children' | translate }}</dt><dd>{{ request.childrenCount ?? '—' }}</dd></div>
+            }
             @if (request.kind === 'child') {
               <div><dt>{{ 'common.grade' | translate }}</dt><dd>{{ request.gradeName || '—' }}</dd></div>
               <div><dt>{{ 'accessRequests.details.parent' | translate }}</dt><dd>{{ request.parentName || '—' }}</dd></div>
@@ -227,7 +231,10 @@
                   <input id="approve-max-children" class="input request-number" type="number" min="0" max="50" step="1"
                          [ngModel]="maxChildren()" (ngModelChange)="onMaxChildrenChange($event)" [disabled]="isDeciding()"
                          aria-describedby="approve-max-children-hint" />
-                  <p class="field__hint" id="approve-max-children-hint">{{ 'accessRequests.dialog.maxChildrenHint' | translate }}</p>
+                  <p class="field__hint" id="approve-max-children-hint">
+                    @if (request.childrenCount) { {{ 'accessRequests.dialog.theyAskedChildren' | translate: { count: request.childrenCount } }} }
+                    {{ 'accessRequests.dialog.maxChildrenHint' | translate }}
+                  </p>
                 </div>
               } @else if (tenantId() !== null) {
                 <div class="field">

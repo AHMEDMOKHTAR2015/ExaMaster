@@ -66,6 +66,7 @@ export interface ApiAccessRequest {
   lastName: string;
   mobileNumber: string;
   contactEmail: string | null;
+  childrenCount: number | null;                          // a parent's; null on a request stored before it was asked
   schoolName: string;                                    // '' on a request stored before it was required
   gradeName: string | null;
   parentName: string | null;

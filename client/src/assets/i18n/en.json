@@ -7,6 +7,7 @@
     
   },
   "nav": {
+    "createWorkItem": "Create New Work Item",
     "menu": "Menu",
     "learn": "Learn",
     "overview": "Overview",
@@ -18,7 +19,7 @@
     "participationHistory": "Participation History",
     "allParticipations": "Students Participations",
     "availableQuizzes": "Available Quizzes",
-    "quizManagement": "Quiz Management",
+    "quizManagement": "Work Management",
     "quizzesHomework": "Quizzes & Homework",
     "users": "Users",
     "stagesGroups": "Stages & Groups",
@@ -200,6 +201,8 @@
     "forgotPassword": "Forgot Password?",
     "forgotPasswordHint": "Ask your school administrator to set a new password for you. A student's parent can set one too, from their dashboard.",
     "requestAccess": {
+      "childrenCount": "Number of children",
+      "childrenCountPlaceholder": "How many children will you follow?",
       "prompt": "Don't have an account yet?",
       "open": "Request access",
       "title": "Request access",
@@ -231,6 +234,7 @@
       "sentBody": "We will review your request. Once it is approved, sign in with {{mobile}} and the password you chose.",
       "sentHint": "If you try to sign in before then, we will tell you that it is still waiting.",
       "errors": {
+        "childrenCount": "Enter how many children you want to follow (1 to 50).",
         "name": "Enter your first and last name.",
         "mobile": "Enter a mobile number with at least 4 digits.",
         "school": "Enter the name of your school.",
@@ -549,7 +553,7 @@
     "loadingProgress": "Loading progress…"
   },
   "quizManagement": {
-    "title": "Quiz Management",
+    "title": "Work Management",
     "subtitle": "Assign, track, analyze and validate your students' quizzes & homework",
     "noTeacherProfile": "No teacher profile linked",
     "noTeacherProfileDesc": "Your login is not linked to a teacher record. Please contact the school administrator.",
@@ -574,7 +578,7 @@
     },
     "tabs": {
       "assignments": "Quizzes & Assignments",
-      "myQuizzes": "My Quizzes",
+      "myQuizzes": "My Work Items",
       "participation": "Participation",
       "results": "Results",
       "validation": "Validation"
@@ -651,6 +655,7 @@
       "noSubmissionsDesc": "Completed quizzes and homework for the filtered subjects/semesters will appear here.",
       "reviewedOn": "Reviewed {{ date }} by {{ name }}",
       "facts": {
+        "workItem": "Work item",
         "homework": "Homework",
         "assignedQuiz": "Assigned quiz",
         "quiz": "Quiz",
@@ -668,17 +673,17 @@
       "editQuiz": "Edit Quiz",
       "editHomework": "Edit Homework",
       "typeLockedHint": "Type can't be changed after an assignment is created.",
-      "subtitle": "Choose a quiz, set a due date, and pick who receives it.",
+      "subtitle": "Choose a work item or a bank quiz, set a due date, and pick who receives it.",
       "type": "Type",
       "title": "Title",
       "titlePlaceholder": "e.g. Unit 3 revision",
       "subject": "Subject",
       "allMySubjects": "All my subjects",
       "semester": "Semester",
-      "quiz": "Quiz",
-      "selectQuiz": "Select quiz",
-      "noQuizzes": "No quizzes for your subjects",
-      "noQuizzesHint": "No quizzes match the subjects/semester and groups you teach. Ask an admin to tag quizzes with your subject.",
+      "quiz": "Work item or bank quiz",
+      "selectQuiz": "Select a work item or bank quiz",
+      "noQuizzes": "Nothing to assign for your subjects",
+      "noQuizzesHint": "No work items or bank quizzes match the subjects/semester and groups you teach. Create a work item, or ask an admin to tag bank quizzes with your subject.",
       "group": "Group",
       "selectGroup": "Select group",
       "dueDate": "Due date",
@@ -691,7 +696,7 @@
       "saving": "Saving…",
       "quiz2": "Quiz",
       "homework": "Homework",
-      "myQuizzesGroup": "My quizzes",
+      "myQuizzesGroup": "My work items",
       "quizBankGroup": "Quiz bank",
       "questions": "questions",
       "groupLockedHint": "A group cannot be changed after the assignment is created — create a new one instead.",
@@ -700,23 +705,23 @@
       "noStudentsMatch": "No students match that name."
     },
     "myQuizzes": {
-      "title": "My Quizzes",
-      "newQuiz": "New Quiz",
+      "title": "My Work Items",
+      "newQuiz": "New Work Item",
       "questionCount": "{{ count }} question(s)",
-      "noQuizzes": "You haven't created any quizzes yet",
-      "noQuizzesDesc": "Use \"New Quiz\" to write your own questions and assign them to your groups."
+      "noQuizzes": "You haven't created any work items yet",
+      "noQuizzesDesc": "Use \"New Work Item\" to write your own questions, then assign it to your groups as a quiz or homework."
     },
     "builder": {
       "tabs": {
-        "label": "Quiz builder sections",
-        "content": "Quiz Content",
-        "config": "Quiz Configuration",
+        "label": "Work item builder sections",
+        "content": "Work Item Content",
+        "config": "Work Item Configuration",
         "sources": "Question Sources"
       },
-      "eyebrow": "Custom quiz",
-      "newTitle": "New Quiz",
-      "editTitle": "Edit Quiz",
-      "name": "Quiz name",
+      "eyebrow": "Work item",
+      "newTitle": "New Work Item",
+      "editTitle": "Edit Work Item",
+      "name": "Work item name",
       "namePlaceholder": "e.g. Unit 3 vocabulary",
       "description": "Description",
       "stage": "Stage",
@@ -742,12 +747,12 @@
       "bankEmpty": "No matching questions in the bank",
       "addQuestionBtn": "Add",
       "removeQuestionBtn": "Remove",
-      "addFromQuiz": "Add from my quizzes",
-      "hideQuizzes": "Hide my quizzes",
-      "quizPickerSearchPlaceholder": "Search your quizzes…",
-      "quizPickerEmpty": "You don't have any other quizzes yet",
+      "addFromQuiz": "Add from my work items",
+      "hideQuizzes": "Hide my work items",
+      "quizPickerSearchPlaceholder": "Search your work items…",
+      "quizPickerEmpty": "You don't have any other work items yet",
       "quizPickerView": "View questions",
-      "quizPickerBack": "Choose a different quiz",
+      "quizPickerBack": "Choose a different work item",
       "addAllQuestionsBtn": "Add all",
       "typeChoose": "Choose",
       "typeComplete": "Complete",
@@ -762,7 +767,7 @@
       "explainAnswer": "Reference answer",
       "explainAnswerPlaceholder": "Type the model answer you'll compare against…",
       "explainWeight": "Score share (%)",
-      "explainWeightHint": "How much of the whole quiz score this question is worth. The remaining percentage is split equally across the auto-graded questions."
+      "explainWeightHint": "How much of the whole work item's score this question is worth. The remaining percentage is split equally across the auto-graded questions."
     },
     "validationPopup": {
       "title": "Validate Submission",
@@ -1471,6 +1476,8 @@
       "rejected": "Rejected"
     },
     "details": {
+      "children": "Children to follow",
+      "childrenShort": "{{ count }} children",
       "school": "School",
       "parent": "Parent's name",
       "parentMobile": "Parent's mobile",
@@ -1490,6 +1497,7 @@
       "filteredTitle": "No requests match."
     },
     "dialog": {
+      "theyAskedChildren": "They asked to follow {{ count }}.",
       "eyebrow": {
         "parent": "PARENT REQUEST",
         "child": "STUDENT REQUEST"

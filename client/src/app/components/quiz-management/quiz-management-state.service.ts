@@ -452,7 +452,7 @@ export class QuizManagementStateService {
       if (failure) throw failure.reason;
     } catch (error) {
       console.error('Failed to load quiz management:', error);
-      this.notification.error('Failed to load quiz management data. Please refresh and try again.');
+      this.notification.error('Failed to load work management data. Please refresh and try again.');
     } finally {
       this.isLoading.set(false);
     }
@@ -732,7 +732,7 @@ export class QuizManagementStateService {
     const customQuizId = isCustom ? rawQuizSelection.slice('custom:'.length) : undefined;
 
     if (!title) { this.formError.set('Title is required.'); return false; }
-    if (!rawQuizSelection || (!isCustom && !quizId)) { this.formError.set('Please select a quiz.'); return false; }
+    if (!rawQuizSelection || (!isCustom && !quizId)) { this.formError.set('Please select a work item or bank quiz.'); return false; }
     if (classIds.length === 0) { this.formError.set('Please select at least one group.'); return false; }
     if (!dueAt || Number.isNaN(dueAt)) { this.formError.set('Please pick a due date.'); return false; }
     if (dueAt < Date.now()) { this.formError.set('The due date must be in the future.'); return false; }
@@ -915,7 +915,7 @@ export class QuizManagementStateService {
   /** Resolves the linked quiz's name regardless of whether it's a bank or custom quiz. */
   assignmentQuizName(assignment: HomeworkAssignment): string {
     if (assignment.quizSource === 'custom' && assignment.customQuizId) {
-      return this.customQuizById().get(assignment.customQuizId)?.name ?? 'Custom quiz';
+      return this.customQuizById().get(assignment.customQuizId)?.name ?? 'Work item';
     }
     return this.getQuizName(assignment.quizId);
   }
