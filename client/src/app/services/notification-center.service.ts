@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
 import { AppNotification, AppNotificationType } from '../models';
 import { AuthService } from './auth';
 import { ApiClient } from './api/api-client.service';
+import { safetyNetPoll } from './shared/safety-net-poll';
 
 type ApiNotificationType = 'SubmissionApproved' | 'SubmissionRejected' | 'SubmissionCompleted' | 'SubmissionNeedsReview' | 'SubmissionReceived'
   | 'ChildSubmissionApproved' | 'ChildSubmissionRejected';
@@ -47,23 +48,29 @@ export class NotificationCenterService {
   readonly items = this._items.asReadonly();
   readonly unreadCount = this._unreadCount.asReadonly();
 
-  private timer: ReturnType<typeof setInterval> | null = null;
   private generation = 0;
 
   constructor() {
-    effect(() => {
-      // The platform administrator belongs to no school, and notifications are a school's: the API answers 403.
+    // The platform administrator belongs to no school, and notifications are a school's: the API answers 403.
+    const hasInbox = () => {
       const user = this.authService.user();
-      const hasInbox = !!user && !user.roles?.includes('platformAdmin');
-      this.stop();
+      return !!user && !user.roles?.includes('platformAdmin');
+    };
+
+    effect(() => {
+      const inbox = hasInbox();
+      this.authService.user();                                   // a change of account resets it, even to one with the same role
+      this.generation++;
       this._items.set([]);
       this._unreadCount.set(0);
-      if (!hasInbox) return;
-      void this.refresh();
-      this.timer = setInterval(() => void this.refresh(), NotificationCenterService.POLL_MS);
+      if (inbox) void this.refresh();
     }, { allowSignalWrites: true });
 
-    inject(DestroyRef).onDestroy(() => this.stop());
+    safetyNetPoll({
+      intervalMs: NotificationCenterService.POLL_MS, active: hasInbox, coveredByLiveChannel: true,
+      refresh: () => void this.refresh()
+    });
+    inject(DestroyRef).onDestroy(() => this.generation++);
   }
 
   async refresh(): Promise<void> {
@@ -93,11 +100,6 @@ export class NotificationCenterService {
     await this.refresh();
   }
 
-  private stop(): void {
-    this.generation++;
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
-  }
 }
 
 function toNotification(notification: ApiNotification): AppNotification {

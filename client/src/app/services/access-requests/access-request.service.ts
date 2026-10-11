@@ -12,6 +12,7 @@ import {
 } from '../../models';
 import { AuthService } from '../auth';
 import { ApiClient } from '../api/api-client.service';
+import { safetyNetPoll } from '../shared/safety-net-poll';
 import {
   ApiAccessRequest,
   ApiPage,
@@ -40,8 +41,8 @@ export interface AccessRequestQuery {
  *
  * Also the sidebar's pending badge for the platform administrator. It is read
  * when they sign in, whenever the review page loads or decides, and every
- * {@link POLL_MS} as a safety net (there is no live signal for it: requests
- * come from people with no account, so nobody's channel carries them). Clears
+ * {@link POLL_MS} while their tab is visible (there is no live signal for it:
+ * requests come from people with no account, so nobody's channel carries them). Clears
  * the moment the signed-in account changes.
  */
 @Injectable({ providedIn: 'root' })
@@ -54,21 +55,26 @@ export class AccessRequestService {
   private readonly count = signal(0);
   readonly pendingCount = this.count.asReadonly();
 
-  private timer: ReturnType<typeof setInterval> | null = null;
   private generation = 0;
 
   constructor() {
-    effect(() => {
-      const isPlatformAdmin = this.authService.user()?.roles?.includes('platformAdmin') ?? false;
-      this.stop();
-      this.count.set(0);
-      if (!isPlatformAdmin) return;
+    const isPlatformAdmin = () => this.authService.user()?.roles?.includes('platformAdmin') ?? false;
 
-      void this.refreshPendingCount();
-      this.timer = setInterval(() => void this.refreshPendingCount(), AccessRequestService.POLL_MS);
+    effect(() => {
+      const admin = isPlatformAdmin();
+      this.authService.user();                                   // a change of account resets it, even to one with the same role
+      this.generation++;
+      this.count.set(0);
+      if (admin) void this.refreshPendingCount();
     }, { allowSignalWrites: true });
 
-    inject(DestroyRef).onDestroy(() => this.stop());
+    // No live signal covers this one (a request comes from someone with no account), so it polls whenever the
+    // platform administrator's tab is visible — and only then.
+    safetyNetPoll({
+      intervalMs: AccessRequestService.POLL_MS, active: isPlatformAdmin, coveredByLiveChannel: false,
+      refresh: () => void this.refreshPendingCount()
+    });
+    inject(DestroyRef).onDestroy(() => this.generation++);
   }
 
   /** The visitor's request. The password is kept as a hash and becomes theirs on approval. */
@@ -170,11 +176,6 @@ export class AccessRequestService {
     }
   }
 
-  private stop(): void {
-    this.generation++;
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
-  }
 }
 
 function toAccessRequest(api: ApiAccessRequest): AccessRequest {
