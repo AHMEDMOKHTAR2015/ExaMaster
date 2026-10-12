@@ -3307,7 +3307,7 @@ router-outlet {
 .subject-perf {
   margin-bottom: var(--gap-card);
   border-radius: calc(var(--r-2xl) - .25rem);
-    border: 1px solid var(--border);
+    border: 2px dashed var(--border);
     padding: 1.125rem 1.25rem;
   
 }
