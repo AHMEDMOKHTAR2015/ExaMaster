@@ -10,4 +10,7 @@ public sealed class SignalRRealtimeNotifier(IHubContext<NotificationsHub> _hub) 
 
     public Task ReviewQueueChangedAsync(int reviewerId, CancellationToken ct)
         => _hub.Clients.User(reviewerId.ToString()).SendAsync(NotificationsHub.ReviewQueueChanged, ct);
+
+    public Task AccessRequestsChangedAsync(CancellationToken ct)
+        => _hub.Clients.Group(NotificationsHub.PlatformAdministrators).SendAsync(NotificationsHub.AccessRequestsChanged, ct);
 }

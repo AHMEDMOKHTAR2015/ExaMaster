@@ -1,9 +1,13 @@
 using QuizMaster.Application.Features.AccessRequests.Shared;
 using QuizMaster.Application.Features.Accounts.Shared;
+using QuizMaster.Application.Realtime;
+using Microsoft.Extensions.Logging;
 
 namespace QuizMaster.Application.Features.AccessRequests.ApproveAccessRequest;
 
-public class ApproveAccessRequestCommandHandler(Repository<AccessRequest> _requestRepository, AccessRequestScope _scope, ISignInAccounts _signInAccounts)
+public class ApproveAccessRequestCommandHandler(
+    Repository<AccessRequest> _requestRepository, AccessRequestScope _scope, ISignInAccounts _signInAccounts,
+    IRealtimeNotifier _notifier, ILogger<ApproveAccessRequestCommandHandler> _logger)
     : IRequestHandler<ApproveAccessRequestCommand, IdResponse>
 {
     public async Task<IdResponse> Handle(ApproveAccessRequestCommand command, CancellationToken ct)
@@ -37,6 +41,7 @@ public class ApproveAccessRequestCommandHandler(Repository<AccessRequest> _reque
                 return user.Id;
             }, ct), ct);
 
+        await RealtimeSignals.AccessRequestsChangedSafelyAsync(_notifier, _logger, ct);
         return new IdResponse(userId);
     }
 

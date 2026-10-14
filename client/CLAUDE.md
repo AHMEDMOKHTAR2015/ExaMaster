@@ -129,12 +129,16 @@ Route guards (`src/app/guards/auth.guard.ts`) are all `CanActivateFn`s that: `aw
   in their `effect`: the first screen after sign-in loads before that effect runs, and an effect that clears on
   "nothing loaded yet" threw that first load away (the Quizzes tab came up empty).
 - **Live updates come over SignalR** (`services/realtime/realtime.service.ts`, the API's `/hubs/notifications`). The
-  server sends only signals — `inboxChanged`, `reviewQueueChanged` — and the notification inbox
-  (`NotificationCenterService`) and the teacher's Validation badge (`TeacherReviewQueueService`) then re-read through the
-  API, so nothing that matters travels over the socket. One connection per signed-in account, opened on sign-in and
-  closed on sign-out; a reconnect refreshes both, and both still poll every 5 minutes as a safety net for a connection
-  that cannot be made. Both clear on a change of account. The token rides in the connection URL (`access_token`), which
-  the API accepts on `/hubs` paths only.
+  server sends only signals — `inboxChanged`, `reviewQueueChanged`, and `accessRequestsChanged` (to every platform
+  administrator online) — and the notification inbox (`NotificationCenterService`), the teacher's Validation badge
+  (`TeacherReviewQueueService`) and the platform administrator's pending-requests badge (`AccessRequestService`) then
+  re-read through the API, so nothing that matters travels over the socket. One connection per signed-in account,
+  opened on sign-in and closed on sign-out; a reconnect re-reads all three. **Nothing polls**: each count is read at
+  sign-in, on a reconnect and on a signal, so the database is touched only when someone signs in, comes back online or
+  something changed — an idle signed-in tab makes no API calls, which is what lets Azure SQL serverless pause. Don't
+  add a timer that calls the API; add a signal instead. (If the channel cannot connect at all, the counts catch up on
+  the next sign-in or page load.) All clear on a change of account. The token rides in the connection URL
+  (`access_token`), which the API accepts on `/hubs` paths only.
 
 ### Quiz-taking flow
 

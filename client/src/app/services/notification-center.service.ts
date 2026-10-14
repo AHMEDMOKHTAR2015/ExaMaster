@@ -2,7 +2,6 @@ import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
 import { AppNotification, AppNotificationType } from '../models';
 import { AuthService } from './auth';
 import { ApiClient } from './api/api-client.service';
-import { safetyNetPoll } from './shared/safety-net-poll';
 
 type ApiNotificationType = 'SubmissionApproved' | 'SubmissionRejected' | 'SubmissionCompleted' | 'SubmissionNeedsReview' | 'SubmissionReceived'
   | 'ChildSubmissionApproved' | 'ChildSubmissionRejected';
@@ -30,16 +29,16 @@ const TYPES: Record<ApiNotificationType, AppNotificationType> = {
  * The server writes every notification itself — a submission tells the parent
  * and, every time, the reviewer; a review tells the student and the parent — so
  * this only reads and marks.
- * It reads when someone signs in, whenever the live channel says the inbox
- * changed (`RealtimeService`), straight after marking, and every
- * {@link POLL_MS} as a safety net for when the live channel cannot connect.
+ * It reads when someone signs in (or the live channel reconnects), whenever the
+ * live channel says the inbox changed (`RealtimeService`), and straight after
+ * marking — never on a timer, so an idle signed-in tab makes no API calls.
+ * Unread notifications live on the server, so whatever arrived while someone
+ * was away is in the first read after they sign in.
  * A root singleton: cleared the moment the signed-in account changes, so one
  * inbox never shows under another account.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationCenterService {
-  private static readonly POLL_MS = 5 * 60_000;
-
   private readonly api = inject(ApiClient);
   private readonly authService = inject(AuthService);
 
@@ -66,10 +65,6 @@ export class NotificationCenterService {
       if (inbox) void this.refresh();
     }, { allowSignalWrites: true });
 
-    safetyNetPoll({
-      intervalMs: NotificationCenterService.POLL_MS, active: hasInbox, coveredByLiveChannel: true,
-      refresh: () => void this.refresh()
-    });
     inject(DestroyRef).onDestroy(() => this.generation++);
   }
 

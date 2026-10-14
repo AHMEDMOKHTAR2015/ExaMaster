@@ -23,6 +23,20 @@ public class SignalReviewQueueOnReviewHandler(IRealtimeNotifier _notifier, ILogg
 
 internal static class RealtimeSignals
 {
+    // An access request arrived or was decided. Best-effort after the save, like every signal: a missed one only
+    // leaves a badge stale until the platform administrator next signs in or reconnects.
+    public static async Task AccessRequestsChangedSafelyAsync(IRealtimeNotifier notifier, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            await notifier.AccessRequestsChangedAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not signal the platform administrators about access requests");
+        }
+    }
+
     public static async Task SafelyAsync(ILogger logger, int? reviewerId, Func<int, Task> signal)
     {
         if (reviewerId is not { } id)

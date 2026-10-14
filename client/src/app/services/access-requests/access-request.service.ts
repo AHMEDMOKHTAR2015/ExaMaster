@@ -12,7 +12,6 @@ import {
 } from '../../models';
 import { AuthService } from '../auth';
 import { ApiClient } from '../api/api-client.service';
-import { safetyNetPoll } from '../shared/safety-net-poll';
 import {
   ApiAccessRequest,
   ApiPage,
@@ -40,15 +39,14 @@ export interface AccessRequestQuery {
  * review of them (`/platform/access-requests`).
  *
  * Also the sidebar's pending badge for the platform administrator. It is read
- * when they sign in, whenever the review page loads or decides, and every
- * {@link POLL_MS} while their tab is visible (there is no live signal for it:
- * requests come from people with no account, so nobody's channel carries them). Clears
+ * when they sign in (or the live channel reconnects), whenever the review page
+ * loads or decides, and whenever the live channel says a request arrived or was
+ * decided (`accessRequestsChanged`, sent to every platform administrator
+ * online) — never on a timer. Clears
  * the moment the signed-in account changes.
  */
 @Injectable({ providedIn: 'root' })
 export class AccessRequestService {
-  private static readonly POLL_MS = 5 * 60_000;
-
   private readonly api = inject(ApiClient);
   private readonly authService = inject(AuthService);
 
@@ -68,12 +66,6 @@ export class AccessRequestService {
       if (admin) void this.refreshPendingCount();
     }, { allowSignalWrites: true });
 
-    // No live signal covers this one (a request comes from someone with no account), so it polls whenever the
-    // platform administrator's tab is visible — and only then.
-    safetyNetPoll({
-      intervalMs: AccessRequestService.POLL_MS, active: isPlatformAdmin, coveredByLiveChannel: false,
-      refresh: () => void this.refreshPendingCount()
-    });
     inject(DestroyRef).onDestroy(() => this.generation++);
   }
 

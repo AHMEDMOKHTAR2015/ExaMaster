@@ -1,9 +1,13 @@
 using QuizMaster.Application.Features.Accounts.Shared;
 using QuizMaster.Application.Features.Registration.Shared;
+using QuizMaster.Application.Realtime;
+using Microsoft.Extensions.Logging;
 
 namespace QuizMaster.Application.Features.AccessRequests.SubmitAccessRequest;
 
-public class SubmitAccessRequestCommandHandler(Repository<AccessRequest> _requestRepository, ISignInAccounts _signInAccounts, IClaimsProvider _claimsProvider)
+public class SubmitAccessRequestCommandHandler(
+    Repository<AccessRequest> _requestRepository, ISignInAccounts _signInAccounts, IClaimsProvider _claimsProvider,
+    IRealtimeNotifier _notifier, ILogger<SubmitAccessRequestCommandHandler> _logger)
     : IRequestHandler<SubmitAccessRequestCommand, IdResponse>
 {
     public async Task<IdResponse> Handle(SubmitAccessRequestCommand command, CancellationToken ct)
@@ -24,6 +28,7 @@ public class SubmitAccessRequestCommandHandler(Repository<AccessRequest> _reques
 
         await _requestRepository.AddAsync(request, ct);
         await _requestRepository.SaveChangesAsync(ct);          // the filtered unique index settles two submissions at once
+        await RealtimeSignals.AccessRequestsChangedSafelyAsync(_notifier, _logger, ct);
         return new IdResponse(request.Id);
     }
 }

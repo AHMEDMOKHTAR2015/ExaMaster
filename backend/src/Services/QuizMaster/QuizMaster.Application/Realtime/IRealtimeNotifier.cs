@@ -10,6 +10,9 @@ public interface IRealtimeNotifier
 
     // The submissions they review changed: one arrived, or one was reviewed (the Validation badge).
     Task ReviewQueueChangedAsync(int reviewerId, CancellationToken ct);
+
+    // An access request arrived or was decided: every platform administrator online re-reads their pending count.
+    Task AccessRequestsChangedAsync(CancellationToken ct);
 }
 
 // For hosts with no live connections (tools, tests): signals go nowhere.
@@ -17,4 +20,5 @@ public sealed class NoRealtimeNotifier : IRealtimeNotifier
 {
     public Task InboxChangedAsync(IEnumerable<int> userIds, CancellationToken ct) => Task.CompletedTask;
     public Task ReviewQueueChangedAsync(int reviewerId, CancellationToken ct) => Task.CompletedTask;
+    public Task AccessRequestsChangedAsync(CancellationToken ct) => Task.CompletedTask;
 }

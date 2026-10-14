@@ -1,12 +1,11 @@
-import { DestroyRef, Injectable, effect, inject, untracked } from '@angular/core';
+import { DestroyRef, Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { AuthSessionService } from '../auth/auth-session.service';
 import { NotificationCenterService } from '../notification-center.service';
 import { TeacherReviewQueueService } from '../teacher-review-queue.service';
-import { PageVisibilityService } from '../shared/page-visibility.service';
-import { LiveChannelState } from './live-channel-state';
+import { AccessRequestService } from '../access-requests/access-request.service';
 
 /** Where the API's live channel is: beside `/api`, not under it. */
 export function hubUrl(apiUrl = environment.apiUrl): string {
@@ -24,10 +23,11 @@ const MAX_RETRY_MS = 60_000;
  *
  * One connection per signed-in account, opened on sign-in and closed on
  * sign-out or a change of account. Signals sent while disconnected are lost,
- * so a reconnect refreshes both; the two services poll, slowly, only while
- * this channel is down (`LiveChannelState`, read by `safetyNetPoll`). A signal
- * that arrives while the tab is hidden is not acted on: the services re-read
- * when it comes back into view, so a background tab makes no API calls.
+ * so a reconnect refreshes all three counts. Nothing polls: the counts are read
+ * at sign-in, on a reconnect and on a signal — the database is touched only
+ * when someone signs in, comes back online, or something actually changed.
+ * (If the channel cannot connect at all, the counts update on the next sign-in
+ * or page load instead.)
  *
  * The token comes from {@link AuthSessionService} on every (re)connect, so an
  * expired access token is renewed rather than refused. Cookies are not used
@@ -40,9 +40,10 @@ export class RealtimeService {
   private readonly inbox = inject(NotificationCenterService);
   private readonly reviewQueue = inject(TeacherReviewQueueService);
 
-  private readonly visibility = inject(PageVisibilityService);
-  private readonly _connected = inject(LiveChannelState).connected;
-  /** Whether the live channel is up (false: the slow polling is all there is). */
+  private readonly accessRequests = inject(AccessRequestService);
+
+  private readonly _connected = signal(false);
+  /** Whether the live channel is up (false: counts update only on the next sign-in, reconnect or page load). */
   readonly connected = this._connected.asReadonly();
 
   private connection: HubConnection | null = null;
@@ -74,9 +75,9 @@ export class RealtimeService {
       .configureLogging(environment.production ? LogLevel.None : LogLevel.Warning)
       .build();
 
-    // hidden: skipped, because the services re-read when the tab is shown again
-    connection.on('inboxChanged', () => { if (this.visibility.visible()) void this.inbox.refresh(); });
-    connection.on('reviewQueueChanged', () => { if (this.visibility.visible()) void this.reviewQueue.refresh(); });
+    connection.on('inboxChanged', () => void this.inbox.refresh());
+    connection.on('reviewQueueChanged', () => void this.reviewQueue.refresh());
+    connection.on('accessRequestsChanged', () => void this.accessRequests.refreshPendingCount());
     connection.onreconnecting(() => this._connected.set(false));
     connection.onreconnected(() => {
       this._connected.set(true);
@@ -95,7 +96,7 @@ export class RealtimeService {
       if (attempt > 0) this.refreshAll();
     } catch {
       // The server is unreachable (or refused the session). Automatic reconnect only covers a connection that was
-      // once up, so try again later, backing off; polling covers the gap.
+      // once up, so try again later, backing off; a successful retry re-reads every count (refreshAll).
       if (this.connection !== connection || this.forUserId !== userId) return;
       this.connection = null;
       const delay = Math.min(MAX_RETRY_MS, 2_000 * 2 ** attempt);
@@ -107,9 +108,9 @@ export class RealtimeService {
   }
 
   private refreshAll(): void {
-    if (!this.visibility.visible()) return;                       // they re-read when the tab is shown again
     void this.inbox.refresh();
     void this.reviewQueue.refresh();
+    void this.accessRequests.refreshPendingCount();
   }
 
   private async stop(): Promise<void> {

@@ -2,23 +2,19 @@ import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
 import { AuthService } from './auth';
 import { ApiClient } from './api/api-client.service';
 import { ApiPage } from './api/api-models';
-import { safetyNetPoll } from './shared/safety-net-poll';
 
 /**
  * The sidebar's Validation badge: how many submissions the signed-in teacher
  * still has to review (`GET /reviews`, whose total is the queue's length).
  *
- * The count is read when a teacher signs in, whenever the live channel says
- * their queue changed (`RealtimeService`), straight away when they save a
- * review ({@link refresh}), and every {@link POLL_MS} as a safety net while the
- * live channel is down and the tab is visible (`safetyNetPoll`). A root
+ * The count is read when a teacher signs in (or the live channel reconnects),
+ * whenever the live channel says their queue changed (`RealtimeService`), and
+ * straight away when they save a review ({@link refresh}) — never on a timer. A root
  * singleton: the effect below clears it the moment the signed-in account
  * changes, so one teacher's backlog never shows on another's badge.
  */
 @Injectable({ providedIn: 'root' })
 export class TeacherReviewQueueService {
-  private static readonly POLL_MS = 5 * 60_000;
-
   private readonly api = inject(ApiClient);
   private readonly authService = inject(AuthService);
 
@@ -38,10 +34,6 @@ export class TeacherReviewQueueService {
       if (teacher) void this.refresh();
     }, { allowSignalWrites: true });
 
-    safetyNetPoll({
-      intervalMs: TeacherReviewQueueService.POLL_MS, active: isTeacher, coveredByLiveChannel: true,
-      refresh: () => void this.refresh()
-    });
     inject(DestroyRef).onDestroy(() => this.generation++);
   }
 
