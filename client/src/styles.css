@@ -1138,7 +1138,7 @@ background: radial-gradient(circle farthest-side at center center, #DDF0FF 10%, 
 .card__sub {
   color: var(--ink-3);
   font-size: var(--font-sm);
-  margin-top: 0.125rem;
+  margin-top: 0.795rem;
 }
 
 .card__body {
@@ -3340,12 +3340,14 @@ router-outlet {
   color: var(--danger);
 }
 
+/* Three tiles to a row, each a third of the section; two below 900px and one
+   below 640px (styles.mobile.css). */
 .subject-perf__grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--gap-card);
 }
 
@@ -3405,8 +3407,32 @@ router-outlet {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.25rem;
+  gap: 0.4375rem;
+  flex: 1;
   min-width: 0;
+}
+
+/* Each line after the name (participations, points, trend…) sits under a
+   hairline of its own, so the facts read as separate rows. */
+.subject-perf__body > * + * {
+  align-self: stretch;
+  padding-top: 0.4375rem;
+  border-top: 1px dashed var(--border);
+}
+
+/* Name and level on one line; the level drops under the name only when the tile is too narrow for both. */
+.subject-perf__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  max-width: 100%;
+}
+
+.subject-perf__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
 }
 
 .subject-perf__name {
@@ -3473,6 +3499,747 @@ router-outlet {
 
 .subject-perf__trend--down {
   color: var(--danger-600);
+}
+
+/* ==========================================================================
+   My Children (parent) — /my-children and a child's profile /my-children/:id
+   ==========================================================================
+   Classes here are prefixed (`kid-`, `child-`, `work-`, `activity-`) because
+   class names are global: nothing outside these two pages uses them. The
+   subject donuts on the profile are `.subject-perf` above, shared with the
+   student dashboard; the KPI tiles are the shared `.kpis` / `.stat`. */
+
+.dashboard-hero__cta {
+  margin-top: 0.5rem;
+}
+
+/* ---- Avatar: initials on a gradient, one colour per person ---- */
+.kid-avatar {
+  width: 3.25rem;
+  height: 3.25rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--grad-brand);
+  color: var(--ink-on-accent);
+  font-weight: 700;
+  font-size: var(--font-h3);
+  letter-spacing: 0.02em;
+}
+
+.kid-avatar[data-variant="mint"] { background: var(--grad-mint); }
+.kid-avatar[data-variant="sky"] { background: var(--grad-sky); }
+.kid-avatar[data-variant="amber"] { background: var(--grad-amber); }
+
+.kid-avatar--xs {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: var(--font-2xs);
+}
+
+.kid-avatar--sm {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--font-sm);
+}
+
+.kid-avatar--xl {
+  width: 4.75rem;
+  height: 4.75rem;
+  font-size: var(--font-h1);
+  box-shadow: 0 0 0 4px var(--surface), var(--shadow-md);
+}
+
+/* ---- Children grid (list page) ----
+   Three to a row, each a third of the page, even for a family of one; two
+   below 900px and one below 640px (styles.mobile.css). */
+.kids-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gap-card);
+}
+
+.kids-grid__empty {
+  grid-column: 1 / -1;
+}
+
+.kid-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-height: 12rem;
+  padding: 1.125rem 1.25rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.kid-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-200);
+  box-shadow: var(--shadow-lg);
+}
+
+.kid-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* A tinted band across the top, behind the avatar, in the child's colour. */
+.kid-card__band {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3.5rem;
+  background: var(--grad-brand-soft);
+}
+
+.kid-card__band[data-variant="mint"] { background: var(--grad-mint-soft); }
+.kid-card__band[data-variant="sky"] { background: var(--grad-sky-soft); }
+.kid-card__band[data-variant="amber"] { background: var(--grad-amber-soft); }
+
+.kid-card__top {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+}
+
+.kid-card__top .kid-avatar {
+  box-shadow: 0 0 0 3px var(--surface);
+}
+
+.kid-card__go {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  color: var(--ink-3);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.kid-card:hover .kid-card__go {
+  background: var(--grad-brand);
+  color: var(--ink-on-accent);
+  transform: translateX(2px);
+}
+
+[dir="rtl"] .kid-card__go svg,
+[dir="rtl"] .child-back svg {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .kid-card:hover .kid-card__go {
+  transform: translateX(-2px);
+}
+
+.kid-card__name {
+  font-size: var(--font-h2);
+  font-weight: 700;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.kid-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.kid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+
+.kid-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--divider);
+}
+
+.kid-card__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-xs);
+  color: var(--ink-3);
+}
+
+.kid-card--skeleton,
+.child-hero--skeleton {
+  background: linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 50%, var(--surface-3) 100%) 0 0 / 200% 100%;
+  animation: kid-shimmer 1.4s ease-in-out infinite;
+}
+
+.child-hero--skeleton {
+  min-height: 11rem;
+}
+
+@keyframes kid-shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kid-card,
+  .kid-card__go { transition: none; }
+  .kid-card:hover,
+  .kid-card:hover .kid-card__go { transform: none; }
+  .kid-card--skeleton,
+  .child-hero--skeleton { animation: none; }
+}
+
+/* ---- Child profile: back link and identity header ---- */
+.child-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.875rem;
+  color: var(--ink-3);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.child-back:hover {
+  color: var(--brand-700);
+}
+
+.child-hero {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  margin-bottom: var(--gap-card);
+  padding: 1.5rem 1.75rem;
+  border-radius: var(--r-xl);
+  background: var(--sidebar-bg-gradient);
+  color: var(--ink-on-accent);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.child-hero__main {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  min-width: 0;
+}
+
+.child-hero__main .kid-avatar--xl {
+  box-shadow: 0 0 0 4px var(--brand-200);
+}
+
+.child-hero__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.child-hero__eyebrow {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.child-hero__name {
+  margin: 0;
+  font-size: var(--font-prose);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.child-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* Frosted chips: readable on every part of the gradient. */
+.child-hero__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: var(--font-sm);
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+
+.child-hero__chip-key {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.child-hero__facts {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.875rem 1.125rem;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.child-hero__fact dt {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.child-hero__fact dd {
+  margin: 0.125rem 0 0;
+  font-weight: 700;
+}
+
+.child-hero__switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-basis: 100%;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.kid-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.25rem 0.875rem 0.25rem 0.3125rem;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--ink-on-accent);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+[dir="rtl"] .kid-switch {
+  padding: 0.25rem 0.3125rem 0.25rem 0.875rem;
+}
+
+.kid-switch:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.kid-switch.is-active {
+  background: var(--surface);
+  color: var(--brand-700);
+}
+
+.kid-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-invert);
+}
+
+.child-alert {
+  margin-bottom: var(--gap-card);
+}
+
+.child-stat__of {
+  font-size: var(--font-h3);
+  font-weight: 600;
+  color: var(--ink-4);
+}
+
+.child-stat__flag {
+  vertical-align: middle;
+  margin-inline-start: 0.375rem;
+  letter-spacing: 0;
+}
+
+/* ---- Section cards ---- */
+.child-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.child-card-title__icon {
+  display: grid;
+  place-items: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  color: var(--ink-on-accent);
+  background: var(--grad-brand);
+}
+
+.child-card-title__icon--mint { background: var(--grad-mint); }
+.child-card-title__icon--sky { background: var(--grad-sky); }
+.child-card-title__icon--amber { background: var(--grad-amber); }
+
+.child-subhead {
+  margin: 1.125rem 0 0.5rem;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.empty--compact {
+  padding: 1.5rem 1rem;
+}
+
+/* ---- Activity: the last action, then a short timeline ---- */
+.activity-latest {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem;
+  border-radius: var(--r-lg);
+  background: var(--grad-sky-soft);
+  border: 1px solid var(--sky-200);
+}
+
+.activity-latest[data-kind="homework"] {
+  background: var(--grad-amber-soft);
+  border-color: var(--amber-200);
+}
+
+.activity-latest__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: var(--r-md);
+  background: var(--grad-sky);
+  color: var(--ink-on-accent);
+}
+
+.activity-latest[data-kind="homework"] .activity-latest__icon {
+  background: var(--grad-amber);
+}
+
+.activity-latest__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-latest__eyebrow {
+  font-size: var(--font-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.activity-latest__title {
+  font-weight: 700;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.activity-latest__meta {
+  font-size: var(--font-xs);
+  color: var(--ink-3);
+}
+
+.activity-latest__score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.activity-latest__score-value {
+  font-size: var(--font-display);
+  font-weight: 800;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-list__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5625rem 0;
+}
+
+/* The timeline's rail, joining each dot to the next. */
+.activity-list__item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.28125rem;
+  top: 1.5rem;
+  bottom: -0.5rem;
+  width: 2px;
+  background: var(--divider);
+}
+
+.activity-list__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex-shrink: 0;
+  border-radius: var(--r-pill);
+  background: var(--sky-500);
+  box-shadow: 0 0 0 3px var(--sky-50);
+}
+
+.activity-list__dot[data-kind="homework"] {
+  background: var(--amber-500);
+  box-shadow: 0 0 0 3px var(--amber-50);
+}
+
+.activity-list__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-list__title {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.activity-list__meta {
+  font-size: var(--font-xs);
+  color: var(--ink-4);
+}
+
+/* ---- Teachers ---- */
+.teacher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.teacher-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.teacher-list__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.teacher-list__name {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.teacher-list__email {
+  font-size: var(--font-xs);
+  color: var(--brand-700);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.teacher-list__email:hover {
+  text-decoration: underline;
+}
+
+.teacher-list__subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.subject-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.625rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.subject-chip--muted {
+  color: var(--ink-3);
+  border-style: dashed;
+}
+
+.subject-chip--inline {
+  padding: 0.0625rem 0.5rem;
+}
+
+.subject-chip__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+}
+
+/* ---- Assigned work ---- */
+.child-work__head {
+  flex-wrap: wrap;
+}
+
+.work-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.work-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--info);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition: box-shadow 0.15s ease;
+}
+
+.work-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.work-item[data-status="overdue"],
+.work-item[data-status="rejected"] { border-inline-start-color: var(--danger); }
+.work-item[data-status="awaiting"] { border-inline-start-color: var(--warning); }
+.work-item[data-status="approved"],
+.work-item[data-status="submitted"] { border-inline-start-color: var(--success); }
+
+.work-item__icon {
+  display: grid;
+  place-items: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: var(--r-md);
+  background: var(--sky-50);
+  color: var(--sky-700);
+}
+
+.work-item__icon[data-kind="homework"] {
+  background: var(--amber-50);
+  color: var(--amber-700);
+}
+
+.work-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.work-item__title {
+  font-weight: 700;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.work-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  font-size: var(--font-xs);
+  color: var(--ink-3);
+}
+
+.work-item__when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  text-align: end;
+}
+
+.work-item__date {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.work-item__hint {
+  font-size: var(--font-2xs);
+  font-weight: 600;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+.work-item__hint--soon { color: var(--amber-700); }
+.work-item__hint--late { color: var(--danger-600); }
+
+.work-item__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 6.5rem;
+}
+
+.work-item__score {
+  font-size: var(--font-h3);
+  font-weight: 800;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================================================

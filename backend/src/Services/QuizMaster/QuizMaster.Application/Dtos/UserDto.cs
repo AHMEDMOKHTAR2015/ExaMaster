@@ -22,4 +22,4 @@ public record UserDto(
     DateTime CreatedOn,
     DateTime? LastActiveOn,
     int? ChildCount = null,                                      // filled by the users list only: how many children link to this account
-    int? ParticipationCount = null);                             // filled by the users list only: how many attempts it has submitted
+    int? ParticipationCount = null);                             // filled by the users list and /me/children only: how many attempts it has submitted

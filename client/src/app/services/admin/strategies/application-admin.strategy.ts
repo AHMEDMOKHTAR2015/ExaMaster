@@ -18,6 +18,10 @@ export class ApplicationAdminStrategy implements AdminRoleStrategy {
     return true;
   }
 
+  canViewMyChildren(): boolean {
+    return false;
+  }
+
   // Application admin specific capabilities
   canManageAllUsers(): boolean {
     return true;

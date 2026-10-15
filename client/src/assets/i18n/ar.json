@@ -33,7 +33,8 @@
       "alerts": "التنبيهات",
       "profile": "الملف الشخصي",
       "students": "الطلاب",
-      "requests": "الطلبات"
+      "requests": "الطلبات",
+      "children": "الأبناء"
     },
     "myParticipations": "مشاركاتي",
     "username": "اسم المستخدم",
@@ -41,7 +42,8 @@
     "tenant": "الجهة",
     "platform": "المنصة",
     "organizations": "المؤسسات",
-    "accessRequests": "طلبات الانضمام"
+    "accessRequests": "طلبات الانضمام",
+    "myChildren": "أبنائي"
   },
   "roles": {
     "platformAdmin": "مدير المنصة",
@@ -384,7 +386,8 @@
       "createChildAccount": "إنشاء حساب الطالب",
       "refreshing": "جارٍ التحديث…",
       "close": "إغلاق",
-      "homework": "الواجب: {{ title }}"
+      "homework": "الواجب: {{ title }}",
+      "openMyChildren": "عرض أبنائي"
     },
     "teacher": {
       "stats": {
@@ -1580,7 +1583,9 @@
         "good": "جيد",
         "fair": "مقبول",
         "weak": "يحتاج إلى تحسين"
-      }
+      },
+      "participations": "المشاركات: {{count}}",
+      "participationsHint": "{{quizzes}} اختبار · {{homework}} واجب"
     },
     "tabs": {
       "quizzes": "الاختبارات",
@@ -1788,5 +1793,88 @@
     "add": "إضافة",
     "remove": "حذف",
     "chooseSubjectForUpload": "اختر مادة لتوسم الأسئلة المرفوعة بموضوعاتها (اختياري)."
+  },
+  "myChildren": {
+    "title": "أبنائي",
+    "subtitle": "افتح ملف أي من أبنائك لمتابعة تقدمه والمهام المكلّف بها ومعلميه",
+    "loadFailed": "تعذّر تحميل بيانات أبنائك.",
+    "openProfile": "فتح ملف {{name}}",
+    "participations": "{{count}} مشاركة",
+    "lastActive": "آخر نشاط {{date}}",
+    "neverActive": "لم يسجّل الدخول بعد",
+    "empty": "لا يوجد أبناء بعد",
+    "emptyDesc": "أضف ابنًا من لوحة التحكم لمتابعة تقدمه هنا."
+  },
+  "childProfile": {
+    "back": "أبنائي",
+    "eyebrow": "ملف الطالب",
+    "loadFailed": "تعذّر تحميل هذا الملف.",
+    "childDataFailed": "تعذّر تحميل بعض بيانات هذا الابن.",
+    "notFound": "لم يتم العثور على الابن",
+    "notFoundDesc": "هذا الابن غير مرتبط بحسابك.",
+    "lastActive": "آخر نشاط",
+    "neverActive": "لم يسجّل الدخول بعد",
+    "mobile": "الجوال",
+    "joined": "تاريخ الانضمام",
+    "switchChild": "التبديل إلى ابن آخر",
+    "stats": {
+      "participations": "المشاركات",
+      "done": "المهام المسلّمة",
+      "open": "المتبقي",
+      "overdue": "{{count}} متأخرة",
+      "average": "متوسط الدرجات"
+    },
+    "subjects": {
+      "title": "المواد",
+      "subtitle": "المستوى في كل مادة خلال آخر 12 شهرًا",
+      "loading": "جارٍ تحميل المواد…",
+      "loadFailed": "تعذّر تحميل مستويات المواد.",
+      "empty": "تظهر المستويات بعد تصحيح أول اختبار أو واجب."
+    },
+    "activity": {
+      "title": "النشاط",
+      "subtitle": "آخر ما قام به {{name}}",
+      "last": "آخر نشاط",
+      "earlier": "قبل ذلك",
+      "submittedOn": "سُلّم {{date}}",
+      "answers": "{{correct}} صحيحة · {{wrong}} خاطئة",
+      "viewAll": "السجل الكامل",
+      "none": "لا يوجد نشاط بعد",
+      "noneDesc": "تظهر الاختبارات والواجبات هنا بعد تسليمها."
+    },
+    "teachers": {
+      "title": "المعلمون",
+      "subtitle": "من يدرّس {{name}} وماذا يدرّس",
+      "none": "لا يوجد معلمون بعد",
+      "noneDesc": "لم تُعيّن المدرسة معلمين لهذه المجموعة بعد.",
+      "untaught": "مواد بدون معلم حتى الآن"
+    },
+    "work": {
+      "title": "المهام المكلّف بها",
+      "subtitle": "الاختبارات والواجبات المكلّف بها {{name}}",
+      "filters": {
+        "all": "الكل",
+        "open": "المتبقي",
+        "done": "المسلّم"
+      },
+      "by": "بواسطة {{name}}",
+      "questions": "{{count}} سؤال",
+      "due": "موعد التسليم {{date}}",
+      "submitted": "سُلّم {{date}}",
+      "daysLeft": "متبقٍ {{count}} يوم",
+      "dueToday": "يُسلّم اليوم",
+      "daysLate": "متأخر {{count}} يوم",
+      "pages": "صفحات المهام",
+      "empty": "لا يوجد شيء هنا",
+      "emptyDesc": "لا توجد اختبارات أو واجبات تطابق هذا التصفية."
+    },
+    "status": {
+      "todo": "مطلوب",
+      "overdue": "متأخر",
+      "awaiting": "بانتظار التصحيح",
+      "approved": "مقبول",
+      "rejected": "مُعاد",
+      "submitted": "مسلّم"
+    }
   }
 }

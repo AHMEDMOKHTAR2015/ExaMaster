@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SubjectPerformanceService } from '../../services/subject-performance.service';
 import { SubjectPerformance } from '../../models';
@@ -17,6 +17,9 @@ interface RingArcs {
 /**
  * The student dashboard's "My Subjects" row: one donut per subject, green for what they earned and red for what
  * they missed, so strengths and weaknesses read at a glance. Ordered strongest first by the API.
+ *
+ * Given a `childId`, it shows that child instead, for their parent (the child profile under My Children): same
+ * donuts, worded about the child, reloaded whenever the parent switches to another child.
  */
 @Component({
   selector: 'app-subject-performance',
@@ -25,16 +28,16 @@ interface RingArcs {
   template: `
     <section class="subject-perf" aria-labelledby="subject-perf-title">
       <div class="subject-perf__head">
-        <h2 id="subject-perf-title" class="subject-perf__title">{{ 'availableQuizzes.subjectPerformance.title' | translate }}</h2>
-        <p class="subject-perf__subtitle">{{ 'availableQuizzes.subjectPerformance.subtitle' | translate }}</p>
+        <h2 id="subject-perf-title" class="subject-perf__title">{{ copy() + '.title' | translate }}</h2>
+        <p class="subject-perf__subtitle">{{ copy() + '.subtitle' | translate }}</p>
       </div>
 
       @if (loading()) {
-        <p class="subject-perf__note">{{ 'availableQuizzes.subjectPerformance.loading' | translate }}</p>
+        <p class="subject-perf__note">{{ copy() + '.loading' | translate }}</p>
       } @else if (hasError()) {
-        <p class="subject-perf__note subject-perf__note--error">{{ 'availableQuizzes.subjectPerformance.loadFailed' | translate }}</p>
+        <p class="subject-perf__note subject-perf__note--error">{{ copy() + '.loadFailed' | translate }}</p>
       } @else if (subjects().length === 0) {
-        <p class="subject-perf__note">{{ 'availableQuizzes.subjectPerformance.empty' | translate }}</p>
+        <p class="subject-perf__note">{{ copy() + '.empty' | translate }}</p>
       } @else {
         <ul class="subject-perf__grid">
           @for (subject of subjects(); track subject.subjectId) {
@@ -58,18 +61,27 @@ interface RingArcs {
               </div>
 
               <div class="subject-perf__body">
-                <span class="subject-perf__name">
-                  <span class="subject-perf__dot" [style.background]="subject.subjectColor || null" aria-hidden="true"></span>
-                  {{ subject.subjectName }}
-                </span>
-
-                @if (subject.level; as level) {
-                  <span class="subject-perf__level subject-perf__level--{{ level }}">
-                    {{ 'availableQuizzes.subjectPerformance.levels.' + level | translate }}
+                <div class="subject-perf__headline">
+                  <span class="subject-perf__name">
+                    <span class="subject-perf__dot" [style.background]="subject.subjectColor || null" aria-hidden="true"></span>
+                    {{ subject.subjectName }}
                   </span>
-                } @else {
-                  <span class="subject-perf__level">{{ 'availableQuizzes.subjectPerformance.awaitingMarks' | translate }}</span>
-                }
+
+                  @if (subject.level; as level) {
+                    <span class="subject-perf__level subject-perf__level--{{ level }}">
+                      {{ 'availableQuizzes.subjectPerformance.levels.' + level | translate }}
+                    </span>
+                  } @else {
+                    <span class="subject-perf__level">{{ 'availableQuizzes.subjectPerformance.awaitingMarks' | translate }}</span>
+                  }
+                </div>
+
+                <!-- Every submission in the subject over the period, marked or not (rejected ones are not counted). -->
+                <span class="subject-perf__meta subject-perf__count"
+                      [title]="'availableQuizzes.subjectPerformance.participationsHint' | translate : { quizzes: subject.quizCount, homework: subject.homeworkCount }">
+                  <svg viewBox="0 0 24 24" fill="none" width="13" height="13" aria-hidden="true"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/></svg>
+                  {{ 'availableQuizzes.subjectPerformance.participations' | translate : { count: subject.quizCount + subject.homeworkCount } }}
+                </span>
 
                 @if (subject.pointsPossible > 0) {
                   <span class="subject-perf__meta">
@@ -105,19 +117,42 @@ interface RingArcs {
     </section>
   `
 })
-export class SubjectPerformanceComponent extends BaseComponent implements OnInit {
+export class SubjectPerformanceComponent extends BaseComponent {
   private readonly subjectPerformanceService = inject(SubjectPerformanceService);
+
+  /** A parent's child to show; absent, the signed-in student's own subjects. */
+  readonly childId = input<string>();
 
   protected readonly ringRadius = RING_RADIUS;
   protected readonly subjects = signal<SubjectPerformance[]>([]);
+  /** The heading and notes speak to the student ("your level") or about the child. */
+  protected readonly copy = computed(() =>
+    this.childId() ? 'childProfile.subjects' : 'availableQuizzes.subjectPerformance');
 
-  async ngOnInit(): Promise<void> {
+  /** Bumped per load, so a slow answer for the child the parent just left never replaces the current one's. */
+  private loadToken = 0;
+
+  constructor() {
+    super();
+    effect(() => {
+      const childId = this.childId();
+      untracked(() => void this.load(childId));
+    });
+  }
+
+  private async load(childId: string | undefined): Promise<void> {
+    const token = ++this.loadToken;
+    this.subjects.set([]);
     this.setLoading(true);
     try {
-      this.subjects.set(await this.subjectPerformanceService.listMine());
+      const subjects = childId
+        ? await this.subjectPerformanceService.listForChild(childId)
+        : await this.subjectPerformanceService.listMine();
+      if (token !== this.loadToken) return;
+      this.subjects.set(subjects);
       this.setLoading(false);
     } catch (error) {
-      this.setError(error instanceof Error ? error.message : String(error));
+      if (token === this.loadToken) this.setError(error instanceof Error ? error.message : String(error));
     }
   }
 

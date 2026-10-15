@@ -18,6 +18,10 @@ export class UserAdminStrategy implements AdminRoleStrategy {
     return true;
   }
 
+  canViewMyChildren(): boolean {
+    return true;
+  }
+
   // UserAdmin cannot access global user management
   canManageAllUsers(): boolean {
     return false;

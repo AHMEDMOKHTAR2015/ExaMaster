@@ -4,8 +4,8 @@ import { ApiSubjectPerformance } from './api/api-models';
 import { SubjectLevel, SubjectPerformance } from '../models';
 
 /**
- * The signed-in student's level in each subject (`GET /me/subject-performance`). The server works it out from
- * the caller's own sign-in, so nothing identifying is sent. Holds no state: the dashboard owns what it loaded, so
+ * A student's level in each subject: the signed-in student's own (`GET /me/subject-performance`, worked out from
+ * the caller's own sign-in, so nothing identifying is sent), or a parent's child's. Holds no state: the dashboard owns what it loaded, so
  * nothing outlives a change of account on a shared device.
  */
 @Injectable({ providedIn: 'root' })
@@ -14,6 +14,12 @@ export class SubjectPerformanceService {
 
   async listMine(): Promise<SubjectPerformance[]> {
     const rows = await this.api.get<ApiSubjectPerformance[]>('/me/subject-performance');
+    return rows.map(toSubjectPerformance);
+  }
+
+  /** One of the signed-in parent's children (`GET /me/children/{id}/subject-performance`); the API refuses anyone else's. */
+  async listForChild(childId: string): Promise<SubjectPerformance[]> {
+    const rows = await this.api.get<ApiSubjectPerformance[]>(`/me/children/${childId}/subject-performance`);
     return rows.map(toSubjectPerformance);
   }
 }

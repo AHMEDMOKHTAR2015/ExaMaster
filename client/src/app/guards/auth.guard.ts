@@ -282,3 +282,28 @@ export const translationsAdminGuard: CanActivateFn = async () => {
   }
   return router.createUrlTree([roleHomeRoute(authService, adminAccess)]);
 };
+
+/**
+ * Guards My Children and a child's profile (`/my-children`, `/my-children/:id`).
+ * A sub-page a parent navigates to, so a capability check rather than
+ * `homeRouteGuard` — same shape as {@link childParticipationHistoryGuard}.
+ * Which children a parent may open is the API's to decide: it refuses a child
+ * that is not theirs.
+ */
+export const myChildrenGuard: CanActivateFn = async () => {
+  const authService = inject(AuthService);
+  const adminAccess = inject(AdminAccessService);
+  const router = inject(Router);
+
+  await authService.waitForAuthReady();
+
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
+
+  if (adminAccess.getStrategy(authService.getUserRoles()).canViewMyChildren()) {
+    return true;
+  }
+
+  return router.createUrlTree([roleHomeRoute(authService, adminAccess)]);
+};

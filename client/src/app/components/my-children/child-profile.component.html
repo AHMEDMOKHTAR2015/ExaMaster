@@ -1,0 +1,393 @@
+<a class="child-back" routerLink="/my-children">
+  <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  {{ 'childProfile.back' | translate }}
+</a>
+
+@if (loading()) {
+  <div class="child-hero child-hero--skeleton" aria-busy="true"></div>
+} @else if (hasError()) {
+  <div class="card">
+    <div class="empty">
+      <div class="empty__icon">
+        <svg viewBox="0 0 24 24" fill="none" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="empty__title">{{ 'childProfile.loadFailed' | translate }}</div>
+      <p>{{ error() }}</p>
+    </div>
+  </div>
+} @else if (notFound()) {
+  <div class="card">
+    <div class="empty">
+      <div class="empty__icon">
+        <svg viewBox="0 0 24 24" fill="none" width="24" height="24" aria-hidden="true"><circle cx="12" cy="8" r="5" stroke="currentColor" stroke-width="2"/><path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="empty__title">{{ 'childProfile.notFound' | translate }}</div>
+      <p>{{ 'childProfile.notFoundDesc' | translate }}</p>
+      <a class="btn btn--primary btn--sm" routerLink="/my-children">{{ 'childProfile.back' | translate }}</a>
+    </div>
+  </div>
+} @else if (child(); as child) {
+  <!-- Identity: who, where they are placed, when they were last on -->
+  <section class="child-hero" aria-labelledby="child-profile-name">
+    <div class="child-hero__main">
+      <span class="kid-avatar kid-avatar--xl" [attr.data-variant]="avatarVariant(child.uid)" aria-hidden="true">{{ initials(child.displayName) }}</span>
+      <div class="child-hero__identity">
+        <span class="child-hero__eyebrow">{{ 'childProfile.eyebrow' | translate }}</span>
+        <h1 id="child-profile-name" class="child-hero__name">{{ child.displayName }}</h1>
+        <div class="child-hero__chips">
+          <span class="child-hero__chip">
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 12v5c3 2 9 2 12 0v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="child-hero__chip-key">{{ 'common.stage' | translate }}</span>
+            <span class="child-hero__chip-value">{{ placement().stage ?? '—' }}</span>
+          </span>
+          @if (placement().grade) {
+            <span class="child-hero__chip">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              <span class="child-hero__chip-key">{{ 'common.grade' | translate }}</span>
+              <span class="child-hero__chip-value">{{ placement().grade }}</span>
+            </span>
+          }
+          <span class="child-hero__chip">
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="child-hero__chip-key">{{ 'common.group' | translate }}</span>
+            <span class="child-hero__chip-value">{{ placement().group ?? '—' }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <dl class="child-hero__facts">
+      <div class="child-hero__fact">
+        <dt>
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ 'childProfile.lastActive' | translate }}
+        </dt>
+        <dd>
+          @if (child.lastLoginAt) { {{ child.lastLoginAt | date:'medium' }} } @else { {{ 'childProfile.neverActive' | translate }} }
+        </dd>
+      </div>
+      @if (child.mobileNumber) {
+        <div class="child-hero__fact">
+          <dt>
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="2"/><path d="M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            {{ 'childProfile.mobile' | translate }}
+          </dt>
+          <dd dir="ltr">{{ child.mobileNumber }}</dd>
+        </div>
+      }
+      <div class="child-hero__fact">
+        <dt>
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ 'childProfile.joined' | translate }}
+        </dt>
+        <dd>{{ child.createdAt | date:'mediumDate' }}</dd>
+      </div>
+    </dl>
+
+    @if (children().length > 1) {
+      <nav class="child-hero__switch" [attr.aria-label]="'childProfile.switchChild' | translate">
+        @for (sibling of children(); track sibling.uid) {
+          <a class="kid-switch" [routerLink]="['/my-children', sibling.uid]" [class.is-active]="sibling.uid === child.uid"
+             [attr.aria-current]="sibling.uid === child.uid ? 'page' : null">
+            <span class="kid-avatar kid-avatar--xs" [attr.data-variant]="avatarVariant(sibling.uid)" aria-hidden="true">{{ initials(sibling.displayName) }}</span>
+            {{ sibling.firstName || sibling.displayName }}
+          </a>
+        }
+      </nav>
+    }
+  </section>
+
+  @if (childDataError()) {
+    <div class="alert alert--danger child-alert">
+      <span>{{ 'childProfile.childDataFailed' | translate }} {{ childDataError() }}</span>
+    </div>
+  }
+
+  <!-- At a glance -->
+  <div class="kpis">
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'childProfile.stats.participations' | translate }}</span>
+        <div class="stat__icon stat__icon--brand">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ child.participationCount || 0 }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'childProfile.stats.done' | translate }}</span>
+        <div class="stat__icon stat__icon--mint">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 4 12 14.01l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="stat__value">{{ assignmentCounts().done }}<span class="child-stat__of"> / {{ assignmentCounts().all }}</span></div>
+    </div>
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'childProfile.stats.open' | translate }}</span>
+        <div class="stat__icon stat__icon--sky">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true"><path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="stat__value">
+        {{ assignmentCounts().open }}
+        @if (assignmentCounts().overdue > 0) {
+          <span class="badge badge--danger child-stat__flag">{{ 'childProfile.stats.overdue' | translate : { count: assignmentCounts().overdue } }}</span>
+        }
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat__head">
+        <span class="stat__label">{{ 'childProfile.stats.average' | translate }}</span>
+        <div class="stat__icon stat__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="stat__value">@if (averageScore() !== null) { {{ averageScore() }}% } @else { — }</div>
+    </div>
+  </div>
+
+  <!-- Level per subject: the same donuts the child sees on their own dashboard -->
+  <app-subject-performance [childId]="child.uid" />
+
+  <div class="detail-grid">
+    <!-- Last action, then a few before it -->
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title child-card-title">
+            <span class="child-card-title__icon child-card-title__icon--sky" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            {{ 'childProfile.activity.title' | translate }}
+          </h2>
+          <p class="card__sub">{{ 'childProfile.activity.subtitle' | translate : { name: child.firstName || child.displayName } }}</p>
+        </div>
+        <a class="btn btn--sm btn--ghost" routerLink="/participation-history">{{ 'childProfile.activity.viewAll' | translate }}</a>
+      </div>
+      <div class="card__body">
+        @if (childDataLoading()) {
+          <p class="muted">{{ 'common.loading' | translate }}</p>
+        } @else if (lastActivity(); as last) {
+          <div class="activity-latest" [attr.data-kind]="activityKind(last)">
+            <span class="activity-latest__icon" aria-hidden="true">
+              @if (activityKind(last) === 'quiz') {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              }
+            </span>
+            <div class="activity-latest__body">
+              <span class="activity-latest__eyebrow">{{ 'childProfile.activity.last' | translate }} · {{ 'common.' + activityKind(last) | translate }}</span>
+              <span class="activity-latest__title">{{ activityTitle(last) }}</span>
+              <span class="activity-latest__meta">
+                {{ 'childProfile.activity.submittedOn' | translate : { date: (last.endedAt | date:'medium') } }}
+              </span>
+              <span class="activity-latest__meta">
+                {{ 'childProfile.activity.answers' | translate : { correct: last.correctCount, wrong: last.wrongCount } }}
+              </span>
+            </div>
+            <div class="activity-latest__score">
+              <span class="activity-latest__score-value">{{ activityScore(last) }}%</span>
+              @if (last.pendingReviewCount) {
+                <span class="badge badge--warning">{{ 'childProfile.status.awaiting' | translate }}</span>
+              }
+            </div>
+          </div>
+
+          @if (earlierActivity().length > 0) {
+            <h3 class="child-subhead">{{ 'childProfile.activity.earlier' | translate }}</h3>
+            <ul class="activity-list">
+              @for (record of earlierActivity(); track record.id) {
+                <li class="activity-list__item">
+                  <span class="activity-list__dot" [attr.data-kind]="activityKind(record)" aria-hidden="true"></span>
+                  <div class="activity-list__main">
+                    <span class="activity-list__title">{{ activityTitle(record) }}</span>
+                    <span class="activity-list__meta">{{ 'common.' + activityKind(record) | translate }} · {{ record.endedAt | date:'mediumDate' }}</span>
+                  </div>
+                  <span class="badge badge--brand">{{ activityScore(record) }}%</span>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <div class="empty empty--compact">
+            <div class="empty__title">{{ 'childProfile.activity.none' | translate }}</div>
+            <p>{{ 'childProfile.activity.noneDesc' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Teachers, each with the subjects they teach this child -->
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title child-card-title">
+            <span class="child-card-title__icon child-card-title__icon--mint" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2ZM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            </span>
+            {{ 'childProfile.teachers.title' | translate }}
+          </h2>
+          <p class="card__sub">{{ 'childProfile.teachers.subtitle' | translate : { name: child.firstName || child.displayName } }}</p>
+        </div>
+      </div>
+      <div class="card__body">
+        @if (childTeachers().length > 0) {
+          <ul class="teacher-list">
+            @for (row of childTeachers(); track row.teacher.id) {
+              <li class="teacher-list__item">
+                <span class="kid-avatar kid-avatar--sm" [attr.data-variant]="avatarVariant(row.teacher.id)" aria-hidden="true">{{ initials(teacherName(row.teacher)) }}</span>
+                <div class="teacher-list__main">
+                  <span class="teacher-list__name">{{ teacherName(row.teacher) }}</span>
+                  @if (row.teacher.email) {
+                    <a class="teacher-list__email" [href]="'mailto:' + row.teacher.email" dir="ltr">{{ row.teacher.email }}</a>
+                  }
+                  <div class="teacher-list__subjects">
+                    @for (subject of row.subjects; track subject.id) {
+                      <span class="subject-chip">
+                        <span class="subject-chip__dot" [style.background]="subject.color || null" aria-hidden="true"></span>
+                        {{ subject.name }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty empty--compact">
+            <div class="empty__title">{{ 'childProfile.teachers.none' | translate }}</div>
+            <p>{{ 'childProfile.teachers.noneDesc' | translate }}</p>
+          </div>
+        }
+        @if (untaughtSubjects().length > 0) {
+          <h3 class="child-subhead">{{ 'childProfile.teachers.untaught' | translate }}</h3>
+          <div class="teacher-list__subjects">
+            @for (subject of untaughtSubjects(); track subject.id) {
+              <span class="subject-chip subject-chip--muted">
+                <span class="subject-chip__dot" [style.background]="subject.color || null" aria-hidden="true"></span>
+                {{ subject.name }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned quizzes and homework, with where the child stands on each -->
+  <div class="card">
+    <div class="card__head child-work__head">
+      <div>
+        <h2 class="card__title child-card-title">
+          <span class="child-card-title__icon child-card-title__icon--amber" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="8" y="2" width="8" height="4" rx="1" stroke="currentColor" stroke-width="2"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          {{ 'childProfile.work.title' | translate }}
+        </h2>
+        <p class="card__sub">{{ 'childProfile.work.subtitle' | translate : { name: child.firstName || child.displayName } }}</p>
+      </div>
+      <div class="segmented" role="group" [attr.aria-label]="'common.filter' | translate">
+        <button type="button" [class.is-active]="assignmentFilter() === 'all'" [attr.aria-pressed]="assignmentFilter() === 'all'" (click)="setAssignmentFilter('all')">
+          {{ 'childProfile.work.filters.all' | translate }} <span class="tabs__count">{{ assignmentCounts().all }}</span>
+        </button>
+        <button type="button" [class.is-active]="assignmentFilter() === 'open'" [attr.aria-pressed]="assignmentFilter() === 'open'" (click)="setAssignmentFilter('open')">
+          {{ 'childProfile.work.filters.open' | translate }} <span class="tabs__count">{{ assignmentCounts().open }}</span>
+        </button>
+        <button type="button" [class.is-active]="assignmentFilter() === 'done'" [attr.aria-pressed]="assignmentFilter() === 'done'" (click)="setAssignmentFilter('done')">
+          {{ 'childProfile.work.filters.done' | translate }} <span class="tabs__count">{{ assignmentCounts().done }}</span>
+        </button>
+      </div>
+    </div>
+    <div class="card__body">
+      @if (childDataLoading()) {
+        <p class="muted">{{ 'common.loading' | translate }}</p>
+      } @else {
+        <ul class="work-list">
+          @for (assignment of pagedAssignments(); track assignment.id) {
+            @let status = statusOf(assignment);
+            @let subject = subjectOf(assignment);
+            <li class="work-item" [attr.data-status]="status">
+              <span class="work-item__icon" [attr.data-kind]="assignment.kind ?? 'homework'" aria-hidden="true">
+                @if (assignment.kind === 'quiz') {
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                }
+              </span>
+              <div class="work-item__main">
+                <span class="work-item__title">{{ assignment.title }}</span>
+                <span class="work-item__meta">
+                  <span>{{ 'common.' + (assignment.kind ?? 'homework') | translate }}</span>
+                  @if (subject) {
+                    <span class="subject-chip subject-chip--inline">
+                      <span class="subject-chip__dot" [style.background]="subject.color || null" aria-hidden="true"></span>
+                      {{ subject.name }}
+                    </span>
+                  }
+                  @if (assignment.createdByName) {
+                    <span>{{ 'childProfile.work.by' | translate : { name: assignment.createdByName } }}</span>
+                  }
+                  @if (assignment.questionCount) {
+                    <span>{{ 'childProfile.work.questions' | translate : { count: assignment.questionCount } }}</span>
+                  }
+                </span>
+              </div>
+              <div class="work-item__when">
+                @if (assignment.submission; as submission) {
+                  <span class="work-item__date">{{ 'childProfile.work.submitted' | translate : { date: (submission.endedAt | date:'mediumDate') } }}</span>
+                } @else {
+                  <span class="work-item__date">{{ 'childProfile.work.due' | translate : { date: (assignment.dueAt | date:'mediumDate') } }}</span>
+                  @let days = daysUntil(assignment.dueAt);
+                  @if (days < 0) {
+                    <span class="work-item__hint work-item__hint--late">{{ 'childProfile.work.daysLate' | translate : { count: -days } }}</span>
+                  } @else if (days === 0) {
+                    <span class="work-item__hint work-item__hint--soon">{{ 'childProfile.work.dueToday' | translate }}</span>
+                  } @else {
+                    <span class="work-item__hint" [class.work-item__hint--soon]="days <= 2">{{ 'childProfile.work.daysLeft' | translate : { count: days } }}</span>
+                  }
+                }
+              </div>
+              <div class="work-item__status">
+                <span class="badge" [class]="statusBadge(status)">{{ 'childProfile.status.' + status | translate }}</span>
+                @if (assignment.submission; as submission) {
+                  <span class="work-item__score">{{ submission.scorePercent }}%</span>
+                }
+              </div>
+            </li>
+          } @empty {
+            <li class="empty empty--compact">
+              <div class="empty__title">{{ 'childProfile.work.empty' | translate }}</div>
+              <p>{{ 'childProfile.work.emptyDesc' | translate }}</p>
+            </li>
+          }
+        </ul>
+
+        @if (assignmentPageCount() > 1) {
+          <nav class="pagination" [attr.aria-label]="'childProfile.work.pages' | translate">
+            <button type="button" class="pagination__btn" [disabled]="assignmentPage() === 0" (click)="goToAssignmentPage(assignmentPage() - 1)">
+              {{ 'common.previous' | translate }}
+            </button>
+            <div class="pagination__numbers">
+              @for (page of assignmentPageNumbers(); track $index) {
+                @if (page === null) {
+                  <span class="pagination__ellipsis" aria-hidden="true">…</span>
+                } @else {
+                  <button type="button" class="pagination__num" [class.is-active]="page === assignmentPage()"
+                          [attr.aria-current]="page === assignmentPage() ? 'page' : null" (click)="goToAssignmentPage(page)">
+                    {{ page + 1 }}
+                  </button>
+                }
+              }
+            </div>
+            <button type="button" class="pagination__btn" [disabled]="assignmentPage() >= assignmentPageCount() - 1" (click)="goToAssignmentPage(assignmentPage() + 1)">
+              {{ 'common.next' | translate }}
+            </button>
+          </nav>
+        }
+      }
+    </div>
+  </div>
+}

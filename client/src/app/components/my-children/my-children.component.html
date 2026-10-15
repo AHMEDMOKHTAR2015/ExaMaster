@@ -1,0 +1,88 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'myChildren.title' | translate }}</h1>
+    <p class="page__subtitle">{{ 'myChildren.subtitle' | translate }}</p>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="kids-grid" aria-busy="true">
+    @for (placeholder of [1, 2, 3]; track placeholder) {
+      <div class="kid-card kid-card--skeleton" aria-hidden="true"></div>
+    }
+  </div>
+} @else if (hasError()) {
+  <div class="card">
+    <div class="empty">
+      <div class="empty__icon">
+        <svg viewBox="0 0 24 24" fill="none" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="empty__title">{{ 'myChildren.loadFailed' | translate }}</div>
+      <p>{{ error() }}</p>
+    </div>
+  </div>
+} @else {
+  <div class="kids-grid">
+    @for (child of children(); track child.uid) {
+      @let where = placement(child);
+      <a class="kid-card" [routerLink]="['/my-children', child.uid]"
+         [attr.aria-label]="'myChildren.openProfile' | translate : { name: child.displayName }">
+        <div class="kid-card__band" [attr.data-variant]="avatarVariant(child.uid)" aria-hidden="true"></div>
+        <div class="kid-card__top">
+          <span class="kid-avatar" [attr.data-variant]="avatarVariant(child.uid)" aria-hidden="true">{{ initials(child.displayName) }}</span>
+          <span class="kid-card__go" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+
+        <div class="kid-card__name">{{ child.displayName }}</div>
+        <div class="kid-card__chips">
+          @if (where.stage) {
+            <span class="kid-chip">
+              <svg viewBox="0 0 24 24" fill="none" width="13" height="13" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 12v5c3 2 9 2 12 0v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              {{ where.stage }}
+            </span>
+          }
+          @if (where.grade) {
+            <span class="kid-chip">
+              <svg viewBox="0 0 24 24" fill="none" width="13" height="13" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              {{ where.grade }}
+            </span>
+          }
+          @if (where.group) {
+            <span class="kid-chip">
+              <svg viewBox="0 0 24 24" fill="none" width="13" height="13" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              {{ where.group }}
+            </span>
+          }
+        </div>
+
+        <div class="kid-card__foot">
+          <span class="kid-card__fact">
+            <svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden="true"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/></svg>
+            {{ 'myChildren.participations' | translate : { count: child.participationCount || 0 } }}
+          </span>
+          <span class="kid-card__fact">
+            <svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            @if (child.lastLoginAt) {
+              {{ 'myChildren.lastActive' | translate : { date: (child.lastLoginAt | date:'mediumDate') } }}
+            } @else {
+              {{ 'myChildren.neverActive' | translate }}
+            }
+          </span>
+        </div>
+      </a>
+    } @empty {
+      <div class="card kids-grid__empty">
+        <div class="empty">
+          <div class="empty__icon">
+            <svg viewBox="0 0 24 24" fill="none" width="24" height="24" aria-hidden="true"><circle cx="12" cy="8" r="5" stroke="currentColor" stroke-width="2"/><path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2"/></svg>
+          </div>
+          <div class="empty__title">{{ 'myChildren.empty' | translate }}</div>
+          <p>{{ 'myChildren.emptyDesc' | translate }}</p>
+          <a class="btn btn--primary btn--sm" routerLink="/parent-dashboard">{{ 'nav.dashboard' | translate }}</a>
+        </div>
+      </div>
+    }
+  </div>
+}

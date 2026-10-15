@@ -22,6 +22,10 @@ export class TeacherStrategy implements AdminRoleStrategy {
     return false;
   }
 
+  canViewMyChildren(): boolean {
+    return false;
+  }
+
   canManageAllUsers(): boolean {
     return false;
   }

@@ -1532,10 +1532,11 @@
               <td class="col-actions">
                 <div class="quizzes-admin__row-actions">
                   <button class="btn btn--lg btn--ghost small" type="button" (click)="viewHomeworkCompletion(hw)">{{ 'quizzesAdmin.homework.completion' | translate }}</button>
+                  <!-- One [class] binding, not [class.btn btn--lg btn--ghost]: a class name cannot hold spaces, and
+                       removing one throws mid-update, which left this button with no class and no label. -->
                   <button
                     class="small"
-                    [class.btn btn--lg btn--ghost]="!hw.active"
-                    [class.danger-btn]="hw.active"
+                    [class]="hw.active ? 'danger-btn' : 'btn btn--lg btn--ghost'"
                     type="button"
                     (click)="toggleHomeworkActive(hw)">
                     {{ hw.active ? ('quizzesAdmin.homework.deactivate' | translate) : ('quizzesAdmin.homework.activate' | translate) }}

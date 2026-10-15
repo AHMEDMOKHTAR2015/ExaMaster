@@ -50,7 +50,11 @@ export class HomeworkService {
     return this.list({});
   }
 
-  /** The signed-in teacher's own assignments, closed ones included, newest first. */
+  /** One of the signed-in parent's children's active assignments, each with that child's latest attempt. */
+  async listForChild(childId: string): Promise<HomeworkAssignment[]> {
+    return this.list({ childId: Number(childId) });
+  }
+
   /** The caller's own assignments, active or not, narrowed by Quiz Management's filter bar (applied by the API). */
   async listByCreator(filter: AssignmentFilter = {}): Promise<HomeworkAssignment[]> {
     return this.list({ mine: true, includeInactive: true, ...assignmentFilterParams(filter) });

@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { guestGuard, studentGuard, userAdminGuard, applicationAdminGuard,
   platformAdminGuard,
-  translationsAdminGuard, adminDashboardGuard, teacherGuard, childParticipationHistoryGuard } from './guards';
+  translationsAdminGuard, adminDashboardGuard, teacherGuard, childParticipationHistoryGuard, myChildrenGuard } from './guards';
 
 /**
  * Application routes with lazy loading and guards
@@ -143,6 +143,21 @@ export const routes: Routes = [
       .then(m => m.ParentDashboardComponent),
     canActivate: [userAdminGuard],
     title: 'Parent Dashboard - QuizMaster'
+  },
+  {
+    // A parent's children, each card opening that child's profile. The API serves only the caller's own children.
+    path: 'my-children',
+    loadComponent: () => import('./components/my-children/my-children.component')
+      .then(m => m.MyChildrenComponent),
+    canActivate: [myChildrenGuard],
+    title: 'My Children - QuizMaster'
+  },
+  {
+    path: 'my-children/:id',
+    loadComponent: () => import('./components/my-children/child-profile.component')
+      .then(m => m.ChildProfileComponent),
+    canActivate: [myChildrenGuard],
+    title: 'Child Profile - QuizMaster'
   },
   {
     path: 'participation-history',

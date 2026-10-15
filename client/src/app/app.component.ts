@@ -120,6 +120,10 @@ export class AppComponent {
     return this.adminAccessService.getStrategy(this.user()?.roles).getRoleType() === 'userAdmin';
   });
 
+  /** Parents: My Children and each child's profile (`myChildrenGuard` asks the same capability). */
+  readonly canViewMyChildren = computed(() =>
+    this.adminAccessService.getStrategy(this.user()?.roles).canViewMyChildren());
+
   /** The vendor: their own sidebar section (organizations, access requests), and none of a school's. */
   readonly isPlatformAdmin = computed(() => this.user()?.roles?.includes('platformAdmin') ?? false);
 

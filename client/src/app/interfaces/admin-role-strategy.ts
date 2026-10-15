@@ -5,6 +5,12 @@ export interface AdminRoleStrategy {
   // Dashboard-specific permissions
   canManageChildren(): boolean;
   canViewChildParticipations(): boolean;
+  /**
+   * May open My Children and a child's profile. Parents only: the pages read
+   * `GET /me/children`, which the API serves to the Parent role alone — an
+   * application admin can view participations school-wide but has no family.
+   */
+  canViewMyChildren(): boolean;
   canManageAllUsers(): boolean;
   canViewGlobalParticipations(): boolean;
   canManageRegistrationKeys(): boolean;

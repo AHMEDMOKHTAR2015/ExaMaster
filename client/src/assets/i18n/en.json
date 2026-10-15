@@ -3,8 +3,6 @@
     "name": "ExaMaster",
     "tagline": "Learning Platform",
     "loading": "Loading ExaMaster..."
-    
-    
   },
   "nav": {
     "createWorkItem": "Create New Work Item",
@@ -35,7 +33,8 @@
       "alerts": "Alerts",
       "profile": "Profile",
       "students": "Students",
-      "requests": "Requests"
+      "requests": "Requests",
+      "children": "Children"
     },
     "myParticipations": "My Participations",
     "username": "Username",
@@ -43,7 +42,8 @@
     "tenant": "Tenant",
     "platform": "Platform",
     "organizations": "Organizations",
-    "accessRequests": "Access requests"
+    "accessRequests": "Access requests",
+    "myChildren": "My Children"
   },
   "roles": {
     "platformAdmin": "Platform Admin",
@@ -147,7 +147,7 @@
     "select": "-- Select Semester --"
   },
   "auth": {
-    "welcome":"Welcome Back",
+    "welcome": "Welcome Back",
     "subtitle": "Test your knowledge, track your progress",
     "tabs": {
       "login": "Login",
@@ -386,7 +386,8 @@
       "createChildAccount": "Create Child Account",
       "refreshing": "Refreshing…",
       "close": "Close",
-      "homework": "Homework: {{ title }}"
+      "homework": "Homework: {{ title }}",
+      "openMyChildren": "View my children"
     },
     "teacher": {
       "stats": {
@@ -1581,7 +1582,9 @@
         "good": "Good",
         "fair": "Fair",
         "weak": "Needs work"
-      }
+      },
+      "participations": "Participations: {{count}}",
+      "participationsHint": "{{quizzes}} quizzes · {{homework}} homework"
     },
     "tabs": {
       "quizzes": "Quizzes",
@@ -1789,5 +1792,88 @@
     "add": "Add",
     "remove": "Remove",
     "chooseSubjectForUpload": "Choose a subject to tag the uploaded questions with its topics (optional)."
+  },
+  "myChildren": {
+    "title": "My Children",
+    "subtitle": "Open a child to see their progress, assigned work and teachers",
+    "loadFailed": "Couldn't load your children.",
+    "openProfile": "Open {{name}}'s profile",
+    "participations": "{{count}} participations",
+    "lastActive": "Active {{date}}",
+    "neverActive": "Not signed in yet",
+    "empty": "No children yet",
+    "emptyDesc": "Add a child from your dashboard to follow their progress here."
+  },
+  "childProfile": {
+    "back": "My Children",
+    "eyebrow": "Student profile",
+    "loadFailed": "Couldn't load this profile.",
+    "childDataFailed": "Some of this child's work couldn't be loaded.",
+    "notFound": "Child not found",
+    "notFoundDesc": "This child isn't linked to your account.",
+    "lastActive": "Last active",
+    "neverActive": "Not signed in yet",
+    "mobile": "Mobile",
+    "joined": "Joined",
+    "switchChild": "Switch child",
+    "stats": {
+      "participations": "Participations",
+      "done": "Work handed in",
+      "open": "Still to do",
+      "overdue": "{{count}} overdue",
+      "average": "Average score"
+    },
+    "subjects": {
+      "title": "Subjects",
+      "subtitle": "Level in each subject over the past 12 months",
+      "loading": "Loading subjects…",
+      "loadFailed": "Couldn't load subject levels.",
+      "empty": "Levels appear once a quiz or homework has been marked."
+    },
+    "activity": {
+      "title": "Activity",
+      "subtitle": "What {{name}} did most recently",
+      "last": "Last action",
+      "earlier": "Before that",
+      "submittedOn": "Submitted {{date}}",
+      "answers": "{{correct}} correct · {{wrong}} wrong",
+      "viewAll": "Full history",
+      "none": "No activity yet",
+      "noneDesc": "Quizzes and homework appear here once they are submitted."
+    },
+    "teachers": {
+      "title": "Teachers",
+      "subtitle": "Who teaches {{name}}, and what",
+      "none": "No teachers yet",
+      "noneDesc": "The school hasn't assigned teachers to this group yet.",
+      "untaught": "Subjects without a teacher yet"
+    },
+    "work": {
+      "title": "Assigned work",
+      "subtitle": "Quizzes and homework set for {{name}}",
+      "filters": {
+        "all": "All",
+        "open": "To do",
+        "done": "Handed in"
+      },
+      "by": "By {{name}}",
+      "questions": "{{count}} questions",
+      "due": "Due {{date}}",
+      "submitted": "Handed in {{date}}",
+      "daysLeft": "{{count}} days left",
+      "dueToday": "Due today",
+      "daysLate": "{{count}} days late",
+      "pages": "Assigned work pages",
+      "empty": "Nothing here",
+      "emptyDesc": "No quizzes or homework match this filter."
+    },
+    "status": {
+      "todo": "To do",
+      "overdue": "Overdue",
+      "awaiting": "Awaiting marks",
+      "approved": "Approved",
+      "rejected": "Returned",
+      "submitted": "Handed in"
+    }
   }
 }
