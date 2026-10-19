@@ -2276,6 +2276,57 @@ router-outlet {
   display: block;
 }
 
+/* Each portrait pops in 0.15s after the one before, then floats; its disc
+   pulses on the same beat. `pop` drives `transform` and `float` drives the
+   separate `translate` property, so the two compose instead of overriding
+   each other. `--i` is the portrait's place in the grid; the disc inherits it. */
+.auth-logo__avatar {
+  --i: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation:
+    auth-avatar-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    auth-avatar-float 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.15s), calc(0.7s + var(--i) * 0.55s);
+}
+
+.auth-logo__avatar:nth-child(2) { --i: 1; }
+.auth-logo__avatar:nth-child(3) { --i: 2; }
+.auth-logo__avatar:nth-child(4) { --i: 3; }
+.auth-logo__avatar:nth-child(5) { --i: 4; }
+.auth-logo__avatar:nth-child(6) { --i: 5; }
+.auth-logo__avatar:nth-child(7) { --i: 6; }
+.auth-logo__avatar:nth-child(8) { --i: 7; }
+
+.auth-logo__disc {
+  animation: auth-avatar-pulse 4s ease-in-out infinite;
+  animation-delay: calc(0.7s + var(--i) * 0.55s);
+}
+
+@keyframes auth-avatar-pop {
+  0% { opacity: 0; transform: scale(0.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes auth-avatar-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -12px; }
+}
+
+@keyframes auth-avatar-pulse {
+  0%, 100% { fill: #f2f2f2; }
+  50% { fill: #e3ebf5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-logo__avatar,
+  .auth-logo__disc {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .auth-brand__hero {
   flex: 1;
   display: flex;
