@@ -14,6 +14,9 @@ public interface ISignInAccounts
     // brought over from the old system). Signs every existing session of that account out.
     Task SetPasswordAsync(string uid, string email, string password, CancellationToken ct);
 
+    // Lifts a lockout from too many wrong passwords now, rather than when it runs out; the password stays as it was.
+    Task UnlockAsync(string uid, CancellationToken ct);
+
     Task DeleteAsync(string uid, CancellationToken ct);
 
     // For a password chosen before its account exists (an access request): kept as a hash until the account is created

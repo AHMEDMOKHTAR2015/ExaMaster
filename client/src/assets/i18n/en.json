@@ -1188,6 +1188,10 @@
     "editUser": "Edit user",
     "suspendUser": "Suspend user",
     "activateUser": "Activate user",
+    "lockedOut": "Locked out",
+    "lockedUntil": "Too many wrong passwords. Locked until {{ time }}.",
+    "unlockUser": "Unlock sign-in",
+    "unlocked": "Account unlocked. They can sign in again with their password.",
     "drawer": {
       "editEyebrow": "EDIT ACCOUNT",
       "newEyebrow": "NEW ACCOUNT",

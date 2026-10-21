@@ -44,12 +44,20 @@ public class SearchUsersQueryHandler(Repository<User> _userRepository, QuizMaste
             .Select(group => new { ChildId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(entry => entry.ChildId, entry => entry.Count, ct);
 
+        // And which are locked out by wrong passwords, so an administrator can see who to unlock.
+        var now = DateTime.UtcNow;
+        var uids = page.Items.Select(user => user.SignInUid).ToList();
+        var lockedUntil = await _dbContext.SignInCredentials.AsNoTracking()
+            .Where(credential => uids.Contains(credential.Uid) && credential.LockedUntil > now)
+            .ToDictionaryAsync(credential => credential.Uid, credential => credential.LockedUntil, ct);
+
         return page with
         {
             Items = page.Items.Select(user => user with
             {
                 ChildCount = childCounts.GetValueOrDefault(user.Id),
-                ParticipationCount = participationCounts.GetValueOrDefault(user.Id)
+                ParticipationCount = participationCounts.GetValueOrDefault(user.Id),
+                LockedUntil = lockedUntil.GetValueOrDefault(user.SignInUid)
             }).ToList()
         };
     }

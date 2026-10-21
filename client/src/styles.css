@@ -9053,6 +9053,16 @@ button.list-row:hover {
   color: var(--danger-600);
 }
 
+/* Locked out by wrong passwords: shown beside the status, not instead of it */
+.status-pill[data-status="locked"] {
+  color: var(--danger-600);
+  margin-inline-start: 0.5rem;
+}
+
+.status-pill[data-status="locked"] .status-pill__dot {
+  background: var(--rose-500);
+}
+
 /* ============================================================
    Linked-to cell
    ============================================================ */

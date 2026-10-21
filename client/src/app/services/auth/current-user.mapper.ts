@@ -58,6 +58,7 @@ export function toUser(user: ApiUser, tenantSlug: string | undefined, provider: 
     active: user.isActive,
     createdAt: new Date(user.createdOn),
     lastLoginAt: user.lastActiveOn ? new Date(user.lastActiveOn) : undefined,
+    lockedUntil: user.lockedUntil ? new Date(user.lockedUntil) : undefined,
     // Derived from participations by the API now; the screens that show them move over with participations.
     completedQuizzes: []
   };

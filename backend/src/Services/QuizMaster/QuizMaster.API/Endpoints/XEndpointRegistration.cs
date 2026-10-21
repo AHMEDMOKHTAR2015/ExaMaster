@@ -44,6 +44,7 @@ public static class EndpointRegistration
         SignOutEndpoint.Map(api);
         ChangeMyPasswordEndpoint.Map(api);
         SetUserPasswordEndpoint.Map(api);
+        UnlockUserSignInEndpoint.Map(api);
 
         // Accounts (a profile and its sign-in, created together)
         CreateAccountEndpoint.Map(api);

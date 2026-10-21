@@ -61,7 +61,8 @@ for a token. `ApiAuthInterceptor` adds the token to API requests only and retrie
 
 On start, `AuthService` restores a stored session by loading `GET /me`; a 401 or 404 there signs out. Families sign in
 with a mobile number, which `EmailBuilder` turns into the email it was registered under (`{digits}@mobile.local`,
-unique platform-wide). Five wrong passwords lock an account for 15 minutes.
+unique platform-wide). Five wrong passwords lock an account for 15 minutes; Users admin marks a locked account "Locked out"
+and its unlock button lets that person straight back in with the password they have.
 
 **There is no reset email** — a child has no mailbox. The people responsible for an account set its password: an
 administrator for anyone in their school (Users → edit), a parent for their own children (dashboard → child → Set

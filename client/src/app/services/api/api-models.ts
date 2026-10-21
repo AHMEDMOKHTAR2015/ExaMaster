@@ -30,6 +30,7 @@ export interface ApiUser {
   lastActiveOn: string | null;                         // latest sign-in or session renewal; null until they first sign in
   childCount?: number | null;                          // GET /users only
   participationCount?: number | null;                  // GET /users only
+  lockedUntil?: string | null;                         // GET /users only: set while wrong passwords keep the account from signing in
 }
 
 export interface ApiTenant {

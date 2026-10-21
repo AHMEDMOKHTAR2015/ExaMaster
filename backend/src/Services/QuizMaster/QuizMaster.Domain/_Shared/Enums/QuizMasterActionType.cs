@@ -91,6 +91,7 @@ public enum QuizMasterActionType
     ChangeMyPassword,
     SetUserPassword,
     SetAdministratorPassword,
+    UnlockUserSignIn,
 
     // Access requests (a visitor asks; the platform administrator decides)
     SubmitAccessRequest,

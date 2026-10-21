@@ -370,6 +370,11 @@ check "and it is the one that signs in now" 200 "$(anon POST /auth/sign-in '{"em
 for i in 1 2 3 4 5; do anon POST /auth/sign-in '{"email":"student2@demo-school.local","password":"guess"}' >/dev/null; done
 check "the first-run platform administrator signs in" "200" "$(anon POST /auth/sign-in '{"email":"platform@quizmasterpro.local","password":"@dminP@$$w0rd"}')"
 check "five wrong guesses lock the account" "401 true" "$(anon POST /auth/sign-in '{"email":"student2@demo-school.local","password":"password"}') $(json '.Message | test("Too many")')"
+check "the users list shows the lockout" "200 true" "$(call dev-admin GET '/users?search=student2@demo-school.local') $(json '.items[0].lockedUntil != null')"
+LOCKED_ID=$(json .items[0].id)
+check "a teacher cannot unlock it" 403 "$(call dev-teacher POST /users/$LOCKED_ID:unlock)"
+check "an administrator can" 200 "$(call dev-admin POST /users/$LOCKED_ID:unlock)"
+check "and the same password signs in again" 200 "$(anon POST /auth/sign-in '{"email":"student2@demo-school.local","password":"password"}')"
 
 echo "== a school with no working administrator login"
 check "a school administrator cannot use the platform's reset" 403 "$(call dev-admin PUT /platform/tenants/$DEMO/administrator-password '{"email":"admin@demo-school.local","password":"platform1"}')"

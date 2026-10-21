@@ -45,6 +45,8 @@ export interface User {
   createdAt: Date;
   /** When they last used the app (a sign-in or session renewal); absent if they never have. */
   lastLoginAt?: Date;
+  /** Until when too many wrong passwords keep this account from signing in (users lists only); absent if it can sign in. */
+  lockedUntil?: Date;
   completedQuizzes: CompletedQuiz[];
   participations?: ParticipationRecord[];
   participationCount?: number;

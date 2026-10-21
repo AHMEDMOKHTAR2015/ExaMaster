@@ -71,7 +71,7 @@ export class EmailBuilder {
    */
   static fromMobile(mobileOrEmail: string, domain = 'mobile.local'): string {
     const input = (mobileOrEmail ?? '').trim();
-    if (!input) throw new Error('Mobile number is required');
+    if (!input) throw new Error('Mobile number or email is required');
     if (input.includes('@')) return input;
     return new EmailBuilder().setMobileNumber(input).setDomain(domain).build();
   }

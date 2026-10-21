@@ -108,6 +108,11 @@ export class AppUserService {
     await this.api.put(`/users/${id}/password`, { password });
   }
 
+  /** Let someone locked out by wrong passwords sign in again now, with the password they already have. */
+  async unlockSignIn(id: string): Promise<void> {
+    await this.api.post(`/users/${id}:unlock`);
+  }
+
   async updateUserActive(id: string, active: boolean): Promise<void> {
     await this.api.post(`/users/${id}:${active ? 'activate' : 'deactivate'}`);
   }

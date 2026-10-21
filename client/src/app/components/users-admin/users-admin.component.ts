@@ -393,6 +393,23 @@ export class UsersAdminComponent {
     }
   }
 
+  /** Locked out by too many wrong passwords, as of when the list was loaded (the lock runs out by itself). */
+  isLockedOut(u: User): boolean {
+    return !!u.lockedUntil && u.lockedUntil.getTime() > Date.now();
+  }
+
+  async unlockSignIn(user: User): Promise<void> {
+    try {
+      await this.appUserService.unlockSignIn(user.id!);
+      const unlocked = (u: User) => u.uid === user.uid ? { ...u, lockedUntil: undefined } : u;
+      this.allUsers.update(list => list.map(unlocked));
+      this.childrenByParent.update(map => new Map([...map].map(([parentId, children]) => [parentId, children.map(unlocked)])));
+      this.notification.success(this.translate.instant('usersAdmin.unlocked'));
+    } catch (error) {
+      this.notification.error(error instanceof ServiceError ? error.message : 'Could not unlock the account.');
+    }
+  }
+
   exportCsv(): void {
     const rows = this.filteredUsers();
     const header = ['Name', 'Email', 'Mobile', 'Role', 'Status', 'Linked', 'Last Active', 'Joined'];
@@ -499,7 +516,6 @@ export class UsersAdminComponent {
     this.newLastName.set(u.lastName ?? '');
     this.newMobile.set(u.mobileNumber ?? '');
     this.newEmail.set(u.email ?? '');
-    this.newRegistrationKeyId.set(u.registrationKeyId ?? '');
     this.newActive.set(u.active ?? true);
 
     if (role === 'Admin') {

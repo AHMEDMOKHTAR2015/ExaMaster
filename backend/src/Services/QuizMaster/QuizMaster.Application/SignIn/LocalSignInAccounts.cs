@@ -58,6 +58,11 @@ public class LocalSignInAccounts(QuizMasterDbContext _dbContext, IPasswordHasher
 
     private static readonly SignInCredential NoAccountYet = new() { Uid = "", Email = "" };
 
+    // Straight to the columns, as RecordSuccess would set them: a profile with no credential yet has nothing to unlock.
+    public Task UnlockAsync(string uid, CancellationToken ct)
+        => _dbContext.SignInCredentials.Where(c => c.Uid == uid)
+            .ExecuteUpdateAsync(set => set.SetProperty(c => c.FailedAttempts, 0).SetProperty(c => c.LockedUntil, (DateTime?)null), ct);
+
     public async Task DeleteAsync(string uid, CancellationToken ct)
     {
         await _dbContext.RefreshTokens.Where(t => t.Uid == uid).ExecuteDeleteAsync(ct);
