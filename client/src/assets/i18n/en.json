@@ -43,7 +43,8 @@
     "platform": "Platform",
     "organizations": "Organizations",
     "accessRequests": "Access requests",
-    "myChildren": "My Children"
+    "myChildren": "My Children",
+    "teachingMaterials": "Teaching Materials"
   },
   "roles": {
     "platformAdmin": "Platform Admin",
@@ -1878,6 +1879,60 @@
       "approved": "Approved",
       "rejected": "Returned",
       "submitted": "Handed in"
+    }
+  },
+  "teachingMaterials": {
+    "title": "Teaching Materials",
+    "subtitleTeacher": "Course material you uploaded for your subjects, to teach lesson by lesson",
+    "subtitleAdmin": "Course material every teacher in your school has uploaded",
+    "count": "{{ count }} material(s)",
+    "allSubjects": "All subjects",
+    "loading": "Loading materials…",
+    "loadFailed": "Couldn't load the materials. Refresh the page to try again.",
+    "empty": "No materials yet",
+    "emptyHintTeacher": "Upload a teaching-summary JSON file to add your first material.",
+    "emptyHintAdmin": "Materials appear here once a teacher uploads one.",
+    "noMatches": "No materials match these filters",
+    "open": "Open",
+    "deleteConfirm": "Delete \"{{ title }}\" with all its units and lessons? This cannot be undone.",
+    "unitCount": "{{ count }} unit(s)",
+    "lessonCount": "{{ count }} lesson(s)",
+    "table": {
+      "material": "Material",
+      "units": "Units",
+      "lessons": "Lessons",
+      "uploadedBy": "Uploaded by",
+      "uploadedOn": "Uploaded"
+    },
+    "upload": {
+      "open": "Upload material",
+      "title": "Upload a teaching material",
+      "hint": "Choose a teaching-summary JSON file, then the subject and grade it is for.",
+      "choose": "Choose JSON file",
+      "chooseAnother": "Choose another file",
+      "notJson": "This file is not valid JSON.",
+      "notMaterial": "This file is not a teaching summary: it needs an id, a title and a list of units.",
+      "noTeacherRecord": "Your account is not linked to a teacher record yet, so you cannot upload material. Ask the school administrator to link it.",
+      "noSubjects": "You have no subjects yet. Ask the school administrator to add your subjects to your teacher record.",
+      "whoSees": "You and the school administrators will see this material.",
+      "problemsTitle": "The file has {{ count }} problem(s). Fix them and choose the file again:",
+      "confirm": "Upload",
+      "uploading": "Uploading…",
+      "done": "\"{{ title }}\" was uploaded."
+    },
+    "reader": {
+      "back": "← Teaching Materials",
+      "loading": "Loading the material…",
+      "notFound": "This material no longer exists, or you cannot open it.",
+      "loadFailed": "Couldn't load the material. Refresh the page to try again.",
+      "contents": "Contents",
+      "overview": "Overview",
+      "units": "Units",
+      "lessons": "Lessons",
+      "bigIdea": "Big idea",
+      "keyTakeaways": "Key takeaways",
+      "bookPages": "Book pp. {{ pages }}",
+      "pager": "Lesson navigation"
     }
   }
 }

@@ -6,7 +6,7 @@ public class GetMyStudentsQueryHandler(QuizMasterDbContext _dbContext, IClaimsPr
     public async Task<GetMyStudentsResponse> Handle(GetMyStudentsQuery query, CancellationToken ct)
     {
         var callerId = _claimsProvider.GetUserId();
-        var teacher = await FindTeacherRecordAsync(callerId, ct);
+        var teacher = await _dbContext.FindTeacherRecordAsync(callerId, ct);
         if (teacher is null)
             return new GetMyStudentsResponse([]);
 
@@ -87,23 +87,5 @@ public class GetMyStudentsQueryHandler(QuizMasterDbContext _dbContext, IClaimsPr
             .ToList();
 
         return new GetMyStudentsResponse(result);
-    }
-
-    // The caller's roster record: the one their account is linked to, else the one with their email (as the app links them).
-    private async Task<Teacher?> FindTeacherRecordAsync(int callerId, CancellationToken ct)
-    {
-        var account = await _dbContext.Users.AsNoTracking()
-            .Where(user => user.Id == callerId)
-            .Select(user => new { user.TeacherId, user.Email })
-            .SingleAsync(ct);
-
-        if (account.TeacherId is { } teacherId
-            && await _dbContext.Teachers.AsNoTracking().SingleOrDefaultAsync(teacher => teacher.Id == teacherId, ct) is { } linked)
-            return linked;
-
-        return await _dbContext.Teachers.AsNoTracking()
-            .Where(teacher => teacher.Email == account.Email)
-            .OrderBy(teacher => teacher.Id)
-            .FirstOrDefaultAsync(ct);
     }
 }

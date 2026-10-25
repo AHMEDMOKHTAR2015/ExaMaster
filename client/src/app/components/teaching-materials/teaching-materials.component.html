@@ -1,0 +1,206 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'teachingMaterials.title' | translate }}</h1>
+    <p class="page__subtitle">
+      {{ (canUpload() ? 'teachingMaterials.subtitleTeacher' : 'teachingMaterials.subtitleAdmin') | translate }}
+    </p>
+  </div>
+  @if (canUpload() && !uploadOpen()) {
+    <button class="btn btn--primary" type="button" (click)="openUpload()">{{ 'teachingMaterials.upload.open' | translate }}</button>
+  }
+</div>
+
+@if (uploadedTitle(); as title) {
+  <div class="tm-alert tm-alert--success" role="status">{{ 'teachingMaterials.upload.done' | translate : { title } }}</div>
+}
+
+@if (uploadOpen()) {
+  <section class="card tm-upload" aria-labelledby="tm-upload-title">
+    <div class="tm-upload__head">
+      <h2 id="tm-upload-title" class="tm-upload__title">{{ 'teachingMaterials.upload.title' | translate }}</h2>
+      <button class="btn btn--sm btn--ghost" type="button" (click)="closeUpload()" [disabled]="uploading()">{{ 'common.cancel' | translate }}</button>
+    </div>
+    <p class="hint">{{ 'teachingMaterials.upload.hint' | translate }}</p>
+
+    @if (!hasTeacherRecord()) {
+      <div class="tm-alert tm-alert--warning" role="alert">{{ 'teachingMaterials.upload.noTeacherRecord' | translate }}</div>
+    } @else if (uploadSubjects().length === 0) {
+      <div class="tm-alert tm-alert--warning" role="alert">{{ 'teachingMaterials.upload.noSubjects' | translate }}</div>
+    } @else {
+      <input type="file" accept="application/json,.json" #fileInput hidden (change)="onFileSelected($event)" />
+      <div class="tm-upload__file">
+        <button class="btn btn--lg btn--ghost" type="button" (click)="fileInput.click()" [disabled]="uploading()">
+          {{ (fileName() ? 'teachingMaterials.upload.chooseAnother' : 'teachingMaterials.upload.choose') | translate }}
+        </button>
+        @if (fileName()) {
+          <span class="muted" dir="ltr">{{ fileName() }}</span>
+        }
+      </div>
+
+      @if (fileError(); as error) {
+        <div class="tm-alert tm-alert--error" role="alert">{{ 'teachingMaterials.upload.' + error | translate }}</div>
+      }
+
+      @if (preview(); as file) {
+        <div class="tm-preview">
+          <div class="tm-preview__title">{{ file.title }}</div>
+          @if (file.subtitle) {
+            <div class="muted">{{ file.subtitle }}</div>
+          }
+          @if (file.forLabel) {
+            <div class="muted">{{ file.forLabel }}</div>
+          }
+          <div class="tm-preview__stats">
+            <span class="badge badge--brand">{{ 'teachingMaterials.unitCount' | translate : { count: file.unitCount } }}</span>
+            <span class="badge badge--brand">{{ 'teachingMaterials.lessonCount' | translate : { count: file.lessonCount } }}</span>
+            @if (file.semester) {
+              <span class="badge">{{ 'semester.' + file.semester | translate }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="tm-upload__grid">
+          <div class="form-group">
+            <label for="tm-upload-subject">{{ 'common.subject' | translate }}</label>
+            <select id="tm-upload-subject" class="form-input" [ngModel]="uploadSubjectId()" (ngModelChange)="uploadSubjectId.set($event)">
+              <option value="">{{ 'common.selectSubject' | translate }}</option>
+              @for (subject of uploadSubjects(); track subject.id) {
+                <option [value]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tm-upload-grade">{{ 'common.grade' | translate }}</label>
+            <select id="tm-upload-grade" class="form-input" [ngModel]="uploadGradeId()" (ngModelChange)="uploadGradeId.set($event)">
+              <option value="">{{ 'common.selectGrade' | translate }}</option>
+              @for (grade of gradeOptions(); track grade.id) {
+                <option [value]="grade.id">{{ grade.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <p class="hint">{{ 'teachingMaterials.upload.whoSees' | translate }}</p>
+      }
+
+      @if (problems().length > 0) {
+        <div class="tm-problems" role="alert">
+          <strong>{{ 'teachingMaterials.upload.problemsTitle' | translate : { count: problems().length } }}</strong>
+          <ul>
+            @for (problem of problems(); track $index) {
+              <li dir="ltr">{{ problem }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="tm-upload__actions">
+        <button class="btn btn--primary" type="button" (click)="confirmUpload()" [disabled]="!canConfirmUpload()">
+          {{ (uploading() ? 'teachingMaterials.upload.uploading' : 'teachingMaterials.upload.confirm') | translate }}
+        </button>
+      </div>
+    }
+  </section>
+}
+
+<div class="card users-card">
+  <div class="users-toolbar">
+    <select class="form-input form-input--sm users-toolbar__select"
+            [attr.aria-label]="'common.subject' | translate"
+            [ngModel]="subjectFilter()"
+            (ngModelChange)="subjectFilter.set($event)">
+      <option value="">{{ 'teachingMaterials.allSubjects' | translate }}</option>
+      @for (subject of subjects(); track subject.id) {
+        <option [value]="subject.id">{{ subject.name }}</option>
+      }
+    </select>
+    <select class="form-input form-input--sm users-toolbar__select"
+            [attr.aria-label]="'common.grade' | translate"
+            [ngModel]="gradeFilter()"
+            (ngModelChange)="gradeFilter.set($event)">
+      <option value="">{{ 'common.allGrades' | translate }}</option>
+      @for (grade of gradeOptions(); track grade.id) {
+        <option [value]="grade.id">{{ grade.label }}</option>
+      }
+    </select>
+    <div class="users-toolbar__spacer"></div>
+    <span class="muted">{{ 'teachingMaterials.count' | translate : { count: visibleMaterials().length } }}</span>
+  </div>
+
+  @if (actionError(); as error) {
+    <div class="tm-alert tm-alert--error" role="alert">{{ error }}</div>
+  }
+
+  @if (loading()) {
+    <div class="empty"><span>{{ 'teachingMaterials.loading' | translate }}</span></div>
+  } @else if (hasError()) {
+    <div class="empty">
+      <div class="empty__title">{{ 'teachingMaterials.loadFailed' | translate }}</div>
+    </div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+      <table class="tbl tbl--materials">
+        <thead>
+          <tr>
+            <th>{{ 'teachingMaterials.table.material' | translate }}</th>
+            <th>{{ 'common.subject' | translate }}</th>
+            <th>{{ 'common.grade' | translate }}</th>
+            <th>{{ 'common.semester' | translate }}</th>
+            <th class="tbl__center">{{ 'teachingMaterials.table.units' | translate }}</th>
+            <th class="tbl__center">{{ 'teachingMaterials.table.lessons' | translate }}</th>
+            @if (!canUpload()) {
+              <th>{{ 'teachingMaterials.table.uploadedBy' | translate }}</th>
+            }
+            <th>{{ 'teachingMaterials.table.uploadedOn' | translate }}</th>
+            <th class="col-actions">{{ 'common.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (material of visibleMaterials(); track material.id) {
+            <tr>
+              <td>
+                <div class="cell-stack__main">
+                  <a class="tm-link" [routerLink]="['/teaching-materials', material.id]">{{ material.title }}</a>
+                </div>
+                @if (material.subtitle) {
+                  <div class="cell-stack__sub">{{ material.subtitle }}</div>
+                }
+              </td>
+              <td>{{ subjectName(material.subjectId) }}</td>
+              <td>{{ gradeLabel(material.gradeId) }}</td>
+              <td>{{ (material.semester ? 'semester.' + material.semester : 'semester.unspecified') | translate }}</td>
+              <td class="tbl__center"><span class="badge badge--brand">{{ material.unitCount }}</span></td>
+              <td class="tbl__center"><span class="badge badge--brand">{{ material.lessonCount }}</span></td>
+              @if (!canUpload()) {
+                <td>{{ material.uploadedByName || ('common.na' | translate) }}</td>
+              }
+              <td>{{ material.createdAt | date: 'mediumDate' }}</td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <a class="btn btn--sm" [routerLink]="['/teaching-materials', material.id]">{{ 'teachingMaterials.open' | translate }}</a>
+                  <button class="btn btn--sm btn--danger" type="button" (click)="remove(material)" [disabled]="deletingId() === material.id">
+                    {{ (deletingId() === material.id ? 'common.working' : 'common.delete') | translate }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="canUpload() ? 8 : 9">
+                <div class="empty">
+                  @if (materials().length === 0) {
+                    <div class="empty__title">{{ 'teachingMaterials.empty' | translate }}</div>
+                    <div class="muted">
+                      {{ (canUpload() ? 'teachingMaterials.emptyHintTeacher' : 'teachingMaterials.emptyHintAdmin') | translate }}
+                    </div>
+                  } @else {
+                    <div class="empty__title">{{ 'teachingMaterials.noMatches' | translate }}</div>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

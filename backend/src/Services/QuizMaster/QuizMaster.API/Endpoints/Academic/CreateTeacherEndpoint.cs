@@ -14,9 +14,10 @@ public static class CreateTeacherEndpoint
         .RequireRoleAuthorization(Role.ApplicationAdmin)
         .WithName("CreateTeacher")
         .WithTags("Teachers")
-        .Produces<IdResponse>(StatusCodes.Status201Created)
+        .Produces<CreateTeacherResponse>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden);
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict);
     }
 }

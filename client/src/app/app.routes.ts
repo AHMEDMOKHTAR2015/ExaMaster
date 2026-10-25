@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
 import { guestGuard, studentGuard, userAdminGuard, applicationAdminGuard,
   platformAdminGuard,
-  translationsAdminGuard, adminDashboardGuard, teacherGuard, childParticipationHistoryGuard, myChildrenGuard } from './guards';
+  translationsAdminGuard, adminDashboardGuard, teacherGuard, childParticipationHistoryGuard, myChildrenGuard,
+  teachingMaterialsGuard } from './guards';
 
 /**
  * Application routes with lazy loading and guards
@@ -136,6 +137,21 @@ export const routes: Routes = [
       .then(m => m.MyStudentsComponent),
     canActivate: [teacherGuard],
     title: 'My Students - QuizMaster'
+  },
+  {
+    // Course material uploaded as teaching-summary documents: a teacher's own, or every teacher's for an admin.
+    path: 'teaching-materials',
+    loadComponent: () => import('./components/teaching-materials/teaching-materials.component')
+      .then(m => m.TeachingMaterialsComponent),
+    canActivate: [teachingMaterialsGuard],
+    title: 'Teaching Materials - QuizMaster'
+  },
+  {
+    path: 'teaching-materials/:id',
+    loadComponent: () => import('./components/teaching-materials/material-reader.component')
+      .then(m => m.MaterialReaderComponent),
+    canActivate: [teachingMaterialsGuard],
+    title: 'Teaching Material - QuizMaster'
   },
   {
     path: 'parent-dashboard',

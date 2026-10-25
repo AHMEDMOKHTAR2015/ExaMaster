@@ -3,6 +3,7 @@ using QuizMaster.API.Endpoints.Academic;
 using QuizMaster.API.Endpoints.Questions;
 using QuizMaster.API.Endpoints.Quizzes;
 using QuizMaster.API.Endpoints.TeacherQuizzes;
+using QuizMaster.API.Endpoints.TeachingMaterials;
 using QuizMaster.API.Endpoints.Assignments;
 using QuizMaster.API.Endpoints.Attempts;
 using QuizMaster.API.Endpoints.Participations;
@@ -107,6 +108,12 @@ public static class EndpointRegistration
         CreateTeacherQuizEndpoint.Map(api);
         UpdateTeacherQuizEndpoint.Map(api);
         DeleteTeacherQuizEndpoint.Map(api);
+
+        // Teaching materials
+        ListTeachingMaterialsEndpoint.Map(api);
+        GetTeachingMaterialEndpoint.Map(api);
+        CreateTeachingMaterialEndpoint.Map(api);
+        DeleteTeachingMaterialEndpoint.Map(api);
 
         // Assignments
         ListAssignmentsEndpoint.Map(api);

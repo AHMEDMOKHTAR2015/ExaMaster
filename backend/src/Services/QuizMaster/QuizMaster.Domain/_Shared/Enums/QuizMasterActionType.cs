@@ -97,4 +97,8 @@ public enum QuizMasterActionType
     SubmitAccessRequest,
     ApproveAccessRequest,
     RejectAccessRequest,
+
+    // Teaching materials (a teacher's course content for one subject and grade)
+    CreateTeachingMaterial,
+    DeleteTeachingMaterial,
 }

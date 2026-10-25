@@ -21,3 +21,4 @@ export * from './tenant';
 export * from './access-request';
 export * from './subject-performance';
 export * from './my-student';
+export * from './teaching-material';

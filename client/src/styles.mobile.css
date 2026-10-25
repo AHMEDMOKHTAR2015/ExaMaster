@@ -1751,3 +1751,14 @@
     flex-basis: 100%;
   }
 }
+
+/* ---- Teaching Materials: the reader's contents stack above the page; the upload pickers stack ---- */
+@media (max-width: 900px) {
+  .tm-reader { grid-template-columns: minmax(0, 1fr); }
+  .tm-toc { position: static; max-height: none; }
+  .tm-page { padding: 1.125rem 1rem; }
+}
+@media (max-width: 640px) {
+  .tm-upload__grid { grid-template-columns: minmax(0, 1fr); }
+  .tm-terms__row { grid-template-columns: minmax(0, 1fr); }
+}

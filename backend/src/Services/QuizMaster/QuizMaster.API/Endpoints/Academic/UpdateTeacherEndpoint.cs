@@ -10,10 +10,11 @@ public static class UpdateTeacherEndpoint
         .RequireRoleAuthorization(Role.ApplicationAdmin)
         .WithName("UpdateTeacher")
         .WithTags("Teachers")
-        .Produces<IdResponse>(StatusCodes.Status200OK)
+        .Produces<UpdateTeacherResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden);
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict);
     }
 }

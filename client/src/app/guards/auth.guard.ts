@@ -219,6 +219,30 @@ export const teacherGuard: CanActivateFn = async () => {
 };
 
 /**
+ * Teaching Materials: a teacher's own uploaded course material, and every
+ * teacher's for an application admin. Uploading is a further check inside the
+ * page (`canUploadTeachingMaterials()`); the API enforces both.
+ */
+export const teachingMaterialsGuard: CanActivateFn = async () => {
+  const authService = inject(AuthService);
+  const adminAccess = inject(AdminAccessService);
+  const router = inject(Router);
+
+  await authService.waitForAuthReady();
+
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const strategy = adminAccess.getStrategy(authService.getUserRoles());
+  if (strategy.canViewTeachingMaterials()) {
+    return true;
+  }
+
+  return router.createUrlTree([roleHomeRoute(authService, adminAccess)]);
+};
+
+/**
  * Guards `/admin-dashboard`, the landing page shared by application admins
  * and teachers (rendered as two different views inside the same shell — see
  * `AdminDashboardComponent`). A parent (`userAdmin`) lands on

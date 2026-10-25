@@ -60,6 +60,14 @@ export class TeacherStrategy implements AdminRoleStrategy {
     return true;
   }
 
+  canViewTeachingMaterials(): boolean {
+    return true;
+  }
+
+  canUploadTeachingMaterials(): boolean {
+    return true;
+  }
+
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none' {
     return 'teacher';
   }

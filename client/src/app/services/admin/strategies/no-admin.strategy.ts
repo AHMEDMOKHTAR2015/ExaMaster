@@ -53,6 +53,14 @@ export class NoAdminStrategy implements AdminRoleStrategy {
     return false;
   }
 
+  canViewTeachingMaterials(): boolean {
+    return false;
+  }
+
+  canUploadTeachingMaterials(): boolean {
+    return false;
+  }
+
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none' {
     return 'none';
   }

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Teacher, PagedResult } from '../../../models';
 import { ApiClient } from '../../api/api-client.service';
-import { ApiId, ApiTeacher, idNumbers } from '../../api/api-models';
+import { ApiSavedTeacher, ApiTeacher, ApiTeacherLoginStatus, idNumbers } from '../../api/api-models';
 import { onePage, pagedList } from '../../api/list-paging';
 import { PagedSource } from '../../shared/query-spec';
 
@@ -40,13 +40,19 @@ export class TeacherService {
     return pagedList(() => this.all(search));
   }
 
-  /** Returns the new teacher's id, which the API assigns. */
-  async createTeacher(teacher: Omit<Teacher, 'id'>): Promise<string> {
-    return String((await this.api.post<ApiId>('/teachers', this.body(teacher))).id);
+  /**
+   * Returns the new teacher's id, which the API assigns, and what became of their login. A teacher with an email is
+   * added together with their login (`password`) or their school account linked; an email that already signs in
+   * outside this school is refused (409, a `ServiceError` with the API's message) and no teacher is added.
+   */
+  async createTeacher(teacher: Omit<Teacher, 'id'>, password?: string): Promise<{ id: string; loginStatus: ApiTeacherLoginStatus }> {
+    const created = await this.api.post<ApiSavedTeacher>('/teachers', this.bodyWithPassword(teacher, password));
+    return { id: String(created.id), loginStatus: created.loginStatus };
   }
 
-  async updateTeacher(teacher: Teacher): Promise<void> {
-    await this.api.put(`/teachers/${teacher.id}`, this.body(teacher));
+  /** Saved together with their login, as `createTeacher`; a refused email (409) leaves the record as it was. */
+  async updateTeacher(teacher: Teacher, password?: string): Promise<ApiTeacherLoginStatus> {
+    return (await this.api.put<ApiSavedTeacher>(`/teachers/${teacher.id}`, this.bodyWithPassword(teacher, password))).loginStatus;
   }
 
   /** The classes they taught are left unassigned, and a signed-in teacher keeps their account without the link. */
@@ -62,6 +68,11 @@ export class TeacherService {
       photoUrl: teacher.photoURL ?? null,
       subjectIds: idNumbers(teacher.subjectIds)
     };
+  }
+
+  // the password is only for a login created from the email, so it is never sent without one
+  private bodyWithPassword(teacher: Omit<Teacher, 'id'>, password?: string) {
+    return { ...this.body(teacher), password: teacher.email ? password ?? null : null };
   }
 
   private async all(search?: string): Promise<Teacher[]> {

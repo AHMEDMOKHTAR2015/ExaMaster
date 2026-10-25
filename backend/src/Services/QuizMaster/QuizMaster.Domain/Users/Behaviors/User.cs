@@ -73,13 +73,15 @@ public partial class User
         Touch(action);
     }
 
+    // A teacher account and its roster record are one person: the account takes the record's name, and from then on
+    // a rename of either is applied to both (UpdateTeacher, RenameUser).
     public void LinkToTeacherRecord(Teacher teacher, IQuizMasterAction action)
     {
         if (!IsTeacher)
             throw new DomainException("Only a teacher account can be linked to a teacher record.");
 
         TeacherId = teacher.Id;
-        Touch(action);
+        Rename(teacher.FirstName, teacher.LastName, action);
     }
 
     public void HoldRegistrationKey(RegistrationKey key, IQuizMasterAction action)

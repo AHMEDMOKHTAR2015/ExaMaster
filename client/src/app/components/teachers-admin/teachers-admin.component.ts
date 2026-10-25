@@ -11,8 +11,10 @@ import {
   ClassGroupService,
   StageService,
   AppUserService,
-  TeacherAccountService
+  TeacherAccountService,
+  DEFAULT_TEACHER_PASSWORD
 } from '../../services/admin';
+import { TeacherProvisionResult } from '../../interfaces';
 import { NotificationService } from '../../services/notification.service';
 import { PagedList } from '../../shared/paged-list';
 import { Teacher, Subject, ClassGroup, Stage, User } from '../../models';
@@ -355,42 +357,32 @@ export class TeachersAdminComponent {
       return;
     }
     try {
-      // a new teacher's id is the one the API assigns; the form's placeholder is discarded
-      const id = this.editingId()
-        ? (await this.teacherService.updateTeacher(teacher), teacher.id)
-        : await this.teacherService.createTeacher(teacher);
+      // the API saves the teacher only together with their login, and refuses an email that signs in elsewhere;
+      // a new teacher's id is the one the API assigns, the form's placeholder is discarded
+      const { id, loginStatus } = this.editingId()
+        ? { id: teacher.id, loginStatus: await this.teacherService.updateTeacher(teacher, DEFAULT_TEACHER_PASSWORD) }
+        : await this.teacherService.createTeacher(teacher, DEFAULT_TEACHER_PASSWORD);
       await this.syncClassMemberships(id, f.classIds);
       this.notification.success(this.editingId() ? 'Teacher updated.' : 'Teacher created.');
-      await this.provisionLogin({ ...teacher, id });
+      this.reportLogin(this.teacherAccountService.describe({ ...teacher, id }, loginStatus));
       this.closeForm();
       await Promise.all([this.loadAll(), this.loadClasses()]);
     } catch (e) {
-      this.notification.error('Failed to save teacher.');
+      // the form stays open, so a refused email can be corrected
+      this.notification.error(e instanceof ServiceError ? e.message : 'Failed to save teacher.');
       console.error(e);
     }
   }
 
-  /**
-   * Make sure a saved teacher with an email can log in to the app: creates the
-   * auth account (default password) and the linked user record, or links an
-   * existing login. A provisioning problem must not fail the teacher save.
-   */
-  private async provisionLogin(teacher: Teacher): Promise<void> {
-    if (!teacher.email) return;
-    try {
-      const result = await this.teacherAccountService.ensureTeacherAccount(teacher);
-      switch (result.status) {
-        case 'created':
-        case 'linked':
-          this.notification.success(result.message);
-          break;
-        case 'exists-unmanaged':
-          this.notification.warning(result.message);
-          break;
-      }
-    } catch (e) {
-      this.notification.warning('Teacher saved, but their app login could not be provisioned. Try saving again.');
-      console.error(e);
+  private reportLogin(result: TeacherProvisionResult): void {
+    switch (result.status) {
+      case 'created':
+      case 'linked':
+        this.notification.success(result.message);
+        break;
+      case 'exists-unmanaged':
+        this.notification.warning(result.message);
+        break;
     }
   }
 

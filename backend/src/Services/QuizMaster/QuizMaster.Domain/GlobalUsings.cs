@@ -20,6 +20,7 @@ global using QuizMaster.Domain.Quizzes;
 global using QuizMaster.Domain.Shared;
 global using QuizMaster.Domain.Shared.Enums;
 global using QuizMaster.Domain.TeacherQuizzes;
+global using QuizMaster.Domain.TeachingMaterials;
 global using QuizMaster.Domain.Tenants;
 global using QuizMaster.Domain.Translations;
 global using QuizMaster.Domain.Users;

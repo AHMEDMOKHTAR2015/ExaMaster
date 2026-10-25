@@ -2,11 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { Teacher } from '../../../models';
 import { TeacherProvisionResult } from '../../../interfaces';
 import { ApiClient } from '../../api/api-client.service';
+import { ApiTeacherLoginStatus } from '../../api/api-models';
 
 /** Default password assigned to teacher logins provisioned from their email. */
 export const DEFAULT_TEACHER_PASSWORD = 'P@$$123456';
-
-type ApiTeacherLoginStatus = 'Created' | 'Linked' | 'SkippedNoEmail' | 'ExistsUnmanaged';
 
 /**
  * Gives a roster teacher an app login, through the API (`POST /teachers/{id}/login`).
@@ -26,9 +25,13 @@ export class TeacherAccountService {
   private readonly api = inject(ApiClient);
 
   async ensureTeacherAccount(teacher: Teacher, password: string = DEFAULT_TEACHER_PASSWORD): Promise<TeacherProvisionResult> {
-    const name = `${teacher.firstName} ${teacher.lastName}`.trim();
     const { status } = await this.api.post<{ status: ApiTeacherLoginStatus }>(`/teachers/${teacher.id}/login`, { password });
+    return this.describe(teacher, status);
+  }
 
+  /** Words a login outcome, whether it came from this call or from creating the teacher (`POST /teachers`). */
+  describe(teacher: Teacher, status: ApiTeacherLoginStatus): TeacherProvisionResult {
+    const name = `${teacher.firstName} ${teacher.lastName}`.trim();
     switch (status) {
       case 'Created':
         return { status: 'created', message: `Login created for ${name} (${teacher.email}) with the default password.` };

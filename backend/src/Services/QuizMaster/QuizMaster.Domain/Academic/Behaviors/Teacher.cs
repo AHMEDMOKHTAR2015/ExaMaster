@@ -15,6 +15,14 @@ public partial class Teacher
         (LastModifiedById, LastModifiedOn) = (action.CreatedById, action.CreatedOn);
     }
 
+    // The linked account was renamed (User.Rename): the roster shows the same person by the same name.
+    public void Rename(string firstName, string lastName, IQuizMasterAction action)
+    {
+        FirstName = AcademicRules.RequiredName(firstName);
+        LastName = AcademicRules.RequiredName(lastName);
+        (LastModifiedById, LastModifiedOn) = (action.CreatedById, action.CreatedOn);
+    }
+
     // A subject being deleted leaves no id behind (see ClassGroup.Drop).
     public void Drop(Subject subject, IQuizMasterAction action)
     {

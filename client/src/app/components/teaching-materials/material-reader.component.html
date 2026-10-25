@@ -1,0 +1,320 @@
+<a class="back-btn tm-back" routerLink="/teaching-materials">{{ 'teachingMaterials.reader.back' | translate }}</a>
+
+@if (loading()) {
+  <div class="empty"><span>{{ 'teachingMaterials.reader.loading' | translate }}</span></div>
+} @else if (notFound()) {
+  <div class="empty"><div class="empty__title">{{ 'teachingMaterials.reader.notFound' | translate }}</div></div>
+} @else if (hasError()) {
+  <div class="empty"><div class="empty__title">{{ 'teachingMaterials.reader.loadFailed' | translate }}</div></div>
+} @else if (material(); as material) {
+  <header class="page__head tm-reader__head" dir="ltr">
+    <div>
+      @if (material.overview.label) {
+        <div class="tm-eyebrow">{{ material.overview.label }}</div>
+      }
+      <h1 class="page__title">{{ material.title }}</h1>
+      @if (material.subtitle) {
+        <p class="page__subtitle">{{ material.subtitle }}</p>
+      }
+      @if (material.forLabel) {
+        <p class="page__subtitle">{{ material.forLabel }}</p>
+      }
+    </div>
+  </header>
+  <div class="tm-reader__badges">
+    @if (subjectName()) {
+      <span class="badge badge--brand">{{ subjectName() }}</span>
+    }
+    @if (gradeName()) {
+      <span class="badge">{{ gradeName() }}</span>
+    }
+    @if (material.semester) {
+      <span class="badge">{{ 'semester.' + material.semester | translate }}</span>
+    }
+  </div>
+
+  <div class="tm-reader">
+    <!-- table of contents: a side column on desktop, a collapsible block above the page on a phone -->
+    <details class="card tm-toc" open>
+      <summary class="tm-toc__summary">{{ 'teachingMaterials.reader.contents' | translate }}</summary>
+      <nav [attr.aria-label]="'teachingMaterials.reader.contents' | translate" dir="ltr">
+        <button type="button" class="tm-toc__item tm-toc__item--top" [class.is-active]="view().kind === 'overview'"
+                (click)="showOverview()">{{ 'teachingMaterials.reader.overview' | translate }}</button>
+        @for (unit of material.units; track unit.id) {
+          <button type="button" class="tm-toc__item tm-toc__item--unit" [class.is-active]="view().kind === 'unit' && isUnitOpen(unit)"
+                  [attr.aria-expanded]="isUnitOpen(unit)" (click)="showUnit(unit)">
+            <span class="tm-toc__number">{{ unit.kind }} {{ unit.number }}</span>
+            <span>{{ unit.title }}</span>
+          </button>
+          @if (isUnitOpen(unit)) {
+            @for (lesson of unit.lessons; track lesson.id) {
+              <button type="button" class="tm-toc__item tm-toc__item--lesson" [class.is-active]="isLessonOpen(lesson)"
+                      [attr.aria-current]="isLessonOpen(lesson) ? 'page' : null" (click)="showLesson({ unit, lesson })">
+                <span class="tm-toc__code">{{ lesson.code }}</span>
+                <span>{{ lesson.title }}</span>
+              </button>
+            }
+          }
+        }
+      </nav>
+    </details>
+
+    <article class="card tm-page" id="tm-reader-content">
+      @switch (view().kind) {
+        @case ('overview') {
+          <div dir="ltr">
+            @if (material.overview.guide; as guide) {
+              <p class="tm-lead"><app-inline-text [text]="guide" /></p>
+            }
+            @if (material.overview.howToReadBoxes?.length) {
+              <ul class="tm-boxes">
+                @for (box of material.overview.howToReadBoxes; track box.box) {
+                  <li><span class="tm-swatch" [attr.data-box]="box.box"></span><strong>{{ box.label }}</strong> – {{ box.meaning }}</li>
+                }
+              </ul>
+            }
+          </div>
+          @if (material.overview.arabicGuide; as guide) {
+            <section class="tm-arabic" dir="rtl" lang="ar">
+              <h3 class="tm-arabic__title">{{ guide.title }}</h3>
+              <p>{{ guide.text }}</p>
+            </section>
+          }
+          @if (material.overview.arc; as arc) {
+            <section dir="ltr">
+              <h2 class="tm-h2">{{ arc.title }}</h2>
+              <p><app-inline-text [text]="arc.intro" /></p>
+              <div class="tbl-scroll" tabindex="0">
+                <table class="tbl tm-table">
+                  <tbody>
+                    @for (stage of arc.stages; track stage.order) {
+                      <tr>
+                        <th scope="row">{{ stage.order }} · {{ stage.name }}</th>
+                        <td>{{ stage.unitsLabel }}</td>
+                        <td>{{ stage.summary }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          }
+          <section dir="ltr">
+            <h2 class="tm-h2">{{ 'teachingMaterials.reader.units' | translate }}</h2>
+            <ol class="tm-unit-list">
+              @for (unit of material.units; track unit.id) {
+                <li>
+                  <button type="button" class="tm-link-btn" (click)="showUnit(unit)">{{ unit.kind }} {{ unit.number }}: {{ unit.title }}</button>
+                  <span class="muted">· {{ 'teachingMaterials.lessonCount' | translate : { count: unit.lessons.length } }}</span>
+                </li>
+              }
+            </ol>
+          </section>
+          @if (material.overview.sourceNotes; as notes) {
+            <details class="tm-notes" dir="ltr">
+              <summary>{{ notes.title }}</summary>
+              <p class="muted">{{ notes.intro }}</p>
+              <ul>
+                @for (item of notes.items; track $index) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </details>
+          }
+        }
+
+        @case ('unit') {
+          @if (view(); as current) {
+            @if (current.kind === 'unit') {
+              <div dir="ltr">
+                <div class="tm-eyebrow">
+                  {{ current.unit.kind }} {{ current.unit.number }}
+                  @if (pages(current.unit); as pages) {
+                    · {{ 'teachingMaterials.reader.bookPages' | translate : { pages } }}
+                  }
+                </div>
+                <h2 class="tm-h1">{{ current.unit.title }}</h2>
+                <div class="tm-big-idea">
+                  <div class="tm-big-idea__label">{{ 'teachingMaterials.reader.bigIdea' | translate }}</div>
+                  <p>{{ current.unit.bigIdeaEnglish }}</p>
+                </div>
+              </div>
+              <section class="tm-arabic" dir="rtl" lang="ar">
+                <h3 class="tm-arabic__title">الفكرة الأساسية</h3>
+                <p>{{ current.unit.bigIdeaArabic }}</p>
+              </section>
+              <section dir="ltr">
+                <h3 class="tm-h3">{{ 'teachingMaterials.reader.lessons' | translate }}</h3>
+                <ol class="tm-unit-list">
+                  @for (lesson of current.unit.lessons; track lesson.id) {
+                    <li>
+                      <button type="button" class="tm-link-btn" (click)="showLesson({ unit: current.unit, lesson })">{{ lesson.code }} {{ lesson.title }}</button>
+                    </li>
+                  }
+                </ol>
+              </section>
+              @if (current.unit.keyTakeaways.length) {
+                <section class="tm-takeaways" dir="ltr">
+                  <div class="tm-takeaways__label">{{ 'teachingMaterials.reader.keyTakeaways' | translate }}</div>
+                  <ul>
+                    @for (takeaway of current.unit.keyTakeaways; track $index) {
+                      <li><app-inline-text [text]="takeaway" /></li>
+                    }
+                  </ul>
+                </section>
+              }
+            }
+          }
+        }
+
+        @case ('lesson') {
+          @if (view(); as current) {
+            @if (current.kind === 'lesson') {
+              <div dir="ltr">
+                <div class="tm-eyebrow">{{ current.unit.kind }} {{ current.unit.number }} · {{ current.unit.title }}</div>
+                <h2 class="tm-h1"><span class="tm-code">{{ current.lesson.code }}</span> {{ current.lesson.title }}</h2>
+
+                @for (block of current.lesson.content; track $index) {
+                  @switch (block.type) {
+                    @case ('heading') {
+                      <h3 class="tm-h3">{{ block.text }}</h3>
+                    }
+                    @case ('paragraph') {
+                      <p class="tm-paragraph"><app-inline-text [text]="block.text" /></p>
+                    }
+                    @case ('note') {
+                      <div class="tm-note"><app-inline-text [text]="block.text" /></div>
+                    }
+                    @case ('formula') {
+                      <div class="tm-formula"><app-inline-text [text]="block.text" /></div>
+                    }
+                    @case ('example') {
+                      @if (block.type === 'example') {
+                        <div class="tm-example">
+                          <div class="tm-example__label">{{ block.label }}</div>
+                          <div class="tm-paragraph"><app-inline-text [text]="block.text" /></div>
+                        </div>
+                      }
+                    }
+                    @case ('list') {
+                      @if (block.type === 'list') {
+                        @if (block.title) {
+                          <p class="tm-list-title"><app-inline-text [text]="block.title" /></p>
+                        }
+                        @if (block.ordered) {
+                          <ol class="tm-list">
+                            @for (item of block.items; track $index) {
+                              <li><app-inline-text [text]="item" /></li>
+                            }
+                          </ol>
+                        } @else {
+                          <ul class="tm-list">
+                            @for (item of block.items; track $index) {
+                              <li><app-inline-text [text]="item" /></li>
+                            }
+                          </ul>
+                        }
+                      }
+                    }
+                    @case ('terms') {
+                      @if (block.type === 'terms') {
+                        <dl class="tm-terms">
+                          @for (term of block.items; track $index) {
+                            <div class="tm-terms__row">
+                              <dt>
+                                <span class="tm-terms__term">{{ term.term }}</span>
+                                <span class="tm-terms__ar" dir="rtl" lang="ar">{{ term.termAr }}</span>
+                              </dt>
+                              <dd><app-inline-text [text]="term.definition" /></dd>
+                            </div>
+                          }
+                        </dl>
+                      }
+                    }
+                    @case ('table') {
+                      @if (block.type === 'table') {
+                        <div class="tbl-scroll" tabindex="0">
+                          <table class="tbl tm-table">
+                            @if (block.title) {
+                              <caption>{{ block.title }}</caption>
+                            }
+                            <thead>
+                              <tr>
+                                @for (column of block.columns; track $index) {
+                                  <th scope="col">{{ column }}</th>
+                                }
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (row of block.rows; track $index) {
+                                <tr>
+                                  @for (cell of row; track $index) {
+                                    <td>{{ cell }}</td>
+                                  }
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    }
+                    @case ('code') {
+                      @if (block.type === 'code') {
+                        <figure class="tm-code-block">
+                          <figcaption>{{ block.language }}</figcaption>
+                          <pre><code>{{ block.code }}</code></pre>
+                        </figure>
+                      }
+                    }
+                  }
+                }
+              </div>
+
+              <section class="tm-arabic" dir="rtl" lang="ar">
+                <h3 class="tm-arabic__title">{{ current.lesson.arabicExplanation.title }}</h3>
+                @for (item of current.lesson.arabicExplanation.items; track $index) {
+                  @switch (item.type) {
+                    @case ('bullet') {
+                      <p class="tm-arabic__bullet">{{ item.text }}</p>
+                    }
+                    @case ('example') {
+                      <p class="tm-arabic__example">{{ item.text }}</p>
+                    }
+                    @default {
+                      <p>{{ item.text }}</p>
+                    }
+                  }
+                }
+              </section>
+
+              @if (closesUnit() && current.unit.keyTakeaways.length) {
+                <section class="tm-takeaways" dir="ltr">
+                  <div class="tm-takeaways__label">{{ 'teachingMaterials.reader.keyTakeaways' | translate }}</div>
+                  <ul>
+                    @for (takeaway of current.unit.keyTakeaways; track $index) {
+                      <li><app-inline-text [text]="takeaway" /></li>
+                    }
+                  </ul>
+                </section>
+              }
+            }
+          }
+        }
+      }
+
+      <nav class="tm-pager" [attr.aria-label]="'teachingMaterials.reader.pager' | translate">
+        @if (previous(); as stop) {
+          <button type="button" class="btn btn--ghost" (click)="showLesson(stop)">
+            {{ 'common.previous' | translate }} <span class="tm-pager__code" dir="ltr">{{ stop.lesson.code }}</span>
+          </button>
+        }
+        <span class="tm-pager__spacer"></span>
+        @if (next(); as stop) {
+          <button type="button" class="btn btn--primary" (click)="showLesson(stop)">
+            <span class="tm-pager__code" dir="ltr">{{ stop.lesson.code }}</span> {{ 'common.next' | translate }}
+          </button>
+        }
+      </nav>
+    </article>
+  </div>
+}

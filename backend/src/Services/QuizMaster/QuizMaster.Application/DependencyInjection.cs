@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<BankQuizReferences>();
         services.AddScoped<AssignmentReferences>();
         services.AddScoped<FamilyEnrolment>();
+        services.AddScoped<TeacherLogin>();
         services.AddScoped<RegistrationScope>();
         services.AddScoped<AccessRequestScope>();
         services.AddScoped<NotificationSender>();

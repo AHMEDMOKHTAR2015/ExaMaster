@@ -281,7 +281,17 @@ check "the parents list shows the new name and child count" "Hana Hassan 2" "$(j
 call dev-admin GET /teachers >/dev/null; ROSTER=$(json '.teachers[0].id')
 check "provisioning an existing teacher's login links it" "Linked" "$(call dev-admin POST /teachers/$ROSTER/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
 check "a teacher without an email is skipped" "SkippedNoEmail" "$(call dev-admin POST /teachers '{"firstName":"No","lastName":"Email"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
-check "a new teacher gets a login" "Created" "$(call dev-admin POST /teachers '{"firstName":"Mona","lastName":"New","email":"mona@demo-school.local"}' >/dev/null; call dev-admin POST /teachers/$(json .id)/login '{"password":"smoke-pass-1"}' >/dev/null; json .status)"
+check "a new teacher is added with their login" "Created" "$(call dev-admin POST /teachers '{"firstName":"Mona","lastName":"New","email":"mona@demo-school.local","password":"smoke-pass-1"}' >/dev/null; json .loginStatus)"; MONA=$(json .id)
+check "saving that teacher again keeps their login" "Linked" "$(call dev-admin PUT /teachers/$MONA '{"firstName":"Mona","lastName":"Newer","email":"mona@demo-school.local","password":"smoke-pass-1"}' >/dev/null; json .loginStatus)"
+check "changing a teacher's email to one that signs in outside the school is refused" 409 "$(call dev-admin PUT /teachers/$MONA '{"firstName":"Mona","lastName":"Outside","email":"dev-platform@quizmasterpro.local","password":"smoke-pass-1"}')"
+check "and the teacher is left as they were" "Newer mona@demo-school.local" "$(call dev-admin GET '/teachers?search=mona@demo-school.local' >/dev/null; json '.teachers[0] | "\(.lastName) \(.email)"')"
+call dev-admin GET '/users?search=mona@demo-school.local' >/dev/null; MONA_USER=$(json '.items[0].id')
+check "editing a teacher renames their account" "Mona Newer" "$(json '.items[0] | "\(.firstName) \(.lastName)"')"
+check "renaming a teacher's account" 200 "$(call dev-admin PUT /users/$MONA_USER/name '{"firstName":"Mona","lastName":"Renamed"}')"
+check "renames their teacher record too" "Mona Renamed" "$(call dev-admin GET '/teachers?search=mona@demo-school.local' >/dev/null; json '.teachers[0] | "\(.firstName) \(.lastName)"')"
+check "a new teacher with an email but no password is refused" 400 "$(call dev-admin POST /teachers '{"firstName":"Nour","lastName":"New","email":"nour@demo-school.local"}')"
+check "a new teacher whose email signs in outside the school is refused" 409 "$(call dev-admin POST /teachers '{"firstName":"Pat","lastName":"Outside","email":"dev-platform@quizmasterpro.local","password":"smoke-pass-1"}')"
+check "and is not added to the roster" 0 "$(call dev-admin GET '/teachers?search=dev-platform@quizmasterpro.local' >/dev/null; json '.teachers | length')"
 
 echo "== translation overrides"
 check "a student reads the school's labels" 200 "$(call dev-student GET /translation-overrides)"
@@ -458,6 +468,27 @@ check "review queue: Reviewed has a verdict, latest first" true \
   "$(json '(.totalCount > 0) and all(.items[]; .validationStatus != null)')"
 call dev-teacher GET "/participations?reviewerId=$TEACHER_UID&kind=Homework&pageSize=100" >/dev/null
 check "review queue: the kind filter uses the assignment's kind" true "$(json 'all(.items[]; .assignmentKind == "Homework")')"
+
+echo "== teaching materials (a teacher's course content for one subject and grade)"
+call dev-admin GET /subjects >/dev/null; SCIENCE=$(json '.subjects[] | select(.name=="Science") | .id'); MATH=$(json '.subjects[] | select(.name=="Math") | .id')
+call dev-admin GET /grades >/dev/null; GRADE=$(json '.grades[0].id')
+MATERIAL_DOC=$(jq -nc '{schemaVersion:1, id:"smoke-material", title:"Smoke material", units:[
+  {kind:"Chapter", number:1, title:"Basics", bigIdea:{en:"Big idea", ar:"الفكرة"}, keyTakeaways:["One"], lessons:[
+    {order:1, code:"1-1", title:"First lesson",
+     content:[{type:"paragraph", text:"Hello"}, {type:"table", columns:["A","B"], rows:[["1","2"]]}, {type:"code", language:"python", code:"print(1)"}],
+     arabicExplanation:{title:"الشرح بالعربي · 1-1", items:[{type:"bullet", text:"مرحبا"}]}}]}]}')
+MATERIAL=$(jq -nc --argjson s "$SCIENCE" --argjson g "$GRADE" --argjson d "$MATERIAL_DOC" '{subjectId:$s, gradeId:$g, document:$d}')
+check "a teacher uploads material for their subject" 201 "$(call dev-teacher POST /teaching-materials "$MATERIAL")"; MID=$(json .id)
+check "the same document again is a duplicate" 409 "$(call dev-teacher POST /teaching-materials "$MATERIAL")"
+check "not for a subject they do not teach" 400 "$(call dev-teacher POST /teaching-materials "$(echo "$MATERIAL" | jq -c --argjson m "$MATH" '.subjectId=$m')")"
+check "an administrator does not upload (teachers only)" 403 "$(call dev-admin POST /teaching-materials "$MATERIAL")"
+check "a broken table is located" 400 "$(call dev-teacher POST /teaching-materials "$(echo "$MATERIAL" | jq -c '.document.id="other" | .document.units[0].lessons[0].content[1].rows=[["1"]]')")"
+check "the error names the block" "Unit 1, lesson 1, block 2 (table): row 1" "$(json '.Errors[0].PropertyName')"
+check "the teacher lists it, lessons counted" "1 1" "$(call dev-teacher GET "/teaching-materials?subjectId=$SCIENCE" >/dev/null; json '"\(.materials|length) \(.materials[0].lessonCount)"')"
+check "the lesson comes back as the document wrote it" "true" "$(call dev-teacher GET /teaching-materials/$MID >/dev/null; jq --argjson d "$MATERIAL_DOC" '.material.units[0].lessons[0].content == $d.units[0].lessons[0].content' "$WORK/out.json")"
+check "a student cannot open a teacher's material yet" 403 "$(call dev-student GET /teaching-materials/$MID)"
+check "the administrator opens it" 200 "$(call dev-admin GET /teaching-materials/$MID)"
+check "the uploader deletes it" 200 "$(call dev-teacher DELETE /teaching-materials/$MID)"
 
 echo "== security headers and limits (OWASP)"
 HEADERS=$(curl -s -D - -o /dev/null -H "Authorization: Bearer $(cat "$WORK/token-dev-admin")" "$API/subjects" | tr -d '\r')

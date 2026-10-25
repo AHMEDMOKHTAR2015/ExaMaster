@@ -55,6 +55,14 @@ export class ApplicationAdminStrategy implements AdminRoleStrategy {
     return false;
   }
 
+  canViewTeachingMaterials(): boolean {
+    return true;
+  }
+
+  canUploadTeachingMaterials(): boolean {
+    return false;
+  }
+
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none' {
     return 'applicationAdmin';
   }

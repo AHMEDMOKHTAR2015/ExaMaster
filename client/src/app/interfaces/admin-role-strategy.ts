@@ -27,6 +27,18 @@ export interface AdminRoleStrategy {
   // Teacher-specific: view own students' rosters/participation and assign work to them
   canAccessTeacherDashboard(): boolean;
 
+  /**
+   * May open Teaching Materials (the list and the lesson reader). A teacher
+   * sees the material they uploaded; an application admin sees every
+   * teacher's. The API decides which rows each one gets.
+   */
+  canViewTeachingMaterials(): boolean;
+  /**
+   * May upload teaching material. Teachers only: a material belongs to a
+   * subject on the uploader's roster record, which an admin does not have.
+   */
+  canUploadTeachingMaterials(): boolean;
+
   // Get the role type for UI display
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none';
 }

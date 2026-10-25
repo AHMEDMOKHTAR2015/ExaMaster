@@ -120,6 +120,12 @@ export interface ApiTeacher { id: number; firstName: string; lastName: string; e
 /** What a create returns. */
 export interface ApiId { id: number; }
 
+/** What became of a teacher's login when their roster record was saved (`TeacherLoginStatus`). */
+export type ApiTeacherLoginStatus = 'Created' | 'Linked' | 'SkippedNoEmail' | 'ExistsUnmanaged';
+
+/** `POST /teachers` and `PUT /teachers/{id}`: the saved teacher, and their login, created or linked in the same step. */
+export interface ApiSavedTeacher { id: number; loginStatus: ApiTeacherLoginStatus; userId: number | null; }
+
 /**
  * The app's string ids back to the API's integers. An id that is not a whole
  * number (a Firestore id on a screen not yet moved) cannot name an API record,
@@ -183,6 +189,27 @@ export interface ApiTeacherQuiz {
 export interface ApiTeacherQuizSummary {
   id: number; name: string; description: string; subjectId: number; stageId: number | null; semester: ApiSemester | null;
   createdById: number; questionCount: number; createdOn: string;
+}
+
+// ---- teaching materials (GET/POST /teaching-materials) ----
+
+/** One row of GET /teaching-materials: counts, never the lessons. */
+export interface ApiTeachingMaterialSummary {
+  id: number; sourceKey: string; title: string; subtitle: string | null; subjectId: number; gradeId: number;
+  semester: ApiSemester | null; unitCount: number; lessonCount: number; createdById: number; uploadedByName: string | null;
+  createdOn: string;
+}
+export interface ApiMaterialLesson {
+  id: number; order: number; code: string; title: string;
+  content: unknown[]; arabicExplanation: unknown;          // the document's own JSON, validated by the API on upload
+}
+export interface ApiMaterialUnit {
+  id: number; number: number; kind: string; title: string; bookPageFrom: number | null; bookPageTo: number | null;
+  bigIdeaEnglish: string; bigIdeaArabic: string; keyTakeaways: string[]; lessons: ApiMaterialLesson[];
+}
+export interface ApiTeachingMaterial {
+  id: number; sourceKey: string; title: string; subtitle: string | null; forLabel: string | null; subjectId: number;
+  gradeId: number; semester: ApiSemester | null; createdById: number; createdOn: string; overview: unknown; units: ApiMaterialUnit[];
 }
 
 // ---- sitting a quiz ----

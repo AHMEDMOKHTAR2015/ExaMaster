@@ -47,6 +47,7 @@ Every tenant-owned aggregate implements `IMultitenancy`. `QuizMasterDbContext` a
 | `AccessRequest` | platform-wide (no tenant): a visitor with no key asks to join as a parent or child; the password they chose is kept as a hash and becomes their credential on approval; one pending request per sign-in (filtered unique index); a decision is final (`rowversion`). They must name their school (and a child their grade); what they typed about school, grade and parent is still a hint only — the platform administrator picks the organization (and a child's class and parent) when approving |
 | `Notification` | written only by the server, from the `QuizSubmitted`/`SubmissionReviewed` domain events: the parent hears a child finished, the reviewer hears of every submission (`SubmissionNeedsReview` when an answer waits for their mark, else `SubmissionReceived`), the student hears a verdict once (`VerdictChanged`); contents are snapshotted; only the recipient reads or marks it (`/me/notifications`) |
 | `TranslationOverride` | one row per customised label per language per school (`en`/`ar` only); key shape and length checked, never blank; the client's shipped JSON stays the base and the client still sanitizes (unknown keys, `{{ token }}` changes) at merge time |
+| `TeachingMaterial` | a teacher's course content for one subject and grade, imported from a teaching-summary JSON document (`Features/TeachingMaterials/_Shared/MaterialDocument` checks every block's shape and reports up to 20 located problems). Only a teacher uploads, only for a subject on their roster record (`TeacherRecords.FindTeacherRecordAsync`); units unique by number, lesson codes unique, lessons 1..n; one document per uploader, subject and grade (409). Lesson content, the Arabic explanation and the front matter are stored as the document's JSON and returned as JSON. A teacher reads/deletes their own, an administrator everyone's; `IsVisibleTo(ClassGroup)` (grade + subject + the uploader teaching the class) is the rule a student reader will use |
 | `QuizAttemptLock` | One Time Join: written when the attempt opens; blocking until released by a teacher or by the submission (same transaction); exits after release are ignored |
 
 **Grading** (`Domain/Grading`) is a line-by-line port of the app's `grade-quiz.ts` and `question-scoring.ts`, with its spec cases ported to `tests/QuizMaster.Domain.Tests`. Rounding is JavaScript's `Math.round` (`QuizScoring.RoundPercent`), not .NET's banker's rounding. Change grading only there, and only with a test.
@@ -77,7 +78,7 @@ The app's browsers wrote into each other's inboxes (the student's browser notifi
 
 ## Endpoints
 
-All under `/api`; see Swagger. Areas: `me`, `users`, `access-requests`, `platform`, `stages`/`grades`/`classes`/`subjects`/`teachers`, `questions`, `quizzes`, `teacher-quizzes`, `assignments`, `attempt-locks`, `submissions`, `participations`, `reviews`, `dashboard`.
+All under `/api`; see Swagger. Areas: `me`, `users`, `access-requests`, `platform`, `stages`/`grades`/`classes`/`subjects`/`teachers`, `questions`, `quizzes`, `teacher-quizzes`, `teaching-materials`, `assignments`, `attempt-locks`, `submissions`, `participations`, `reviews`, `dashboard`.
 
 ## Design choices worth knowing
 

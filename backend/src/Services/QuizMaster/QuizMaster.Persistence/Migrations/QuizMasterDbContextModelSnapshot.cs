@@ -1389,6 +1389,175 @@ namespace QuizMaster.Persistence.Migrations
                     b.ToTable("TeacherQuizQuestion", (string)null);
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.MaterialLesson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArabicExplanationJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MaterialUnitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialUnitId", "Order")
+                        .IsUnique();
+
+                    b.ToTable("MaterialLesson", (string)null);
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.MaterialUnit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BigIdeaArabic")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BigIdeaEnglish")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("BookPageFrom")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BookPageTo")
+                        .HasColumnType("int");
+
+                    b.PrimitiveCollection<string>("KeyTakeaways")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeachingMaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeachingMaterialId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("MaterialUnit", (string)null);
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("ForLabel")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("GradeId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LastModifiedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OverviewJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Semester")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("TeacherId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GradeId");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "TeacherId");
+
+                    b.HasIndex("TenantId", "CreatedById", "SubjectId", "GradeId", "SourceKey")
+                        .IsUnique();
+
+                    b.ToTable("TeachingMaterial", (string)null);
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.Tenants.Tenant", b =>
                 {
                     b.Property<int>("Id")
@@ -1940,6 +2109,39 @@ namespace QuizMaster.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.MaterialLesson", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.TeachingMaterials.MaterialUnit", null)
+                        .WithMany("Lessons")
+                        .HasForeignKey("MaterialUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.MaterialUnit", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", null)
+                        .WithMany("Units")
+                        .HasForeignKey("TeachingMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.Academic.Grade", null)
+                        .WithMany()
+                        .HasForeignKey("GradeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuizMaster.Domain.Academic.Subject", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.Users.User", b =>
                 {
                     b.HasOne("QuizMaster.Domain.Academic.ClassGroup", null)
@@ -1991,6 +2193,16 @@ namespace QuizMaster.Persistence.Migrations
             modelBuilder.Entity("QuizMaster.Domain.TeacherQuizzes.TeacherQuiz", b =>
                 {
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.MaterialUnit", b =>
+                {
+                    b.Navigation("Lessons");
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", b =>
+                {
+                    b.Navigation("Units");
                 });
 #pragma warning restore 612, 618
         }

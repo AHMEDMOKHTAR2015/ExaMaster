@@ -34,6 +34,10 @@ public class QuizMasterAccessChecker(QuizMasterDbContext _dbContext) : IAggregat
             nameof(TeacherQuiz) => isTeacher
                 && await _dbContext.TeacherQuizzes.AnyAsync(quiz => quiz.Id == id && quiz.CreatedById == caller, ct),
 
+            //insight - a teacher reads and deletes only the material they uploaded (the administrator returned above)
+            nameof(TeachingMaterial) => isTeacher
+                && await _dbContext.TeachingMaterials.AnyAsync(material => material.Id == id && material.CreatedById == caller, ct),
+
             nameof(HomeworkAssignment) => isTeacher
                 && await _dbContext.Assignments.AnyAsync(assignment => assignment.Id == id && assignment.CreatedById == caller, ct),
 

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QuizMaster.Application.Mappings;
 
 public class RestEndpointMappings : IRegister
@@ -24,6 +26,17 @@ public class RestEndpointMappings : IRegister
         config.NewConfig<TeacherQuiz, TeacherQuizSummaryDto>()
             .Map(dest => dest.QuestionCount, src => src.Questions.Count);
 
+        config.NewConfig<TeachingMaterial, TeachingMaterialDto>()
+            .Map(dest => dest.Overview, src => Json(src.OverviewJson))
+            .Map(dest => dest.Units, src => src.Units.OrderBy(unit => unit.Number));
+
+        config.NewConfig<MaterialUnit, MaterialUnitDto>()
+            .Map(dest => dest.Lessons, src => src.Lessons.OrderBy(lesson => lesson.Order));
+
+        config.NewConfig<MaterialLesson, MaterialLessonDto>()
+            .Map(dest => dest.Content, src => Json(src.ContentJson))
+            .Map(dest => dest.ArabicExplanation, src => Json(src.ArabicExplanationJson));
+
         config.NewConfig<BankQuiz, BankQuizDto>()
             .Map(dest => dest.QuestionIds, src => src.QuestionIdsInOrder);
 
@@ -42,6 +55,13 @@ public class RestEndpointMappings : IRegister
     }
 
     // What goes back into the authoring form: the statement, or the passage rebuilt with its "(Complete)" markers.
+    // stored JSON (validated on upload) handed back as JSON, not as a string the client would have to parse again
+    private static JsonElement Json(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
     private static string? AuthoringText(IQuestionDefinition question) => question.Type switch
     {
         QuestionType.Complete => CompletePassage.Reconstruct(question.Segments, question.Key.CorrectBlanks ?? []),

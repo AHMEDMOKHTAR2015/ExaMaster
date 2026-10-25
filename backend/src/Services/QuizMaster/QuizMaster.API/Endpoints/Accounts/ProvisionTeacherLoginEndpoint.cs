@@ -1,3 +1,4 @@
+using QuizMaster.Application.Features.Accounts.Shared;
 using QuizMaster.Application.Features.Accounts.ProvisionTeacherLogin;
 
 namespace QuizMaster.API.Endpoints.Accounts;

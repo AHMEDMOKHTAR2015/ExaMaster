@@ -107,6 +107,29 @@ describe('school structure on the API', () => {
     expect((await result).status).toBe('exists-unmanaged');
   });
 
+  it('creates a teacher together with their login, sending the password only with an email', async () => {
+    const created = TestBed.inject(TeacherService).createTeacher({ firstName: 'Mona', lastName: 'N', email: 'm@x.test' }, DEFAULT_TEACHER_PASSWORD);
+    const request = http.expectOne(api('/teachers'));
+    expect(request.request.body.password).toBe(DEFAULT_TEACHER_PASSWORD);
+    request.flush({ id: 9, loginStatus: 'Created', userId: 4 });
+    expect(await created).toEqual({ id: '9', loginStatus: 'Created' });
+
+    const noEmail = TestBed.inject(TeacherService).createTeacher({ firstName: 'No', lastName: 'Email' }, DEFAULT_TEACHER_PASSWORD);
+    const second = http.expectOne(api('/teachers'));
+    expect(second.request.body.password).toBeNull();
+    second.flush({ id: 10, loginStatus: 'SkippedNoEmail', userId: null });
+    await noEmail;
+  });
+
+  it('updates a teacher together with their login and returns its outcome', async () => {
+    const updated = TestBed.inject(TeacherService).updateTeacher({ id: '9', firstName: 'Mona', lastName: 'N', email: 'm@x.test' }, DEFAULT_TEACHER_PASSWORD);
+    const request = http.expectOne(api('/teachers/9'));
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.password).toBe(DEFAULT_TEACHER_PASSWORD);
+    request.flush({ id: 9, loginStatus: 'Linked', userId: 4 });
+    expect(await updated).toBe('Linked');
+  });
+
   it('pages a whole list in memory for the admin tables', async () => {
     const source = pagedList(() => Promise.resolve([1, 2, 3, 4, 5]));
 
