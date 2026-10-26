@@ -140,6 +140,14 @@ Route guards (`src/app/guards/auth.guard.ts`) are all `CanActivateFn`s that: `aw
   add a timer that calls the API; add a signal instead. (If the channel cannot connect at all, the counts catch up on
   the next sign-in or page load.) All clear on a change of account. The token rides in the connection URL
   (`access_token`), which the API accepts on `/hubs` paths only.
+- **Teaching Rooms are the one live channel that carries content** (`/TeachingRoom/:id`, `TeachingRoomComponent`). The
+  page opens its own connection to `/hubs/teaching-room` (`services/realtime/teaching-room-connection.ts`, provided in
+  the component, closed with it) and calls `JoinRoom`: the server alone decides, from the database, whether this person
+  presents the room or was let in, and only then sends the board (the current lesson) — on the join, on every move, and
+  on `admitted`; `removed` clears it at once. A reconnect joins again and gets the current board; `newerState`
+  (`shared/teaching-room-state.ts`) keeps the higher `revision` when a broadcast overtakes the join's answer. Every change
+  (ask to join, approve/turn away/remove, Next/Previous, end) goes through `TeachingRoomService` over HTTP. A lesson is
+  drawn by `MaterialLessonComponent`, shared with the material reader. The route keeps the casing it is shared with.
 
 ### Quiz-taking flow
 

@@ -243,6 +243,32 @@ export const teachingMaterialsGuard: CanActivateFn = async () => {
 };
 
 /**
+ * Teaching Rooms (`/teaching-rooms` and `/TeachingRoom/:id`): the teacher who
+ * presents, and the students who watch. A teacher passes on
+ * `canPresentTeachingRooms()`; a student on the same check `studentGuard` runs,
+ * since watching a room is not an admin capability. Which room each may open,
+ * and what of it they see, is the API's decision (and the hub's, for the board).
+ */
+export const teachingRoomsGuard: CanActivateFn = async () => {
+  const authService = inject(AuthService);
+  const adminAccess = inject(AdminAccessService);
+  const router = inject(Router);
+
+  await authService.waitForAuthReady();
+
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const home = roleHomeRoute(authService, adminAccess);
+  if (adminAccess.getStrategy(authService.getUserRoles()).canPresentTeachingRooms() || home === STUDENT_HOME_ROUTE) {
+    return true;
+  }
+
+  return router.createUrlTree([home]);
+};
+
+/**
  * Guards `/admin-dashboard`, the landing page shared by application admins
  * and teachers (rendered as two different views inside the same shell — see
  * `AdminDashboardComponent`). A parent (`userAdmin`) lands on

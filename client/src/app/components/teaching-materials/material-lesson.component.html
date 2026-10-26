@@ -1,0 +1,127 @@
+<div dir="ltr">
+  <div class="tm-eyebrow">{{ unit().kind }} {{ unit().number }} · {{ unit().title }}</div>
+  <h2 class="tm-h1"><span class="tm-code">{{ lesson().code }}</span> {{ lesson().title }}</h2>
+
+  @for (block of lesson().content; track $index) {
+    @switch (block.type) {
+      @case ('heading') {
+        <h3 class="tm-h3">{{ block.text }}</h3>
+      }
+      @case ('paragraph') {
+        <p class="tm-paragraph"><app-inline-text [text]="block.text" /></p>
+      }
+      @case ('note') {
+        <div class="tm-note"><app-inline-text [text]="block.text" /></div>
+      }
+      @case ('formula') {
+        <div class="tm-formula"><app-inline-text [text]="block.text" /></div>
+      }
+      @case ('example') {
+        @if (block.type === 'example') {
+          <div class="tm-example">
+            <div class="tm-example__label">{{ block.label }}</div>
+            <div class="tm-paragraph"><app-inline-text [text]="block.text" /></div>
+          </div>
+        }
+      }
+      @case ('list') {
+        @if (block.type === 'list') {
+          @if (block.title) {
+            <p class="tm-list-title"><app-inline-text [text]="block.title" /></p>
+          }
+          @if (block.ordered) {
+            <ol class="tm-list">
+              @for (item of block.items; track $index) {
+                <li><app-inline-text [text]="item" /></li>
+              }
+            </ol>
+          } @else {
+            <ul class="tm-list">
+              @for (item of block.items; track $index) {
+                <li><app-inline-text [text]="item" /></li>
+              }
+            </ul>
+          }
+        }
+      }
+      @case ('terms') {
+        @if (block.type === 'terms') {
+          <dl class="tm-terms">
+            @for (term of block.items; track $index) {
+              <div class="tm-terms__row">
+                <dt>
+                  <span class="tm-terms__term">{{ term.term }}</span>
+                  <span class="tm-terms__ar" dir="rtl" lang="ar">{{ term.termAr }}</span>
+                </dt>
+                <dd><app-inline-text [text]="term.definition" /></dd>
+              </div>
+            }
+          </dl>
+        }
+      }
+      @case ('table') {
+        @if (block.type === 'table') {
+          <div class="tbl-scroll" tabindex="0">
+            <table class="tbl tm-table">
+              @if (block.title) {
+                <caption>{{ block.title }}</caption>
+              }
+              <thead>
+                <tr>
+                  @for (column of block.columns; track $index) {
+                    <th scope="col">{{ column }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of block.rows; track $index) {
+                  <tr>
+                    @for (cell of row; track $index) {
+                      <td>{{ cell }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+      @case ('code') {
+        @if (block.type === 'code') {
+          <figure class="tm-code-block">
+            <figcaption>{{ block.language }}</figcaption>
+            <pre><code>{{ block.code }}</code></pre>
+          </figure>
+        }
+      }
+    }
+  }
+</div>
+
+<section class="tm-arabic" dir="rtl" lang="ar">
+  <h3 class="tm-arabic__title">{{ lesson().arabicExplanation.title }}</h3>
+  @for (item of lesson().arabicExplanation.items; track $index) {
+    @switch (item.type) {
+      @case ('bullet') {
+        <p class="tm-arabic__bullet">{{ item.text }}</p>
+      }
+      @case ('example') {
+        <p class="tm-arabic__example">{{ item.text }}</p>
+      }
+      @default {
+        <p>{{ item.text }}</p>
+      }
+    }
+  }
+</section>
+
+@if (closesUnit() && unit().keyTakeaways.length) {
+  <section class="tm-takeaways" dir="ltr">
+    <div class="tm-takeaways__label">{{ 'teachingMaterials.reader.keyTakeaways' | translate }}</div>
+    <ul>
+      @for (takeaway of unit().keyTakeaways; track $index) {
+        <li><app-inline-text [text]="takeaway" /></li>
+      }
+    </ul>
+  </section>
+}

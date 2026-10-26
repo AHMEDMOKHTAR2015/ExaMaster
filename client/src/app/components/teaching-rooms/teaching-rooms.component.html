@@ -1,0 +1,61 @@
+<div class="page__head">
+  <div>
+    <h1 class="page__title">{{ 'teachingRooms.title' | translate }}</h1>
+    <p class="page__subtitle">{{ (presents() ? 'teachingRooms.subtitleTeacher' : 'teachingRooms.subtitleStudent') | translate }}</p>
+  </div>
+  @if (presents()) {
+    <a class="btn btn--primary" routerLink="/teaching-materials">{{ 'teachingRooms.openFromMaterials' | translate }}</a>
+  }
+</div>
+
+<div class="card users-card">
+  @if (loading()) {
+    <div class="empty"><span>{{ 'teachingRooms.loading' | translate }}</span></div>
+  } @else if (hasError()) {
+    <div class="empty"><div class="empty__title">{{ 'teachingRooms.loadFailed' | translate }}</div></div>
+  } @else {
+    <div class="tbl-scroll" tabindex="0">
+      <table class="tbl tbl--rooms">
+        <thead>
+          <tr>
+            <th>{{ 'teachingRooms.table.material' | translate }}</th>
+            <th>{{ 'common.subject' | translate }}</th>
+            @if (!presents()) {
+              <th>{{ 'teachingRooms.table.teacher' | translate }}</th>
+              <th>{{ 'teachingRooms.table.standing' | translate }}</th>
+            }
+            <th class="tbl__center">{{ 'teachingRooms.table.items' | translate }}</th>
+            <th>{{ 'teachingRooms.table.opened' | translate }}</th>
+            <th class="col-actions">{{ 'common.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (room of rooms(); track room.id) {
+            <tr>
+              <td><a class="tm-link" [routerLink]="['/TeachingRoom', room.id]" dir="auto">{{ room.materialTitle }}</a></td>
+              <td>{{ subjectName(room.subjectId) }}</td>
+              @if (!presents()) {
+                <td>{{ room.teacherName || ('common.na' | translate) }}</td>
+                <td><span [class]="'badge ' + standingBadge(room.admission)">{{ 'teachingRooms.standing.' + room.admission | translate }}</span></td>
+              }
+              <td class="tbl__center"><span class="badge badge--brand">{{ room.itemCount }}</span></td>
+              <td>{{ room.createdAt | date: 'short' }}</td>
+              <td class="col-actions">
+                <a class="btn btn--sm" [routerLink]="['/TeachingRoom', room.id]">{{ 'teachingRooms.enter' | translate }}</a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="presents() ? 5 : 7">
+                <div class="empty">
+                  <div class="empty__title">{{ 'teachingRooms.empty' | translate }}</div>
+                  <div class="muted">{{ (presents() ? 'teachingRooms.emptyHintTeacher' : 'teachingRooms.emptyHintStudent') | translate }}</div>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

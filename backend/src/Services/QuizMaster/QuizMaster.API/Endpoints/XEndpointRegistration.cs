@@ -4,6 +4,7 @@ using QuizMaster.API.Endpoints.Questions;
 using QuizMaster.API.Endpoints.Quizzes;
 using QuizMaster.API.Endpoints.TeacherQuizzes;
 using QuizMaster.API.Endpoints.TeachingMaterials;
+using QuizMaster.API.Endpoints.TeachingRooms;
 using QuizMaster.API.Endpoints.Assignments;
 using QuizMaster.API.Endpoints.Attempts;
 using QuizMaster.API.Endpoints.Participations;
@@ -114,6 +115,17 @@ public static class EndpointRegistration
         GetTeachingMaterialEndpoint.Map(api);
         CreateTeachingMaterialEndpoint.Map(api);
         DeleteTeachingMaterialEndpoint.Map(api);
+
+        // Teaching rooms (a teacher presents a material live; the board itself travels over /hubs/teaching-room)
+        CreateTeachingRoomEndpoint.Map(api);
+        ListTeachingRoomsEndpoint.Map(api);
+        GetTeachingRoomEndpoint.Map(api);
+        GetTeachingRoomStateEndpoint.Map(api);
+        RequestToJoinTeachingRoomEndpoint.Map(api);
+        ApproveTeachingRoomMemberEndpoint.Map(api);
+        RejectTeachingRoomMemberEndpoint.Map(api);
+        MoveTeachingRoomItemEndpoint.Map(api);
+        EndTeachingRoomEndpoint.Map(api);
 
         // Assignments
         ListAssignmentsEndpoint.Map(api);

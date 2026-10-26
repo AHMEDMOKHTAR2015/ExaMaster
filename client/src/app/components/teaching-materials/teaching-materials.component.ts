@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AdminAccessService, GradeService, StageService, SubjectService, TeacherScopeService } from '../../services/admin';
 import { AuthService } from '../../services/auth/auth.service';
 import { TeachingMaterialService, uploadProblems } from '../../services/teaching-material.service';
+import { TeachingRoomService } from '../../services/teaching-room.service';
 import { Grade, Stage, Subject, TeachingMaterialSummary } from '../../models';
 import { MaterialFilePreview, readMaterialFile } from '../../shared/teaching-material-file';
 import { BaseComponent } from '../../shared/base/base.component';
@@ -22,7 +23,8 @@ interface GradeOption {
  *
  * A teacher uploads for the subjects on their roster record and sees what they
  * uploaded; an application admin sees every teacher's and may delete any, but
- * uploads none (`canUploadTeachingMaterials()`). The API enforces all of it.
+ * uploads none (`canUploadTeachingMaterials()`). A teacher also presents their
+ * own material live from here, opening a Teaching Room on it. The API enforces all of it.
  */
 @Component({
   selector: 'app-teaching-materials',
@@ -39,7 +41,10 @@ export class TeachingMaterialsComponent extends BaseComponent implements OnInit 
   private readonly authService = inject(AuthService);
   private readonly adminAccess = inject(AdminAccessService);
   private readonly translate = inject(TranslateService);
+  private readonly roomService = inject(TeachingRoomService);
+  private readonly router = inject(Router);
 
+  readonly canPresent = computed(() => this.adminAccess.getStrategy(this.authService.getUserRoles()).canPresentTeachingRooms());
   readonly canUpload = computed(() => this.adminAccess.getStrategy(this.authService.getUserRoles()).canUploadTeachingMaterials());
 
   readonly materials = signal<TeachingMaterialSummary[]>([]);
@@ -54,6 +59,7 @@ export class TeachingMaterialsComponent extends BaseComponent implements OnInit 
   readonly subjectFilter = signal('');
   readonly gradeFilter = signal('');
   readonly deletingId = signal<string | null>(null);
+  readonly presentingId = signal<string | null>(null);
   readonly actionError = signal<string | null>(null);
 
   // ---- upload ----
@@ -169,6 +175,20 @@ export class TeachingMaterialsComponent extends BaseComponent implements OnInit 
       this.problems.set(uploadProblems(error));
     } finally {
       this.uploading.set(false);
+    }
+  }
+
+  /** Opens a Teaching Room on the material and goes to its board. */
+  async present(material: TeachingMaterialSummary): Promise<void> {
+    this.presentingId.set(material.id);
+    this.actionError.set(null);
+    try {
+      const roomId = await this.roomService.open(material.id);
+      await this.router.navigate(['/TeachingRoom', roomId]);
+    } catch (error) {
+      this.actionError.set(error instanceof Error ? error.message : String(error));
+    } finally {
+      this.presentingId.set(null);
     }
   }
 

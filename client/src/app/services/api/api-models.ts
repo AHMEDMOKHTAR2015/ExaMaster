@@ -212,6 +212,31 @@ export interface ApiTeachingMaterial {
   gradeId: number; semester: ApiSemester | null; createdById: number; createdOn: string; overview: unknown; units: ApiMaterialUnit[];
 }
 
+// ---- teaching rooms (/teaching-rooms; the board itself over /hubs/teaching-room) ----
+
+export type ApiTeachingRoomAdmission = 'None' | 'MayRequest' | 'Pending' | 'Rejected' | 'Approved' | 'Teacher';
+export type ApiTeachingRoomMemberStatus = 'Pending' | 'Approved' | 'Rejected';
+
+export interface ApiTeachingRoomSummary {
+  id: number; subjectId: number; teachingMaterialId: number; materialTitle: string; teacherName: string | null;
+  itemCount: number; createdOn: string; admission: ApiTeachingRoomAdmission;
+}
+export interface ApiTeachingRoom extends ApiTeachingRoomSummary { members: ApiTeachingRoomMember[] | null; }
+export interface ApiTeachingRoomMember {
+  studentId: number; studentName: string; className: string | null; status: ApiTeachingRoomMemberStatus;
+  requestedOn: string; decidedOn: string | null;
+}
+/** The board, from GET …/state, a move's answer, or the hub (`currentItemChanged`, `admitted`, `JoinRoom`). */
+export interface ApiTeachingRoomState {
+  roomId: number; position: number; itemCount: number; canGoPrevious: boolean; canGoNext: boolean; revision: number;
+  item: {
+    unitNumber: number; unitKind: string; unitTitle: string; keyTakeaways: string[]; closesUnit: boolean;
+    lesson: ApiMaterialLesson;
+  };
+}
+/** The hub's answer to `JoinRoom`: a state only when the caller was admitted to the room's group. */
+export interface ApiJoinTeachingRoomResult { admission: ApiTeachingRoomAdmission; state: ApiTeachingRoomState | null; }
+
 // ---- sitting a quiz ----
 
 /** What a student receives to sit a quiz: no member an answer could be carried in. */

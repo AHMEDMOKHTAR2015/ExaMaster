@@ -68,6 +68,10 @@ export class TeacherStrategy implements AdminRoleStrategy {
     return true;
   }
 
+  canPresentTeachingRooms(): boolean {
+    return true;
+  }
+
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none' {
     return 'teacher';
   }

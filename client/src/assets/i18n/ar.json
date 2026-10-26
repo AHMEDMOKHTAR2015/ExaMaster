@@ -44,7 +44,8 @@
     "organizations": "المؤسسات",
     "accessRequests": "طلبات الانضمام",
     "myChildren": "أبنائي",
-    "teachingMaterials": "المواد التعليمية"
+    "teachingMaterials": "المواد التعليمية",
+    "teachingRooms": "غرف التدريس"
   },
   "roles": {
     "platformAdmin": "مدير المنصة",
@@ -1895,6 +1896,7 @@
     "emptyHintAdmin": "تظهر المواد هنا بعد أن يرفعها المعلمون.",
     "noMatches": "لا توجد مواد تطابق هذا التصفية",
     "open": "فتح",
+    "present": "اعرض",
     "deleteConfirm": "حذف \"{{ title }}\" مع كل وحداته ودروسه؟ لا يمكن التراجع عن ذلك.",
     "unitCount": "{{ count }} وحدة",
     "lessonCount": "{{ count }} درس",
@@ -1934,6 +1936,66 @@
       "keyTakeaways": "أهم النقاط",
       "bookPages": "صفحات الكتاب {{ pages }}",
       "pager": "التنقل بين الدروس"
+    }
+  },
+  "teachingRooms": {
+    "title": "غرف التدريس",
+    "subtitleTeacher": "غرفك المباشرة. افتح غرفة على مادة بزر «اعرض»، ثم اسمح لطلابك بالدخول.",
+    "subtitleStudent": "الغرف التي يعرضها معلموك على فصلك. اطلب الانضمام، وتابع الدرس مباشرة بعد قبولك.",
+    "openFromMaterials": "افتح غرفة",
+    "loading": "جارٍ تحميل الغرف…",
+    "loadFailed": "تعذّر تحميل الغرف.",
+    "empty": "لا توجد غرف تدريس بعد",
+    "emptyHintTeacher": "اضغط «اعرض» على إحدى موادك لفتح غرفة.",
+    "emptyHintStudent": "عندما يفتح معلم غرفة لفصلك ستظهر هنا.",
+    "enter": "ادخل",
+    "table": {
+      "material": "المادة",
+      "teacher": "المعلم",
+      "standing": "الحالة",
+      "items": "الدروس",
+      "opened": "فُتحت"
+    },
+    "standing": {
+      "none": "—",
+      "mayRequest": "متاحة لك",
+      "pending": "بانتظار الموافقة",
+      "rejected": "لم تُقبل",
+      "approved": "مقبول",
+      "teacher": "غرفتك"
+    },
+    "room": {
+      "back": "→ غرف التدريس",
+      "loading": "جارٍ فتح الغرفة…",
+      "notFound": "هذه الغرفة غير متاحة. ربما انتهت، أو أنها ليست لفصلك.",
+      "loadFailed": "تعذّر فتح الغرفة.",
+      "eyebrow": "غرفة التدريس",
+      "presentedBy": "يقدّمها {{ name }}",
+      "live": "مباشر",
+      "connecting": "جارٍ الاتصال…",
+      "end": "إنهاء الغرفة",
+      "endConfirm": "إنهاء هذه الغرفة؟ سيُبلَّغ كل من فيها بانتهائها.",
+      "ended": "انتهت هذه الغرفة.",
+      "pager": "التنقل في المادة",
+      "position": "{{ position }} من {{ count }}",
+      "connectingBoard": "جارٍ الاتصال بالسبورة…",
+      "askTitle": "اطلب الانضمام إلى هذه الغرفة",
+      "askHint": "سيسمح لك معلمك بالدخول، وسيظهر الدرس هنا.",
+      "ask": "اطلب الانضمام",
+      "waitingTitle": "بانتظار معلمك",
+      "waitingHint": "سيظهر الدرس هنا فور قبولك.",
+      "rejectedTitle": "أنت لست في هذه الغرفة",
+      "rejectedHint": "لم يسمح لك معلمك بالدخول أو أزالك. ما زال بإمكانه السماح لك.",
+      "people": "الطلاب",
+      "waiting": "بالانتظار ({{ count }})",
+      "admitted": "في الغرفة ({{ count }})",
+      "turnedAway": "غير مقبولين ({{ count }})",
+      "noneWaiting": "لا أحد بالانتظار.",
+      "noneAdmitted": "لم يُقبل أحد بعد.",
+      "approve": "اسمح بالدخول",
+      "reject": "ارفض",
+      "remove": "أزِل",
+      "admit": "اسمح بالدخول"
     }
   }
 }

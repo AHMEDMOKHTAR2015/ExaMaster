@@ -1558,6 +1558,106 @@ namespace QuizMaster.Persistence.Migrations
                     b.ToTable("TeachingMaterial", (string)null);
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.TeachingRooms.TeachingRoom", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("CurrentPosition")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LastModifiedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeachingMaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("TeachingMaterialId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "CreatedById");
+
+                    b.HasIndex("TenantId", "TeachingMaterialId");
+
+                    b.ToTable("TeachingRoom", (string)null);
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingRooms.TeachingRoomMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("DecidedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DecidedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("RequestedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeachingRoomId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("TeachingRoomId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("TeachingRoomMember", (string)null);
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.Tenants.Tenant", b =>
                 {
                     b.Property<int>("Id")
@@ -2142,6 +2242,36 @@ namespace QuizMaster.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("QuizMaster.Domain.TeachingRooms.TeachingRoom", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.Academic.Subject", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", null)
+                        .WithMany()
+                        .HasForeignKey("TeachingMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingRooms.TeachingRoomMember", b =>
+                {
+                    b.HasOne("QuizMaster.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuizMaster.Domain.TeachingRooms.TeachingRoom", null)
+                        .WithMany("Members")
+                        .HasForeignKey("TeachingRoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("QuizMaster.Domain.Users.User", b =>
                 {
                     b.HasOne("QuizMaster.Domain.Academic.ClassGroup", null)
@@ -2203,6 +2333,11 @@ namespace QuizMaster.Persistence.Migrations
             modelBuilder.Entity("QuizMaster.Domain.TeachingMaterials.TeachingMaterial", b =>
                 {
                     b.Navigation("Units");
+                });
+
+            modelBuilder.Entity("QuizMaster.Domain.TeachingRooms.TeachingRoom", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

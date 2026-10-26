@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  ArabicExplanation, MaterialBlock, MaterialOverview, MaterialUnit, TeachingMaterial, TeachingMaterialSummary
+  ArabicExplanation, MaterialBlock, MaterialLesson, MaterialOverview, MaterialUnit, TeachingMaterial, TeachingMaterialSummary
 } from '../models';
 import { ApiClient } from './api/api-client.service';
-import { ApiId, ApiMaterialUnit, ApiTeachingMaterial, ApiTeachingMaterialSummary, idNumber, idString } from './api/api-models';
+import { ApiId, ApiMaterialLesson, ApiMaterialUnit, ApiTeachingMaterial, ApiTeachingMaterialSummary, idNumber, idString } from './api/api-models';
 import { toSemester } from './api/question-mapping';
 import { ServiceError } from './shared/service-error';
 
@@ -113,14 +113,19 @@ function toUnit(unit: ApiMaterialUnit): MaterialUnit {
     bigIdeaEnglish: unit.bigIdeaEnglish,
     bigIdeaArabic: unit.bigIdeaArabic,
     keyTakeaways: unit.keyTakeaways,
-    lessons: unit.lessons.map(lesson => ({
-      id: idString(lesson.id)!,
-      order: lesson.order,
-      code: lesson.code,
-      title: lesson.title,
-      // the API validated every block's shape on upload
-      content: lesson.content as MaterialBlock[],
-      arabicExplanation: lesson.arabicExplanation as ArabicExplanation
-    }))
+    lessons: unit.lessons.map(toLesson)
+  };
+}
+
+/** One lesson as the reader shows it; a teaching room's board carries the same shape. */
+export function toLesson(lesson: ApiMaterialLesson): MaterialLesson {
+  return {
+    id: idString(lesson.id)!,
+    order: lesson.order,
+    code: lesson.code,
+    title: lesson.title,
+    // the API validated every block's shape on upload
+    content: lesson.content as MaterialBlock[],
+    arabicExplanation: lesson.arabicExplanation as ArabicExplanation
   };
 }

@@ -22,3 +22,4 @@ export * from './access-request';
 export * from './subject-performance';
 export * from './my-student';
 export * from './teaching-material';
+export * from './teaching-room';

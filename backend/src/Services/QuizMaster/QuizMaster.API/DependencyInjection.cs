@@ -9,6 +9,7 @@ using Blocks.Core.Context;
 using Blocks.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.OpenApi;
 using QuizMaster.API.Security;
 
@@ -44,9 +45,18 @@ public static class DependencyInjection
 
         // Live signals (inbox, review queue). One API instance needs nothing more; several need a backplane
         // (AddStackExchangeRedis, or Azure SignalR Service) so a signal sent on one reaches people connected to another.
-        services.AddSignalR();
+        services.AddSignalR()
+            // the teaching-room board carries states: enums by name, as the REST API writes them
+            .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+            .AddHubOptions<TeachingRoomHub>(options => options.AddFilter<HubHttpContextFilter>());
         services.RemoveAll<IRealtimeNotifier>();
         services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
+
+        // The teaching-room board: groups per room, filled only by TeachingRoomHub.JoinRoom (see TeachingRoomConnections
+        // on what one instance means for it).
+        services.AddSingleton<TeachingRoomConnections>();
+        services.RemoveAll<ITeachingRoomBroadcaster>();
+        services.AddScoped<ITeachingRoomBroadcaster, SignalRTeachingRoomBroadcaster>();
 
         var allowedOrigins = config.GetSectionByTypeName<ClientAppOptions>().AllowedOrigins;
         services.AddCors(options => options.AddPolicy(ClientAppCorsPolicy, policy =>

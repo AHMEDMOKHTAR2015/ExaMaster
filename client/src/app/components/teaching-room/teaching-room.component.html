@@ -1,0 +1,137 @@
+<a class="back-btn tm-back" routerLink="/teaching-rooms">{{ 'teachingRooms.room.back' | translate }}</a>
+
+@if (loading()) {
+  <div class="empty"><span>{{ 'teachingRooms.room.loading' | translate }}</span></div>
+} @else if (notFound()) {
+  <div class="empty"><div class="empty__title">{{ 'teachingRooms.room.notFound' | translate }}</div></div>
+} @else if (hasError()) {
+  <div class="empty"><div class="empty__title">{{ 'teachingRooms.room.loadFailed' | translate }}</div></div>
+} @else if (room(); as room) {
+  <header class="page__head tr-head">
+    <div>
+      <div class="tm-eyebrow">{{ 'teachingRooms.room.eyebrow' | translate }}</div>
+      <h1 class="page__title" dir="auto">{{ room.materialTitle }}</h1>
+      <p class="page__subtitle">
+        @if (subjectName()) {
+          {{ subjectName() }} ·
+        }
+        {{ 'teachingRooms.room.presentedBy' | translate : { name: room.teacherName || ('common.na' | translate) } }}
+      </p>
+    </div>
+    <div class="tr-head__side">
+      @if (!live.ended()) {
+        <span class="tr-live" [class.is-offline]="!live.connected()" role="status">
+          {{ (live.connected() ? 'teachingRooms.room.live' : 'teachingRooms.room.connecting') | translate }}
+        </span>
+      }
+      @if (isTeacher() && !live.ended()) {
+        <button class="btn btn--sm btn--danger" type="button" (click)="end()" [disabled]="busy()">{{ 'teachingRooms.room.end' | translate }}</button>
+      }
+    </div>
+  </header>
+
+  @if (actionError(); as error) {
+    <div class="tm-alert tm-alert--error" role="alert">{{ error }}</div>
+  }
+
+  @if (live.ended()) {
+    <div class="card empty"><div class="empty__title">{{ 'teachingRooms.room.ended' | translate }}</div></div>
+  } @else {
+    <div class="tr-layout" [class.tr-layout--teacher]="isTeacher()">
+      <article class="card tm-page tr-board" aria-live="polite">
+        @if (isTeacher() || admission() === 'approved') {
+          @if (board(); as state) {
+            @if (boardUnit(); as unit) {
+              <app-material-lesson [unit]="unit" [lesson]="state.item.lesson" [closesUnit]="state.item.closesUnit" />
+            }
+            <!-- Previous and Next are the presenting teacher's; each is disabled at its own end of the material -->
+            <nav class="tm-pager tr-pager" [attr.aria-label]="'teachingRooms.room.pager' | translate">
+              @if (isTeacher()) {
+                <button type="button" class="btn btn--ghost" (click)="previous()" [disabled]="!state.canGoPrevious || busy()">
+                  {{ 'common.previous' | translate }}
+                </button>
+              }
+              <span class="tm-pager__spacer"></span>
+              <span class="tr-position">{{ 'teachingRooms.room.position' | translate : { position: state.position, count: state.itemCount } }}</span>
+              <span class="tm-pager__spacer"></span>
+              @if (isTeacher()) {
+                <button type="button" class="btn btn--primary" (click)="next()" [disabled]="!state.canGoNext || busy()">
+                  {{ 'common.next' | translate }}
+                </button>
+              }
+            </nav>
+          } @else {
+            <div class="empty"><span>{{ 'teachingRooms.room.connectingBoard' | translate }}</span></div>
+          }
+        } @else if (admission() === 'mayRequest') {
+          <div class="empty">
+            <div class="empty__title">{{ 'teachingRooms.room.askTitle' | translate }}</div>
+            <div class="muted">{{ 'teachingRooms.room.askHint' | translate }}</div>
+            <button class="btn btn--primary tr-ask" type="button" (click)="askToJoin()" [disabled]="busy()">
+              {{ (busy() ? 'common.working' : 'teachingRooms.room.ask') | translate }}
+            </button>
+          </div>
+        } @else if (admission() === 'pending') {
+          <div class="empty">
+            <div class="empty__title">{{ 'teachingRooms.room.waitingTitle' | translate }}</div>
+            <div class="muted">{{ 'teachingRooms.room.waitingHint' | translate }}</div>
+          </div>
+        } @else if (admission() === 'rejected') {
+          <div class="empty">
+            <div class="empty__title">{{ 'teachingRooms.room.rejectedTitle' | translate }}</div>
+            <div class="muted">{{ 'teachingRooms.room.rejectedHint' | translate }}</div>
+          </div>
+        } @else {
+          <div class="empty"><div class="empty__title">{{ 'teachingRooms.room.notFound' | translate }}</div></div>
+        }
+      </article>
+
+      @if (isTeacher()) {
+        <aside class="card tr-people" [attr.aria-label]="'teachingRooms.room.people' | translate">
+          <h2 class="tr-people__title">{{ 'teachingRooms.room.waiting' | translate : { count: waiting().length } }}</h2>
+          @for (member of waiting(); track member.studentId) {
+            <div class="tr-person">
+              <div class="tr-person__name">
+                <span>{{ member.studentName }}</span>
+                @if (member.className) {
+                  <span class="muted">{{ member.className }}</span>
+                }
+              </div>
+              <div class="row-actions">
+                <button class="btn btn--sm btn--primary" type="button" (click)="approve(member)" [disabled]="busy()">{{ 'teachingRooms.room.approve' | translate }}</button>
+                <button class="btn btn--sm btn--ghost" type="button" (click)="reject(member)" [disabled]="busy()">{{ 'teachingRooms.room.reject' | translate }}</button>
+              </div>
+            </div>
+          } @empty {
+            <p class="muted tr-people__empty">{{ 'teachingRooms.room.noneWaiting' | translate }}</p>
+          }
+
+          <h2 class="tr-people__title">{{ 'teachingRooms.room.admitted' | translate : { count: admitted().length } }}</h2>
+          @for (member of admitted(); track member.studentId) {
+            <div class="tr-person">
+              <div class="tr-person__name">
+                <span>{{ member.studentName }}</span>
+                @if (member.className) {
+                  <span class="muted">{{ member.className }}</span>
+                }
+              </div>
+              <button class="btn btn--sm btn--ghost" type="button" (click)="reject(member)" [disabled]="busy()">{{ 'teachingRooms.room.remove' | translate }}</button>
+            </div>
+          } @empty {
+            <p class="muted tr-people__empty">{{ 'teachingRooms.room.noneAdmitted' | translate }}</p>
+          }
+
+          @if (turnedAway().length) {
+            <h2 class="tr-people__title">{{ 'teachingRooms.room.turnedAway' | translate : { count: turnedAway().length } }}</h2>
+            @for (member of turnedAway(); track member.studentId) {
+              <div class="tr-person">
+                <div class="tr-person__name"><span>{{ member.studentName }}</span></div>
+                <button class="btn btn--sm btn--ghost" type="button" (click)="approve(member)" [disabled]="busy()">{{ 'teachingRooms.room.admit' | translate }}</button>
+              </div>
+            }
+          }
+        </aside>
+      }
+    </div>
+  }
+}

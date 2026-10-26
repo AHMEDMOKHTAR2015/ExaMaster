@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { guestGuard, studentGuard, userAdminGuard, applicationAdminGuard,
   platformAdminGuard,
   translationsAdminGuard, adminDashboardGuard, teacherGuard, childParticipationHistoryGuard, myChildrenGuard,
-  teachingMaterialsGuard } from './guards';
+  teachingMaterialsGuard, teachingRoomsGuard } from './guards';
 
 /**
  * Application routes with lazy loading and guards
@@ -152,6 +152,23 @@ export const routes: Routes = [
       .then(m => m.MaterialReaderComponent),
     canActivate: [teachingMaterialsGuard],
     title: 'Teaching Material - QuizMaster'
+  },
+  {
+    // A teacher's live rooms, or the rooms open to a student's class.
+    path: 'teaching-rooms',
+    loadComponent: () => import('./components/teaching-rooms/teaching-rooms.component')
+      .then(m => m.TeachingRoomsComponent),
+    canActivate: [teachingRoomsGuard],
+    title: 'Teaching Rooms - QuizMaster'
+  },
+  {
+    // One room's live board. The path keeps the casing it is shared with (/TeachingRoom/42); the API and its hub
+    // decide who may see the board.
+    path: 'TeachingRoom/:id',
+    loadComponent: () => import('./components/teaching-room/teaching-room.component')
+      .then(m => m.TeachingRoomComponent),
+    canActivate: [teachingRoomsGuard],
+    title: 'Teaching Room - QuizMaster'
   },
   {
     path: 'parent-dashboard',

@@ -67,6 +67,15 @@
             </span>
             {{ 'nav.myParticipations' | translate }}
           </a>
+          <a routerLink="/teaching-rooms" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            {{ 'nav.teachingRooms' | translate }}
+          </a>
         }
 
         @if (hasAdminAccess()) {
@@ -140,6 +149,15 @@
               </svg>
             </span>
             {{ 'nav.teachingMaterials' | translate }}
+          </a>
+          <a routerLink="/teaching-rooms" routerLinkActive="is-active" class="nav-item">
+            <span class="nav-item__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            {{ 'nav.teachingRooms' | translate }}
           </a>
           <a routerLink="/quiz-management" routerLinkActive="is-active" class="nav-item">
             <span class="nav-item__icon">

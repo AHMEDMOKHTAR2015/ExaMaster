@@ -5,6 +5,7 @@ import { GradeService, SubjectService } from '../../services/admin';
 import { TeachingMaterialService } from '../../services/teaching-material.service';
 import { MaterialLesson, MaterialUnit, TeachingMaterial } from '../../models';
 import { InlineTextComponent } from '../../shared/inline-text.component';
+import { MaterialLessonComponent } from './material-lesson.component';
 import { BaseComponent } from '../../shared/base/base.component';
 
 /** What the reader shows: the front matter, a unit's introduction, or one lesson. */
@@ -31,7 +32,7 @@ interface LessonStop {
 @Component({
   selector: 'app-material-reader',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TranslatePipe, InlineTextComponent],
+  imports: [RouterLink, TranslatePipe, InlineTextComponent, MaterialLessonComponent],
   templateUrl: './material-reader.component.html'
 })
 export class MaterialReaderComponent extends BaseComponent implements OnInit {

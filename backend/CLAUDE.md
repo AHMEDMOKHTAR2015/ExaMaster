@@ -23,6 +23,7 @@ src/
 └── ApiGateway/                     YARP, /quizmaster/** → QuizMaster
 tools/QuizMasterPro.DevToken/       development tokens for the demo-school accounts (dev-admin, dev-teacher, dev-parent, dev-student, dev-platform)
 tests/QuizMaster.Domain.Tests/      grading (ported app specs) + aggregate rules; no DB, no mocks
+tests/QuizMaster.API.Tests/         the API in memory against SQL Server in Docker (Testcontainers): teaching-room hub + endpoints; needs Docker
 tests/smoke/smoke.sh                end-to-end checks against a running API with the demo school (SeedOptions__DemoSchool=true)
 tests/smoke/first-run.sh            an empty database holds only the platform administrator, who can onboard a school
 docs/playbook/                      the architecture playbook (patterns, decisions, checklist, what not to copy)

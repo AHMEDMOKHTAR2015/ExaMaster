@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<AccessRequestScope>();
         services.AddScoped<NotificationSender>();
         services.TryAddScoped<IRealtimeNotifier, NoRealtimeNotifier>();      // the API replaces it with SignalR
+        services.TryAddScoped<ITeachingRoomBroadcaster, NoTeachingRoomBroadcaster>();   // likewise
 
         return services;
     }

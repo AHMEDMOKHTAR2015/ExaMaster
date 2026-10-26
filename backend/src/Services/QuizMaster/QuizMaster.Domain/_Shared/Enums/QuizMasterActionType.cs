@@ -101,4 +101,12 @@ public enum QuizMasterActionType
     // Teaching materials (a teacher's course content for one subject and grade)
     CreateTeachingMaterial,
     DeleteTeachingMaterial,
+
+    // Teaching rooms (a teacher presents a material live; students ask to join)
+    CreateTeachingRoom,
+    RequestToJoinTeachingRoom,
+    ApproveTeachingRoomMember,
+    RejectTeachingRoomMember,
+    MoveTeachingRoomItem,
+    EndTeachingRoom,
 }

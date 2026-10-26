@@ -63,6 +63,10 @@ export class UserAdminStrategy implements AdminRoleStrategy {
     return false;
   }
 
+  canPresentTeachingRooms(): boolean {
+    return false;
+  }
+
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none' {
     return 'userAdmin';
   }

@@ -38,6 +38,12 @@ export interface AdminRoleStrategy {
    * subject on the uploader's roster record, which an admin does not have.
    */
   canUploadTeachingMaterials(): boolean;
+  /**
+   * May open a Teaching Room on their own material and present it live. Teachers
+   * only: a room presents material its teacher uploaded. Students reach a room
+   * too, but as its audience (see `teachingRoomsGuard`), not through this.
+   */
+  canPresentTeachingRooms(): boolean;
 
   // Get the role type for UI display
   getRoleType(): 'userAdmin' | 'applicationAdmin' | 'teacher' | 'none';

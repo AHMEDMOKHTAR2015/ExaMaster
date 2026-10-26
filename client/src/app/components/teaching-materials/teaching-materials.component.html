@@ -177,6 +177,11 @@
               <td class="col-actions">
                 <div class="row-actions">
                   <a class="btn btn--sm" [routerLink]="['/teaching-materials', material.id]">{{ 'teachingMaterials.open' | translate }}</a>
+                  @if (canPresent()) {
+                    <button class="btn btn--sm btn--primary" type="button" (click)="present(material)" [disabled]="presentingId() === material.id">
+                      {{ (presentingId() === material.id ? 'common.working' : 'teachingMaterials.present') | translate }}
+                    </button>
+                  }
                   <button class="btn btn--sm btn--danger" type="button" (click)="remove(material)" [disabled]="deletingId() === material.id">
                     {{ (deletingId() === material.id ? 'common.working' : 'common.delete') | translate }}
                   </button>

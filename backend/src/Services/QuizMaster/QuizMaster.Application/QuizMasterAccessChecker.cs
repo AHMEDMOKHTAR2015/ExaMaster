@@ -1,4 +1,5 @@
 using QuizMasterPro.Security;
+using QuizMaster.Application.Features.TeachingRooms.Shared;
 
 namespace QuizMaster.Application;
 
@@ -37,6 +38,11 @@ public class QuizMasterAccessChecker(QuizMasterDbContext _dbContext) : IAggregat
             //insight - a teacher reads and deletes only the material they uploaded (the administrator returned above)
             nameof(TeachingMaterial) => isTeacher
                 && await _dbContext.TeachingMaterials.AnyAsync(material => material.Id == id && material.CreatedById == caller, ct),
+
+            //insight - the presenting teacher acts on their room; a student reaches one their class's material is presented in
+            // (to ask to join) or one they already asked to join. What each may then see is the handler's call (the board:
+            // admitted only), all from the same rule as the hub's
+            nameof(TeachingRoom) => await _dbContext.AdmissionAsync(id, caller, roles, ct) != TeachingRoomAdmission.None,
 
             nameof(HomeworkAssignment) => isTeacher
                 && await _dbContext.Assignments.AnyAsync(assignment => assignment.Id == id && assignment.CreatedById == caller, ct),

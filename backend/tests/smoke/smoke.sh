@@ -490,6 +490,31 @@ check "a student cannot open a teacher's material yet" 403 "$(call dev-student G
 check "the administrator opens it" 200 "$(call dev-admin GET /teaching-materials/$MID)"
 check "the uploader deletes it" 200 "$(call dev-teacher DELETE /teaching-materials/$MID)"
 
+echo "== teaching rooms (the teacher presents a material live; students ask to join; the board itself is over /hubs/teaching-room)"
+call dev-admin GET /grades >/dev/null; GRADE4=$(json '.grades[] | select(.name=="Grade 4") | .id')
+ROOM_DOC=$(jq -nc '{schemaVersion:1, id:"smoke-room-material", title:"Smoke room material", units:[
+  {kind:"Chapter", number:1, title:"Basics", bigIdea:{en:"Big idea", ar:"الفكرة"}, keyTakeaways:["One"], lessons:[
+    {order:1, code:"1-1", title:"First", content:[{type:"paragraph", text:"One"}], arabicExplanation:{title:"الشرح", items:[]}},
+    {order:2, code:"1-2", title:"Second", content:[{type:"paragraph", text:"Two"}], arabicExplanation:{title:"الشرح", items:[]}}]}]}')
+call dev-teacher POST /teaching-materials "$(jq -nc --argjson s "$SCIENCE" --argjson g "$GRADE4" --argjson d "$ROOM_DOC" '{subjectId:$s, gradeId:$g, document:$d}')" >/dev/null; RMID=$(json .id)
+ROOM=$(jq -nc --argjson m "$RMID" '{teachingMaterialId:$m}')
+check "a teacher opens a room on their material" 201 "$(call dev-teacher POST /teaching-rooms "$ROOM")"; RID=$(json .id)
+check "an administrator does not present (teachers only)" 403 "$(call dev-admin POST /teaching-rooms "$ROOM")"
+check "the room is listed for a student of the class" "MayRequest" "$(call dev-student GET /teaching-rooms >/dev/null; jq -r --argjson r "$RID" '.rooms[] | select(.id==$r) | .admission' "$WORK/out.json")"
+check "nothing of the board before they are let in" 403 "$(call dev-student GET /teaching-rooms/$RID/state)"
+check "the student asks to join" "Pending" "$(call dev-student POST /teaching-rooms/$RID/join-requests >/dev/null; json .admission)"
+check "the teacher sees the request" "Pending" "$(call dev-teacher GET /teaching-rooms/$RID >/dev/null; json '.room.members[0].status')"
+check "a student cannot let themselves in" 403 "$(call dev-student POST "/teaching-rooms/$RID/members/$STUDENT_ID:approve")"
+check "the teacher lets them in" 200 "$(call dev-teacher POST "/teaching-rooms/$RID/members/$STUDENT_ID:approve")"
+check "now they see the board, on its first item" "1 false true" "$(call dev-student GET /teaching-rooms/$RID/state >/dev/null; json '"\(.state.position) \(.state.canGoPrevious) \(.state.canGoNext)"')"
+check "Previous on the first item is refused" 400 "$(call dev-teacher POST "/teaching-rooms/$RID:previous")"
+check "a student cannot move the board" 403 "$(call dev-student POST "/teaching-rooms/$RID:next")"
+check "Next moves to the last item" "2 true false" "$(call dev-teacher POST "/teaching-rooms/$RID:next" >/dev/null; json '"\(.state.position) \(.state.canGoPrevious) \(.state.canGoNext)"')"
+check "Next on the last item is refused" 400 "$(call dev-teacher POST "/teaching-rooms/$RID:next")"
+check "removed, they see nothing again" 403 "$(call dev-teacher POST "/teaching-rooms/$RID/members/$STUDENT_ID:reject" >/dev/null; call dev-student GET /teaching-rooms/$RID/state)"
+check "the teacher ends the room" 200 "$(call dev-teacher DELETE /teaching-rooms/$RID)"
+call dev-teacher DELETE /teaching-materials/$RMID >/dev/null
+
 echo "== security headers and limits (OWASP)"
 HEADERS=$(curl -s -D - -o /dev/null -H "Authorization: Bearer $(cat "$WORK/token-dev-admin")" "$API/subjects" | tr -d '\r')
 check "responses forbid MIME sniffing" "true" "$(echo "$HEADERS" | grep -qi '^x-content-type-options: nosniff' && echo true)"

@@ -67,6 +67,7 @@ app
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous().ExcludeFromDescription();
 app.MapAllEndpoints();
 app.MapHub<QuizMaster.API.Realtime.NotificationsHub>(QuizMaster.API.Realtime.NotificationsHub.Path);
+app.MapHub<QuizMaster.API.Realtime.TeachingRoomHub>(QuizMaster.API.Realtime.TeachingRoomHub.Path);
 app.MapClientApp();                                         // last: client-side routes fall back to index.html
 #endregion
 

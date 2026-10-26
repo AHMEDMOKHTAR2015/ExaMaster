@@ -7,9 +7,9 @@ import { NotificationCenterService } from '../notification-center.service';
 import { TeacherReviewQueueService } from '../teacher-review-queue.service';
 import { AccessRequestService } from '../access-requests/access-request.service';
 
-/** Where the API's live channel is: beside `/api`, not under it. */
-export function hubUrl(apiUrl = environment.apiUrl): string {
-  return `${apiUrl.replace(/\/api\/?$/, '')}/hubs/notifications`;
+/** Where one of the API's live channels is: beside `/api`, not under it. */
+export function hubUrl(apiUrl = environment.apiUrl, hub: 'notifications' | 'teaching-room' = 'notifications'): string {
+  return `${apiUrl.replace(/\/api\/?$/, '')}/hubs/${hub}`;
 }
 
 /** Longest wait between attempts to reach an unreachable server, in ms. */

@@ -23,6 +23,7 @@ public class QuizMasterDbContext(DbContextOptions<QuizMasterDbContext> options, 
     public virtual DbSet<BankQuiz> BankQuizzes { get; set; }
     public virtual DbSet<TeacherQuiz> TeacherQuizzes { get; set; }
     public virtual DbSet<TeachingMaterial> TeachingMaterials { get; set; }
+    public virtual DbSet<TeachingRoom> TeachingRooms { get; set; }
     public virtual DbSet<HomeworkAssignment> Assignments { get; set; }
     public virtual DbSet<Participation> Participations { get; set; }
     public virtual DbSet<QuizAttemptLock> AttemptLocks { get; set; }

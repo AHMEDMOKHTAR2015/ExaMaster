@@ -44,7 +44,8 @@
     "organizations": "Organizations",
     "accessRequests": "Access requests",
     "myChildren": "My Children",
-    "teachingMaterials": "Teaching Materials"
+    "teachingMaterials": "Teaching Materials",
+    "teachingRooms": "Teaching Rooms"
   },
   "roles": {
     "platformAdmin": "Platform Admin",
@@ -1894,6 +1895,7 @@
     "emptyHintAdmin": "Materials appear here once a teacher uploads one.",
     "noMatches": "No materials match these filters",
     "open": "Open",
+    "present": "Present",
     "deleteConfirm": "Delete \"{{ title }}\" with all its units and lessons? This cannot be undone.",
     "unitCount": "{{ count }} unit(s)",
     "lessonCount": "{{ count }} lesson(s)",
@@ -1933,6 +1935,66 @@
       "keyTakeaways": "Key takeaways",
       "bookPages": "Book pp. {{ pages }}",
       "pager": "Lesson navigation"
+    }
+  },
+  "teachingRooms": {
+    "title": "Teaching Rooms",
+    "subtitleTeacher": "Your live rooms. Open one on a material with Present, then let your students in.",
+    "subtitleStudent": "Rooms your teachers are presenting to your class. Ask to join, and follow the lesson live once you are let in.",
+    "openFromMaterials": "Open a room",
+    "loading": "Loading rooms…",
+    "loadFailed": "The rooms could not be loaded.",
+    "empty": "No teaching rooms yet",
+    "emptyHintTeacher": "Press Present on one of your materials to open a room.",
+    "emptyHintStudent": "When a teacher opens a room for your class, it appears here.",
+    "enter": "Enter",
+    "table": {
+      "material": "Material",
+      "teacher": "Teacher",
+      "standing": "Status",
+      "items": "Lessons",
+      "opened": "Opened"
+    },
+    "standing": {
+      "none": "—",
+      "mayRequest": "Open to you",
+      "pending": "Waiting",
+      "rejected": "Not admitted",
+      "approved": "Admitted",
+      "teacher": "Yours"
+    },
+    "room": {
+      "back": "← Teaching Rooms",
+      "loading": "Opening the room…",
+      "notFound": "This room is not available. It may have ended, or it is not for your class.",
+      "loadFailed": "The room could not be opened.",
+      "eyebrow": "Teaching Room",
+      "presentedBy": "Presented by {{ name }}",
+      "live": "Live",
+      "connecting": "Connecting…",
+      "end": "End room",
+      "endConfirm": "End this room? Everyone in it will be told it has ended.",
+      "ended": "This room has ended.",
+      "pager": "Move through the material",
+      "position": "{{ position }} of {{ count }}",
+      "connectingBoard": "Connecting to the board…",
+      "askTitle": "Ask to join this room",
+      "askHint": "Your teacher will let you in, and the lesson will appear here.",
+      "ask": "Ask to join",
+      "waitingTitle": "Waiting for your teacher",
+      "waitingHint": "The lesson appears here as soon as you are let in.",
+      "rejectedTitle": "You are not in this room",
+      "rejectedHint": "Your teacher did not let you in, or removed you. They can still let you in.",
+      "people": "Students",
+      "waiting": "Waiting ({{ count }})",
+      "admitted": "In the room ({{ count }})",
+      "turnedAway": "Not admitted ({{ count }})",
+      "noneWaiting": "Nobody is waiting.",
+      "noneAdmitted": "Nobody has been let in yet.",
+      "approve": "Let in",
+      "reject": "Turn away",
+      "remove": "Remove",
+      "admit": "Let in"
     }
   }
 }
