@@ -17,6 +17,7 @@ concurrency:
 
 env:
   AZURE_WEBAPP_NAME: ExaMaster
+  AZURE_WEBAPP_URL: https://examaster.azurewebsites.net    # the Web App's default domain (Overview → Default domain)
 
 jobs:
   backend-ci:
@@ -69,6 +70,13 @@ jobs:
         with:
           name: examaster
           path: publish
+
+      # The Free plan (F1) has no Always On: an idle app is unloaded, and deploying onto an unloaded app fails with
+      # "OneDeploy ... Service Unavailable (503)". Wake it first. Never fails the job: a broken app still needs this deploy.
+      - name: Wake the app
+        run: |
+          for i in $(seq 1 30); do curl -sf --max-time 60 "$AZURE_WEBAPP_URL/health" && exit 0; sleep 10; done
+          echo "::warning::The app did not answer /health within 5 minutes; deploying anyway."
 
       - id: deploy
         uses: azure/webapps-deploy@v3
