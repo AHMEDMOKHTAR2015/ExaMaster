@@ -191,6 +191,27 @@ describe('QuizRunnerService submit', () => {
     expect(listRefreshes).toBe(1);
   });
 
+  it('sends the same submission key when a failed submit is pressed again, so a retry is never a second attempt', async () => {
+    submitRejection = new ServiceError('0', 'Network error');
+    await startAndSubmit([chooseQuestion(1)]);
+    const firstKey = submittedRequest!.submissionKey;
+
+    submitRejection = null;
+    await runner.submit();
+
+    expect(firstKey).toMatch(/^[0-9a-f-]{36}$/);
+    expect(submittedRequest!.submissionKey).toBe(firstKey);
+  });
+
+  it('gives every new attempt a key of its own', async () => {
+    await startAndSubmit([chooseQuestion(1)]);
+    const firstKey = submittedRequest!.submissionKey;
+
+    await startAndSubmit([chooseQuestion(1)]);
+
+    expect(submittedRequest!.submissionKey).not.toBe(firstKey);
+  });
+
   it('forgets the target on reset, so a later run cannot submit against it', async () => {
     await startAndSubmit([chooseQuestion(1)]);
     runner.reset();

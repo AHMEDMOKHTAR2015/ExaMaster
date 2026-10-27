@@ -15,6 +15,13 @@ public partial class Participation : AggregateRoot, IMultitenancy
     public int? HomeworkId { get; private set; }
     public string? HomeworkTitle { get; private set; }
 
+    // 1, 2, … per student and assignment (null for a practice quiz). Unique in the database, so two submissions racing
+    // past the "already submitted" check cannot both be recorded: they claim the same number.
+    public int? HomeworkAttempt { get; private set; }
+
+    // The browser's id for this attempt: the same attempt sent twice (a retry after a lost response) is recorded once.
+    public Guid? SubmissionKey { get; private set; }
+
     // Who sat it, and who reviews it (the assignment's author, or the bank quiz's reviewer).
     public int ChildId { get; private set; }
     public int? ParentId { get; private set; }

@@ -9,6 +9,11 @@ public class ParticipationRepository(QuizMasterDbContext dbContext) : Repository
     public Task<Participation?> GetLatestAttemptAsync(int childId, int homeworkId, CancellationToken ct = default)
         => base.Entity.AsNoTracking()
             .Where(e => e.ChildId == childId && e.HomeworkId == homeworkId)
-            .OrderByDescending(e => e.EndedOn)
+            .OrderByDescending(e => e.HomeworkAttempt)
             .FirstOrDefaultAsync(ct);
+
+    // The attempt already recorded under this key, answers included: a resent submission is answered with it.
+    public Task<Participation?> GetBySubmissionKeyAsync(int childId, Guid submissionKey, CancellationToken ct = default)
+        => Query().AsNoTracking()
+            .SingleOrDefaultAsync(e => e.ChildId == childId && e.SubmissionKey == submissionKey, ct);
 }

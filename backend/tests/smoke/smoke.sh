@@ -31,6 +31,7 @@ check() { # label expected actual
   else FAILED=$((FAILED + 1)); echo "FAIL  $1: expected $2, got $3 -> $(head -c 300 "$WORK/out.json")"; fi
 }
 json() { jq -r "$1" "$WORK/out.json"; }
+uuid() { uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid; }
 
 echo "== identity and roles"
 for uid in dev-admin dev-teacher dev-parent dev-student; do check "GET /me as $uid" 200 "$(call $uid GET /me)"; done
@@ -48,8 +49,8 @@ check "student cannot browse the bank" 403 "$(call dev-student GET /questions)"
 check "a teacher can browse the bank (to copy from it)" 200 "$(call dev-teacher GET /questions)"
 
 echo "== server-side grading"
-BODY=$(jq -nc --argjson quiz "$QUIZ" --argjson q0 "${Q[0]}" --argjson q1 "${Q[1]}" --argjson q2 "${Q[2]}" --argjson q3 "${Q[3]}" \
-  '{bankQuizId: $quiz, responses: [
+BODY=$(jq -nc --argjson quiz "$QUIZ" --argjson q0 "${Q[0]}" --argjson q1 "${Q[1]}" --argjson q2 "${Q[2]}" --argjson q3 "${Q[3]}" --arg key "$(uuid)" \
+  '{bankQuizId: $quiz, submissionKey: $key, responses: [
      {questionId: $q0, selectedOptionId: 1}, {questionId: $q1, selectedOptionId: 1},
      {questionId: $q2, blanks: [{index: 0, userAnswer: "Photosynthesis"}, {index: 1, userAnswer: "sunlight"}]},
      {questionId: $q3, responseText: "<p>The axis is tilted.</p>"}]}')
@@ -58,6 +59,8 @@ check "two auto-graded answers right, weighted 53%" "2 53 2" "$(json '"\(.score)
 # worth 26.67% (Explain takes 20, three questions share 80), so marked out of 27 points: half of 27 = 13.5 → 14 points
 check "Complete suggestion is pro rata (1 of 2 blanks)" 14 "$(json '.answers[2].suggestedAward')"
 PID=$(json .participationId)
+# the response lost on the way back, the student presses Submit again: same key, so the same record answers
+check "the same attempt sent again is answered with its record" "201 $PID" "$(call dev-student POST /submissions "$BODY") $(json .participationId)"
 
 echo "== a teacher's students"
 check "a teacher lists the students of the classes they teach" 200 "$(call dev-teacher GET /me/students)"
@@ -110,11 +113,16 @@ HW_SHAPE=$(json '.assignments[0] | "\(.questionCount) \(.oneTimeJoin|type) \(.du
 check "homework sitting" 200 "$(call dev-student GET /assignments/$HW/sitting)"
 HQ=($(json '.questions[].questionId'))
 check "an assignment carries its quiz's shape" "${#HQ[@]} boolean number" "$HW_SHAPE"
-BODY=$(jq -nc --argjson hw "$HW" --argjson q0 "${HQ[0]}" --argjson q1 "${HQ[1]}" \
-  '{homeworkId: $hw, responses: [{questionId: $q0, selectedOptionId: 1}, {questionId: $q1, selectedOptionId: 2}]}')
+homework_body() { # [key] -> the same two answers to the assignment, under a key of its own unless one is given
+  jq -nc --argjson hw "$HW" --argjson q0 "${HQ[0]}" --argjson q1 "${HQ[1]}" --arg key "${1:-$(uuid)}" \
+    '{homeworkId: $hw, submissionKey: $key, responses: [{questionId: $q0, selectedOptionId: 1}, {questionId: $q1, selectedOptionId: 2}]}'
+}
+BODY=$(homework_body)
 check "submit homework" 201 "$(call dev-student POST /submissions "$BODY")"
 check "results withheld before the due date" "false 0 null" "$(json '"\(.resultsAvailable) \(.key|length) \(.answers[0].correctOptionId)"')"
 HPID=$(json .participationId)
+check "the same attempt sent again gets its result, not 'already submitted'" "201 $HPID false" \
+  "$(call dev-student POST /submissions "$BODY") $(json '"\(.participationId) \(.resultsAvailable)"')"
 BODY=$(jq -nc --argjson hw "$HW" '{homeworkId: $hw, responses: []}')
 check "second submission refused" 400 "$(call dev-student POST /submissions "$BODY")"
 call dev-student GET /participations/$HPID >/dev/null
@@ -123,6 +131,14 @@ call dev-teacher GET /participations/$HPID >/dev/null
 check "visible to the teacher" true "$(json '.participation.resultsAvailable')"
 call dev-teacher GET /me/notifications >/dev/null
 check "the teacher hears of an auto-graded submission too" "SubmissionReceived $HPID 0 1" "$(json '"\(.notifications[0].type) \(.notifications[0].participationId) \(.notifications[0].pendingReviewCount) \(.unreadCount)"')"
+# five attempts at once, each its own key (five tabs): every one may pass the "already submitted" check, one is recorded
+for i in 1 2 3 4 5; do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "Authorization: Bearer $(cat "$WORK/token-dev-student-2")" \
+    -H "Content-Type: application/json" -d "$(homework_body)" "$API/submissions" > "$WORK/race-$i" &
+done
+wait
+check "five simultaneous submissions: one recorded, four refused" "1 4" \
+  "$(cat "$WORK"/race-* | grep -c '^201$') $(cat "$WORK"/race-* | grep -cE '^(400|409)$')"
 
 echo "== One Time Join"
 START=$(jq -nc --argjson quiz "$OTJ" '{bankQuizId: $quiz}')

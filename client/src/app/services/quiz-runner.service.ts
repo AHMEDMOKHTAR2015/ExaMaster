@@ -164,6 +164,12 @@ export class QuizRunnerService {
   });
 
   private startTime: Date | null = null;
+  /**
+   * The open attempt's id, made when it starts and sent with every submit of
+   * it: a submit that failed only on the way back (the server recorded it)
+   * and is pressed again returns that record rather than a second one.
+   */
+  private submissionKey: string | null = null;
   private autoMoveHandle: ReturnType<typeof setTimeout> | null = null;
   /** What is being sat — the assignment when there is one, else the quiz — for the lock and the submission. */
   private activeTarget: SittingTarget | null = null;
@@ -234,6 +240,7 @@ export class QuizRunnerService {
       });
     }
     this.startTime = new Date();
+    this.submissionKey = crypto.randomUUID();
     this.elapsedTimer.start();
     this.startPageTimer();
     // Deliberately not awaited: the quiz is already on screen and the student
@@ -448,7 +455,8 @@ export class QuizRunnerService {
       const submission = await this.quizSubmission.submit({
         target,
         startedAt: this.startTime?.getTime() ?? Date.now(),
-        responses: quiz.questions.map(q => this.buildResponse(q))
+        responses: quiz.questions.map(q => this.buildResponse(q)),
+        submissionKey: this.submissionKey ?? undefined
       });
       const { scorePercent, correctCount, resultsAvailable, resultsAvailableAt } = submission;
 
@@ -519,6 +527,7 @@ export class QuizRunnerService {
     this.isLoading.set(false);
     this.lastSubmissionSummary.set(null);
     this.activeTarget = null;
+    this.submissionKey = null;
   }
 
   private applyConfigDefaults(existing: Partial<QuizConfig> | undefined): QuizConfig {

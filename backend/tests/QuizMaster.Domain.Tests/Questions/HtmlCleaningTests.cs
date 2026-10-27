@@ -25,7 +25,7 @@ public class HtmlCleaningTests
     [Fact]
     public void A_students_written_answer_is_cleaned_before_it_is_stored()
     {
-        var participation = Participation.Submit(Student(Class()), Quiz(Explain(id: 3)), null, null, [Written(3, Hostile)], null,
+        var participation = Participation.Submit(Student(Class()), Quiz(Explain(id: 3)), null, null, [Written(3, Hostile)], null, null,
             Action(QuizMasterActionType.SubmitQuiz, StudentId));
 
         var stored = participation.Answers.Single().ResponseText!;

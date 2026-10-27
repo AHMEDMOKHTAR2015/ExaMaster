@@ -138,7 +138,7 @@ public class SubjectTagTests
     {
         var quiz = Quiz(Choose(1) with { TagIds = [11, 12] }, Choose(2));
 
-        var participation = Participation.Submit(Student(Class()), quiz, null, null, [Selected(1, 2), Selected(2, 1)], null,
+        var participation = Participation.Submit(Student(Class()), quiz, null, null, [Selected(1, 2), Selected(2, 1)], null, null,
             Action(QuizMasterActionType.SubmitQuiz, StudentId));
 
         Assert.Equal([11, 12], participation.Answers.Single(answer => answer.QuestionId == 1).TagIds);

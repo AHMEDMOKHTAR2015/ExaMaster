@@ -731,6 +731,9 @@ namespace QuizMaster.Persistence.Migrations
                     b.Property<int?>("GradeId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("HomeworkAttempt")
+                        .HasColumnType("int");
+
                     b.Property<int?>("HomeworkId")
                         .HasColumnType("int");
 
@@ -774,6 +777,9 @@ namespace QuizMaster.Persistence.Migrations
 
                     b.Property<DateTime>("StartedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SubmissionKey")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("TeacherQuizId")
                         .HasColumnType("int");
@@ -823,7 +829,15 @@ namespace QuizMaster.Persistence.Migrations
 
                     b.HasIndex("TenantId", "ChildId", "EndedOn");
 
+                    b.HasIndex("TenantId", "ChildId", "SubmissionKey")
+                        .IsUnique()
+                        .HasFilter("[SubmissionKey] IS NOT NULL");
+
                     b.HasIndex("TenantId", "ReviewerId", "PendingReviewCount");
+
+                    b.HasIndex("TenantId", "ChildId", "HomeworkId", "HomeworkAttempt")
+                        .IsUnique()
+                        .HasFilter("[HomeworkId] IS NOT NULL");
 
                     b.ToTable("Participation", (string)null);
                 });

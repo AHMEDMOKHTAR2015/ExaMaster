@@ -7,7 +7,7 @@ public class NotificationTests
     private static readonly ClassGroup StudentsClass = Class();
 
     private static Participation Submit(AttemptedQuiz quiz, IReadOnlyCollection<QuestionResponse> responses, HomeworkAssignment? homework = null, User? student = null)
-        => Participation.Submit(student ?? Student(StudentsClass), quiz, homework, null, responses, null,
+        => Participation.Submit(student ?? Student(StudentsClass), quiz, homework, null, responses, null, null,
             Action(QuizMasterActionType.SubmitQuiz, StudentId)).WithId(500);
 
     private static IReadOnlyList<Notification> Announce(Participation participation)

@@ -5,12 +5,14 @@ namespace QuizMaster.Application.Features.Attempts.SubmitQuiz;
 
 // The one call that grades and records an attempt. The browser sends only what the student did; the server grades,
 // records the attempt and returns the result WITH the answers (withheld until the due date for an assignment).
+// SubmissionKey is the browser's id for the attempt: sending the same attempt again is answered with the recorded result.
 public record SubmitQuizCommand(
     int? HomeworkId,
     int? BankQuizId,
     int? TeacherQuizId,
     DateTimeOffset? StartedAt,
-    List<QuestionResponse> Responses) : QuizMasterCommand<SubmitQuizResponse>, IAttemptTarget
+    List<QuestionResponse> Responses,
+    Guid? SubmissionKey) : QuizMasterCommand<SubmitQuizResponse>, IAttemptTarget
 {
     public override QuizMasterActionType ActionType => QuizMasterActionType.SubmitQuiz;
 }
@@ -34,6 +36,8 @@ public class SubmitQuizCommandValidator : AbstractValidator<SubmitQuizCommand>
     public SubmitQuizCommandValidator()
     {
         this.AddAttemptTargetRules();
+
+        RuleFor(c => c.SubmissionKey).NotEqual(Guid.Empty).WithMessage("A submission key cannot be empty.");
 
         RuleFor(c => c.Responses).NotNullWithMessage()
             .Must(responses => responses.Count <= MaxResponses).WithMessage($"A submission cannot carry more than {MaxResponses} responses.");

@@ -10,7 +10,7 @@ public partial class Participation
     // Grading happens here, on the server, so the answer key never reaches a student before their attempt is recorded.
     public static Participation Submit(
         User student, AttemptedQuiz quiz, HomeworkAssignment? homework, Participation? latestAttemptAtHomework,
-        IReadOnlyCollection<QuestionResponse> responses, DateTime? claimedStartedOn, IQuizMasterAction action)
+        IReadOnlyCollection<QuestionResponse> responses, DateTime? claimedStartedOn, Guid? submissionKey, IQuizMasterAction action)
     {
         // Any active member may take a practice quiz, as in the app; an assignment additionally checks it was set for them.
         if (!student.IsActive)
@@ -49,6 +49,8 @@ public partial class Participation
             QuizName = quiz.Name,
             HomeworkId = homework?.Id,
             HomeworkTitle = homework?.Title,
+            HomeworkAttempt = homework is null ? null : (latestAttemptAtHomework?.HomeworkAttempt ?? 0) + 1,
+            SubmissionKey = submissionKey,
             ChildId = student.Id,
             ParentId = student.ParentId,
             ReviewerId = homework?.CreatedById ?? quiz.ReviewerId,
@@ -105,6 +107,10 @@ public partial class Participation
 
         AddDomainEvent(new SubmissionReviewed(this, verdictChanged, action));
     }
+
+    // Whether this records an attempt at that quiz or assignment: a resent submission key must name the same work.
+    public bool Records(AttemptedQuiz quiz, HomeworkAssignment? homework)
+        => HomeworkId == homework?.Id && BankQuizId == quiz.BankQuizId && TeacherQuizId == quiz.TeacherQuizId;
 
     // Whether the student (or their parent) may see the correct answers yet.
     public bool AreResultsAvailableTo(HomeworkAssignment? homework, DateTime now)

@@ -158,7 +158,9 @@ Route guards (`src/app/guards/auth.guard.ts`) are all `CanActivateFn`s that: `aw
 where the server decides which quiz the assignment means — and the API's sitting types have nowhere to put an answer.
 `QuizRunnerService.submit()` posts only what the student did to `POST /submissions`, by the same target; the server
 grades, records the attempt, releases a One Time Join lock, notifies the parent and the reviewer, and returns the result
-together with the key (withheld until the due date for an assignment). Only staff can read a quiz whole
+together with the key (withheld until the due date for an assignment). Each attempt carries a `submissionKey` made when
+it opens (`crypto.randomUUID()`), kept across a failed submit: a retry after a lost response gets the recorded result
+back instead of a second submission (or "already submitted"), so pressing Submit again is always safe. Only staff can read a quiz whole
 (`TeacherQuizService.getById`, `QuizAdminService.getAnswer`); an assignment carries its quiz's `questionCount`,
 `quizDurationSeconds` and `oneTimeJoin` so a student's list needs no teacher quiz.
 

@@ -14,6 +14,12 @@ export interface SubmitQuizRequest {
   startedAt?: number;
   /** What the student did — never a score, never an answer. */
   responses: QuestionResponse[];
+  /**
+   * This attempt's id, made when it opened. Sending the same attempt again (a
+   * retry after a lost response) is answered with the recorded result instead
+   * of a second submission, so a retry is always safe.
+   */
+  submissionKey?: string;
 }
 
 export interface SubmitQuizResponse {
@@ -56,7 +62,8 @@ export class QuizSubmissionService extends QuizSubmissionServiceWithState {
         bankQuizId: 'bankQuizId' in target ? target.bankQuizId : null,
         teacherQuizId: 'teacherQuizId' in target ? Number(target.teacherQuizId) : null,
         startedAt: request.startedAt ? new Date(request.startedAt).toISOString() : null,
-        responses: request.responses
+        responses: request.responses,
+        submissionKey: request.submissionKey ?? null
       });
       return {
         ...result,

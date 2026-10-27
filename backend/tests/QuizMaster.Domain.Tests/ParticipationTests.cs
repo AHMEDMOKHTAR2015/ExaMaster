@@ -8,8 +8,8 @@ public class ParticipationTests
 
     private static Participation Submit(
         AttemptedQuiz quiz, IReadOnlyCollection<QuestionResponse> responses, HomeworkAssignment? homework = null,
-        Participation? latest = null, DateTime? claimedStart = null, User? student = null)
-        => Participation.Submit(student ?? Student(StudentsClass), quiz, homework, latest, responses, claimedStart,
+        Participation? latest = null, DateTime? claimedStart = null, User? student = null, Guid? submissionKey = null)
+        => Participation.Submit(student ?? Student(StudentsClass), quiz, homework, latest, responses, claimedStart, submissionKey,
             Action(QuizMasterActionType.SubmitQuiz, StudentId));
 
     [Fact]
@@ -94,6 +94,38 @@ public class ParticipationTests
 
         first.Review([], ValidationStatus.Rejected, "Try again", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
         Assert.NotNull(Submit(Quiz(Choose(1)), [Selected(1, 2)], homework, latest: first));
+    }
+
+    [Fact]
+    public void Attempts_at_an_assignment_are_numbered_so_two_racing_submissions_claim_the_same_number()
+    {
+        var homework = Homework(StudentsClass);
+        var first = Submit(Quiz(Choose(1)), [Selected(1, 1)], homework);
+        var racing = Submit(Quiz(Choose(1)), [Selected(1, 1)], homework);    // read "no attempt yet" too
+
+        Assert.Equal(1, first.HomeworkAttempt);
+        Assert.Equal(first.HomeworkAttempt, racing.HomeworkAttempt);          // the unique index refuses the second
+
+        first.Review([], ValidationStatus.Rejected, "Try again", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
+        Assert.Equal(2, Submit(Quiz(Choose(1)), [Selected(1, 2)], homework, latest: first).HomeworkAttempt);
+        Assert.Null(Submit(Quiz(Choose(1)), [Selected(1, 2)]).HomeworkAttempt);   // practice quizzes may be retaken freely
+    }
+
+    [Fact]
+    public void A_submission_keeps_the_attempts_key_and_records_only_the_work_it_was_sat_for()
+    {
+        var key = Guid.NewGuid();
+        var homework = Homework(StudentsClass);
+
+        var practice = Submit(Quiz(Choose(1)), [Selected(1, 1)], submissionKey: key);
+        var assignment = Submit(Quiz(Choose(1)), [Selected(1, 1)], homework);
+
+        Assert.Equal(key, practice.SubmissionKey);
+        Assert.Null(assignment.SubmissionKey);
+        Assert.True(practice.Records(Quiz(Choose(1)), null));
+        Assert.False(practice.Records(Quiz(Choose(1)) with { BankQuizId = 101 }, null));
+        Assert.False(practice.Records(Quiz(Choose(1)), homework));
+        Assert.True(assignment.Records(Quiz(Choose(1)), homework));
     }
 
     [Fact]
