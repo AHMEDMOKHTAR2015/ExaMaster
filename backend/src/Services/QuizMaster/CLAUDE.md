@@ -5,7 +5,7 @@
 **Database:** SQL Server (`QuizMaster`), EF Core, PascalCase tables (singular type name) and columns
 **Port:** 4401 / 4451
 **Domain-event dispatch:** post-save interceptor (`DispatchDomainEventsInterceptor`)
-**Identity:** this API is the identity provider. `POST /auth/sign-in` checks a password against `SignInCredential` (platform-wide, no tenant filter; `PasswordHasher`) and issues a 30-minute access token (HS256, `AuthTokenOptions`) plus a refresh token (only its SHA-256 is stored; rotated on every use; a spent one presented again revokes every session of that account). The token carries only `sub` = the account's sign-in uid (`User.SignInUid` = `SignInCredential.Uid`); the caller's user id, tenant and roles are loaded from the `User` table on every request (`UserClaimsTransformation`), so revocation is instant. Five wrong passwords lock an account for 15 minutes.
+**Identity:** this API is the identity provider. `POST /auth/sign-in` checks a password against `SignInCredential` (platform-wide, no tenant filter; `PasswordHasher`) and issues a 30-minute access token (HS256, `AuthTokenOptions`) plus a refresh token (only its SHA-256 is stored; rotated on every use; a spent one presented again revokes every session of that account; once past its expiry it is deleted, by its account's next sign-in or renewal and by a sweep at every startup — a revoked one is kept until then, for that reuse check). The token carries only `sub` = the account's sign-in uid (`User.SignInUid` = `SignInCredential.Uid`); the caller's user id, tenant and roles are loaded from the `User` table on every request (`UserClaimsTransformation`), so revocation is instant. Five wrong passwords lock an account for 15 minutes.
 
 ## Why one service
 

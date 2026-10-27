@@ -125,6 +125,7 @@ public class SignInSessions(
     private async Task<SessionTokens> OpenSessionAsync(string uid, DateTime now, CancellationToken ct, bool save = true)
     {
         await RecordActivityAsync(uid, now, ct);
+        await ForgetExpiredSessionsAsync(uid, now, ct);
         var access = _tokens.Issue(uid, now);
         var refresh = RefreshTokens.New();
         var refreshExpiresOn = _tokens.RefreshTokenExpiry(now);
@@ -142,6 +143,27 @@ public class SignInSessions(
     private Task RecordActivityAsync(string uid, DateTime now, CancellationToken ct)
         => _dbContext.Users.IgnoreQueryFilters().Where(u => u.SignInUid == uid)
             .ExecuteUpdateAsync(set => set.SetProperty(u => u.LastActiveOn, now), ct);
+
+    //insight - only sessions past their expiry are forgotten: one is refused then whatever its state, so its row has no use
+    // left. A revoked one is kept until that point, because presenting it again is how a stolen copy is caught (RefreshAsync)
+    private Task ForgetExpiredSessionsAsync(string uid, DateTime now, CancellationToken ct)
+        => _dbContext.RefreshTokens.Where(t => t.Uid == uid && t.ExpiresOn <= now).ExecuteDeleteAsync(ct);
+
+    // Every account's expired sessions, run at startup: an account that never signs in again would otherwise keep its
+    // last month of sessions for good. In batches, so a large backlog never holds a long lock.
+    public async Task<int> ForgetEveryExpiredSessionAsync(CancellationToken ct = default)
+    {
+        const int batch = 5_000;
+        var now = DateTime.UtcNow;
+        int forgotten = 0, deleted;
+        do
+        {
+            deleted = await _dbContext.RefreshTokens.Where(t => t.ExpiresOn <= now).Take(batch).ExecuteDeleteAsync(ct);
+            forgotten += deleted;
+        }
+        while (deleted == batch);
+        return forgotten;
+    }
 
     private Task RevokeAllAsync(string uid, DateTime now, CancellationToken ct)
         => _dbContext.RefreshTokens.Where(t => t.Uid == uid && t.RevokedOn == null)

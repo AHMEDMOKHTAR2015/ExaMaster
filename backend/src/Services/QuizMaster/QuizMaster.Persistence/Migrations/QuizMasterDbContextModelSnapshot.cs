@@ -1927,6 +1927,8 @@ namespace QuizMaster.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExpiresOn");
+
                     b.HasIndex("TokenHash")
                         .IsUnique();
 

@@ -6,6 +6,7 @@ using QuizMaster.API;
 using QuizMaster.API.Endpoints;
 using QuizMaster.API.Security;
 using QuizMaster.Application;
+using QuizMaster.Application.SignIn;
 using QuizMaster.Persistence;
 using QuizMaster.Persistence.Seeding;
 
@@ -37,6 +38,18 @@ catch (Exception ex)
 {
     app.Logger.LogCritical(ex, "Startup database initialization failed (migrations / first-run seed). The app is starting " +
         "without it; restart once the database is reachable to apply any pending migrations.");
+}
+
+// Housekeeping, never a reason not to start: what fails here is simply tried again on the next start.
+try
+{
+    using var scope = app.Services.CreateScope();
+    var forgotten = await scope.ServiceProvider.GetRequiredService<SignInSessions>().ForgetEveryExpiredSessionAsync();
+    app.Logger.LogInformation("Forgot {Count} expired sessions.", forgotten);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Forgetting expired sessions failed; it is tried again on the next start.");
 }
 
 var seedOptions = app.Configuration.GetSection(nameof(SeedOptions)).Get<SeedOptions>() ?? new();

@@ -9,6 +9,7 @@ public class RefreshTokenEntityConfiguration : IEntityTypeConfiguration<RefreshT
         builder.HasKey(e => e.Id);
         builder.HasIndex(e => e.TokenHash).IsUnique();
         builder.HasIndex(e => e.Uid);
+        builder.HasIndex(e => e.ExpiresOn);                       // the startup sweep of expired sessions
 
         builder.Property(e => e.Uid).HasMaxLength(MaxLength.C128).UseCollation("Latin1_General_100_BIN2").IsRequired();
         builder.Property(e => e.TokenHash).HasMaxLength(MaxLength.C64).IsRequired();
