@@ -17,10 +17,10 @@ public class SubmitQuizCommandHandler(
 
         //insight - an attempt sent again (its response was lost on the way back, and the student pressed Submit once more)
         // is answered with what was recorded: not graded twice, and not refused as a second submission of the assignment
-        if (await RecordedUnderKeyAsync(command, quiz, homework, ct) is { } recorded)
-            return ToResponse(recorded, quiz, homework, command.CreatedOn);
-
+        // (and a teacher may have sent it back since: its key and marks then stay withheld, as on any later read of it)
         var latestAttempt = homework is null ? null : await _participationRepository.GetLatestAttemptAsync(student.Id, homework.Id, ct);
+        if (await RecordedUnderKeyAsync(command, quiz, homework, ct) is { } recorded)
+            return ToResponse(recorded, latestAttempt, quiz, homework, command.CreatedOn);
 
         var participation = Participation.Submit(
             student, quiz, homework, latestAttempt, command.Responses, command.StartedAt?.UtcDateTime, command.SubmissionKey, command);
@@ -41,14 +41,14 @@ public class SubmitQuizCommandHandler(
         {
             // the same attempt sent twice at once: the copy that lost the race answers with the one that won
             if (await RecordedUnderKeyAsync(command, quiz, homework, ct) is { } winner)
-                return ToResponse(winner, quiz, homework, command.CreatedOn);
+                return ToResponse(winner, winner, quiz, homework, command.CreatedOn);
             // two attempts at one assignment both passed the "already submitted" check: the second claimed a taken number
             if (homework is not null)
                 throw new ConflictException("You have already submitted this assignment.");
             throw;
         }
 
-        return ToResponse(participation, quiz, homework, command.CreatedOn);
+        return ToResponse(participation, participation, quiz, homework, command.CreatedOn);
     }
 
     private async Task<Participation?> RecordedUnderKeyAsync(
@@ -63,9 +63,12 @@ public class SubmitQuizCommandHandler(
         return recorded;
     }
 
-    private static SubmitQuizResponse ToResponse(Participation participation, AttemptedQuiz quiz, HomeworkAssignment? homework, DateTime now)
+    // A newly recorded attempt is its assignment's latest; one sent again is answered against whichever is latest now.
+    private static SubmitQuizResponse ToResponse(
+        Participation participation, Participation? latestAttemptAtHomework, AttemptedQuiz quiz, HomeworkAssignment? homework, DateTime now)
     {
-        var resultsAvailable = participation.AreResultsAvailableTo(homework, now);
+        var resultsAvailable = participation.AreResultsAvailableTo(homework, latestAttemptAtHomework, now);
+        var marksAvailable = participation.AreMarksAvailableTo(homework, latestAttemptAtHomework);
         return new SubmitQuizResponse(
             participation.Id,
             participation.Score,
@@ -73,11 +76,11 @@ public class SubmitQuizCommandHandler(
             participation.CorrectCount,
             participation.WrongCount,
             participation.PendingReviewCount,
-            participation.Answers.OrderBy(answer => answer.Position).Select(answer => ParticipationViews.ToDto(answer, resultsAvailable)).ToList(),
+            participation.Answers.OrderBy(answer => answer.Position).Select(answer => ParticipationViews.ToDto(answer, resultsAvailable, marksAvailable)).ToList(),
             resultsAvailable
                 ? quiz.Questions.Select(question => new AnswerKeyDto(question.QuestionId, question.Key.CorrectOptionId, question.Key.CorrectBlanks, question.Key.ReferenceAnswer)).ToList()
                 : [],
             resultsAvailable,
-            resultsAvailable ? null : homework!.DueAt);
+            homework is not null && !homework.AreResultsAvailableAt(now) ? homework.DueAt : null);
     }
 }

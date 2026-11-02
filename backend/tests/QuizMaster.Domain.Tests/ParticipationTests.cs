@@ -262,8 +262,25 @@ public class ParticipationTests
         var homework = Homework(StudentsClass, dueAt: Now.AddDays(2));
         var participation = Submit(Quiz(Choose(1)), [Selected(1, 2)], homework);
 
-        Assert.False(participation.AreResultsAvailableTo(homework, Now));
-        Assert.True(participation.AreResultsAvailableTo(homework, Now.AddDays(2)));
-        Assert.True(participation.AreResultsAvailableTo(null, Now));   // practice quizzes: always
+        Assert.False(participation.AreResultsAvailableTo(homework, participation, Now));
+        Assert.True(participation.AreResultsAvailableTo(homework, participation, Now.AddDays(2)));
+        Assert.True(participation.AreResultsAvailableTo(null, null, Now));   // practice quizzes: always
+    }
+
+    [Fact]
+    public void Results_stay_hidden_while_the_assignment_waits_on_a_revision()
+    {
+        var homework = Homework(StudentsClass, dueAt: Now.AddDays(2));
+        var pastDue = Now.AddDays(3);
+        var first = Submit(Quiz(Choose(1)), [Selected(1, 2)], homework);
+        first.Review([], ValidationStatus.Rejected, "Try again", Action(QuizMasterActionType.ReviewSubmission, TeacherId));
+
+        Assert.False(first.AreResultsAvailableTo(homework, first, pastDue));
+        Assert.False(first.AreMarksAvailableTo(homework, first));
+
+        var second = Submit(Quiz(Choose(1)), [Selected(1, 1)], homework, latest: first);
+        Assert.True(first.AreResultsAvailableTo(homework, second, pastDue));      // resubmitted: every attempt opens again
+        Assert.True(first.AreMarksAvailableTo(homework, second));
+        Assert.True(second.AreResultsAvailableTo(homework, second, pastDue));
     }
 }

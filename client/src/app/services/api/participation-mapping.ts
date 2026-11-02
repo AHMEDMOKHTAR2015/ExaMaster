@@ -24,6 +24,7 @@ export function toParticipationDetail(participation: ApiParticipation): Particip
     gradeId: idString(participation.gradeId),
     validation: participation.validation ? toValidation(participation.validation) : undefined,
     resultsAvailable: participation.resultsAvailable,
+    marksAvailable: participation.marksAvailable,
     metadata: { answers: participation.answers.map(toAnswer) }
   };
 }

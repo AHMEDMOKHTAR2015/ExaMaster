@@ -72,7 +72,7 @@ The app's browsers wrote into each other's inboxes (the student's browser notifi
 ## Security boundaries
 
 - **The answer key never reaches a student before grading.** Students sit quizzes through `…/sitting` endpoints that return `SittingDto`, a type with no member an answer could be mapped into. Answer keys appear only in staff authoring DTOs and in a graded result.
-- **Results are withheld until an assignment is due**, both in the submit response and when a student/parent reads the participation later (`ParticipationViews` + `QuizGrader.Redact`).
+- **Results are withheld until an assignment is due**, both in the submit response and when a student/parent reads the participation later (`ParticipationViews` + `QuizGrader.Redact`). **While its latest attempt is sent back for revision, the marks are withheld as well** (`MarksAvailable`, `QuizGrader.RedactMarks`): each answer's verdict, points and the teacher's per-answer mark, so the resubmission is worked out again rather than copied. The overall feedback and the score stay.
 - **For an assignment, the assignment decides which quiz is graded** (`AttemptedQuizLoader`), never ids the client sends with it.
 - Authorization: role layer (`RequireRoleAuthorization`) + aggregate layer (`RequireRoleAuthorization<TAggregate>` → `QuizMasterAccessChecker`).
 - **Deny by default.** A fallback policy requires a signed-in caller on any endpoint that declares no rule; anonymous endpoints say `AllowAnonymous` (sign-in, refresh, sign-out, the two registrations, access requests, `/health`, the client-app fallbacks).

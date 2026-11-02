@@ -112,7 +112,13 @@ public partial class Participation
     public bool Records(AttemptedQuiz quiz, HomeworkAssignment? homework)
         => HomeworkId == homework?.Id && BankQuizId == quiz.BankQuizId && TeacherQuizId == quiz.TeacherQuizId;
 
-    // Whether the student (or their parent) may see the correct answers yet.
-    public bool AreResultsAvailableTo(HomeworkAssignment? homework, DateTime now)
-        => homework is null || homework.AreResultsAvailableAt(now);
+    // Whether the student (or their parent) may see which answers were right and how each was marked.
+    //insight - not while the assignment's latest attempt is sent back for revision: the resubmission is theirs to work out
+    // again, and a verdict per answer (a Right-or-Wrong one above all) all but gives the answer away
+    public bool AreMarksAvailableTo(HomeworkAssignment? homework, Participation? latestAttemptAtHomework)
+        => homework is null || latestAttemptAtHomework?.IsRejected != true;
+
+    // Whether they may see the correct answers too: once the assignment is due, and never while its marks are withheld.
+    public bool AreResultsAvailableTo(HomeworkAssignment? homework, Participation? latestAttemptAtHomework, DateTime now)
+        => AreMarksAvailableTo(homework, latestAttemptAtHomework) && (homework is null || homework.AreResultsAvailableAt(now));
 }

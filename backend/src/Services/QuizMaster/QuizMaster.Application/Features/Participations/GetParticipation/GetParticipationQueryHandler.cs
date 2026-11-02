@@ -11,15 +11,16 @@ public class GetParticipationQueryHandler(
         var caller = Caller.From(_claimsProvider);
         var participation = Guard.NotFound(await _participationRepository.GetByIdAsync(query.Id, ct));
 
-        var resultsAvailable = caller.IsStaff || await AreResultsAvailableAsync(participation, ct);
+        if (caller.IsStaff)
+            return new GetParticipationResponse(ParticipationViews.ToDto(participation, resultsAvailable: true, marksAvailable: true));
 
-        return new GetParticipationResponse(ParticipationViews.ToDto(participation, resultsAvailable));
-    }
-
-    // Read against the assignment's CURRENT due date: a teacher extending it keeps the answers withheld longer.
-    private async Task<bool> AreResultsAvailableAsync(Participation participation, CancellationToken ct)
-    {
+        // Read against the assignment's CURRENT due date and latest attempt: a teacher extending it, or sending it back, keeps the answers withheld longer.
         var homework = participation.HomeworkId is { } homeworkId ? await _assignmentRepository.GetByIdAsync(homeworkId, ct) : null;
-        return participation.AreResultsAvailableTo(homework, DateTime.UtcNow);
+        var latestAttempt = homework is null ? null : await _participationRepository.GetLatestAttemptAsync(participation.ChildId, homework.Id, ct);
+
+        return new GetParticipationResponse(ParticipationViews.ToDto(
+            participation,
+            participation.AreResultsAvailableTo(homework, latestAttempt, DateTime.UtcNow),
+            participation.AreMarksAvailableTo(homework, latestAttempt)));
     }
 }

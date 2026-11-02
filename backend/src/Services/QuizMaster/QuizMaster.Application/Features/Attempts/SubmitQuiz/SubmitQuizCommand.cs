@@ -27,7 +27,7 @@ public record SubmitQuizResponse(
     IReadOnlyList<ParticipationAnswerDto> Answers,
     IReadOnlyList<AnswerKeyDto> Key,        // empty while results are withheld
     bool ResultsAvailable,
-    DateTime? ResultsAvailableAt);          // when withheld: the assignment's due date
+    DateTime? ResultsAvailableAt);          // when withheld until the due date: that date
 
 public class SubmitQuizCommandValidator : AbstractValidator<SubmitQuizCommand>
 {
