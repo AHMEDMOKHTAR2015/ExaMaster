@@ -15,6 +15,7 @@ const PAGE_SIZE = 10;
  * A student's own history: every quiz and homework they have submitted, newest
  * first, each opening the answer popup so they can see what they answered, what
  * the teacher marked, and — once an assignment is due — the correct answers.
+ * An assignment sent back for revision offers no popup until it is redone.
  *
  * Reads `ParticipationSummaryService`, which already holds every attempt for
  * the Available Quizzes tiles; opening this page forces a fresh read so a
@@ -114,6 +115,15 @@ export class MyParticipationsComponent extends BaseComponent implements OnInit {
     if (record.validation?.status === 'approved') return 'approved';
     if (record.validation?.status === 'rejected') return 'revision-requested';
     return 'pending';
+  }
+
+  /**
+   * The assignment's latest submission was sent back and not yet redone. Its
+   * attempts keep their answers closed until then: the student works out what
+   * to fix and solves it again rather than reading the marked answers back.
+   */
+  awaitingRevision(record: ParticipationRecord): boolean {
+    return !!record.homeworkId && this.summary.needsRevisionFeedback().has(record.homeworkId);
   }
 
   reviewStatusBadgeClass(record: ParticipationRecord): string {

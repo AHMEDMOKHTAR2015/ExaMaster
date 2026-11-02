@@ -93,6 +93,9 @@ export class ParticipationAnswersPopupComponent {
   /** False while an assignment's correct answers are withheld from the student (see the model field). */
   readonly resultsWithheld = computed(() => this.shown().resultsAvailable === false);
 
+  /** True while the assignment waits on a revision: no answer may read as right, wrong or marked (see the model field). */
+  readonly marksWithheld = computed(() => this.shown().marksAvailable === false);
+
   /** The teacher's overall comment on the submission, if they left one. */
   readonly feedback = computed(() => this.shown().validation?.feedback ?? null);
 

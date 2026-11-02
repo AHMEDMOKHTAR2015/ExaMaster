@@ -318,6 +318,7 @@ export interface ApiParticipation extends Omit<ApiParticipationSummary, 'childNa
   parentId: number | null; stageId: number | null; gradeId: number | null;
   validation: { status: ApiValidationStatus; feedback: string | null; validatedById: number; validatedOn: string } | null;
   resultsAvailable: boolean;
+  marksAvailable: boolean;
   answers: ApiParticipationAnswer[];
 }
 export interface ApiParticipationAnswer {

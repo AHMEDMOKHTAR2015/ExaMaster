@@ -95,7 +95,9 @@
         </div>
       }
 
-      @if (resultsWithheld()) {
+      @if (marksWithheld()) {
+        <p class="hint">{{ 'participationAnswers.marksWithheld' | translate }}</p>
+      } @else if (resultsWithheld()) {
         <p class="hint">{{ 'participationAnswers.withheld' | translate }}</p>
       }
 
@@ -103,13 +105,15 @@
         <ol class="answer-list">
           @for (answer of answers(); track answer.questionId; let i = $index) {
             <li class="answer-item"
-              [class.answer-item--correct]="answer.isCorrect && !answer.requiresReview"
-              [class.answer-item--wrong]="!answer.isCorrect && !answer.requiresReview"
-              [class.answer-item--pending]="answer.requiresReview && !answer.manualGrade">
+              [class.answer-item--correct]="!marksWithheld() && answer.isCorrect && !answer.requiresReview"
+              [class.answer-item--wrong]="!marksWithheld() && !answer.isCorrect && !answer.requiresReview"
+              [class.answer-item--pending]="!marksWithheld() && answer.requiresReview && !answer.manualGrade">
               <div class="answer-item__head">
                 <span class="answer-item__num">Q{{ i + 1 }}</span>
                 <span class="answer-item__question" dir="auto">{{ answer.questionName }}</span>
-                @if (answer.requiresReview) {
+                @if (marksWithheld()) {
+                  <!-- No verdict badge at all: a withheld mark must not read as "pending" or "wrong". -->
+                } @else if (answer.requiresReview) {
                   @if (answer.manualGrade) {
                     <span class="badge badge--info">{{ 'participationAnswers.graded' | translate : { awarded: awardedLabel(answer), weight: weightLabel(answer) } }}</span>
                   } @else {
@@ -163,7 +167,7 @@
                   @for (blank of answer.blanks; track blank.index) {
                     <div class="answer-row">
                       <span class="answer-row__label">{{ 'participationAnswers.blank' | translate : { n: blank.index + 1 } }}</span>
-                      <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!blank.isCorrect">
+                      <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!marksWithheld() && !blank.isCorrect">
                         {{ blank.userAnswer ?? ('participationAnswers.noAnswer' | translate) }}
                         @if (!blank.isCorrect && !resultsWithheld()) {
                           <span class="answer-row__value--correct" dir="auto"> → {{ blank.correctAnswer }}</span>
@@ -174,7 +178,7 @@
                 } @else {
                   <div class="answer-row">
                     <span class="answer-row__label">{{ answeredLabel | translate }}</span>
-                    <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!answer.isCorrect">
+                    <span class="answer-row__value" dir="auto" [class.answer-row__value--wrong]="!marksWithheld() && !answer.isCorrect">
                       {{ answer.selectedOptionText ?? ('participationAnswers.noAnswer' | translate) }}
                     </span>
                   </div>

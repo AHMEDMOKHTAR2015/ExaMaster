@@ -217,6 +217,21 @@ public class QuizGraderTests
     }
 
     [Fact]
+    public void Redacting_the_marks_keeps_only_the_students_response()
+    {
+        var choose = QuizGrader.RedactMarks(GradeOne(Choose(), Selected(1, 2)));
+        Assert.Null(choose.CorrectOptionId);
+        Assert.False(choose.IsCorrect);
+        Assert.Null(choose.EarnedPercent);
+        Assert.Equal(2, choose.SelectedOptionId);
+
+        var complete = QuizGrader.RedactMarks(GradeOne(Complete(), Typed(2, "paris")));
+        Assert.Equal(string.Empty, complete.Blanks![0].CorrectAnswer);
+        Assert.False(complete.Blanks[0].IsCorrect);
+        Assert.Equal("paris", complete.Blanks[0].UserAnswer);
+    }
+
+    [Fact]
     public void Knows_when_every_question_has_a_usable_answer()
     {
         IReadOnlyList<IQuestionDefinition> quiz = [Choose(1), Complete(2), Explain(3)];

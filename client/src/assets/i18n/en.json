@@ -1785,6 +1785,7 @@
     "blank": "Blank {{ n }}",
     "correctAnswer": "Correct answer",
     "withheld": "The correct answers are shown after the due date.",
+    "marksWithheld": "A resubmission is requested: which answers were right, and the correct answers, are shown once it is resubmitted.",
     "noDetails": "No answer details for this attempt.",
     "expected": "expected: {{ answer }}"
   },

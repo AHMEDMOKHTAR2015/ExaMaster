@@ -50,6 +50,15 @@ public static class QuizGrader
         Blanks = answer.Blanks?.Select(blank => blank with { CorrectAnswer = string.Empty }).ToList()
     };
 
+    // Strips every verdict and mark as well, keeping only the student's own response: what they RECEIVE while the
+    // assignment waits on their revision. Never applied to what is persisted.
+    public static GradedAnswer RedactMarks(GradedAnswer answer) => Redact(answer) with
+    {
+        IsCorrect = false,
+        EarnedPercent = null,
+        Blanks = answer.Blanks?.Select(blank => blank with { CorrectAnswer = string.Empty, IsCorrect = false }).ToList()
+    };
+
     public static WeightableQuestion ToWeightable(IQuestionDefinition question)
         => new(question.QuestionId, question.Type, question.WeightPercent);
 

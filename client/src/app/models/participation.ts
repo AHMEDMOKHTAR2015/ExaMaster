@@ -137,4 +137,11 @@ export interface ParticipationRecord {
    * right is still sent; the correct answers are not.
    */
   resultsAvailable?: boolean;
+  /**
+   * On an attempt read whole: `false` while the assignment waits on the
+   * student's revision — then whether each answer was right, and its marks,
+   * are withheld too (every `isCorrect` reads `false`), leaving only what
+   * they answered.
+   */
+  marksAvailable?: boolean;
 }

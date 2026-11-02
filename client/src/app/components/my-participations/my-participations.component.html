@@ -37,7 +37,7 @@
               <div class="participation-card__header">
                 <span class="participation-card__name" dir="auto">{{ title(record) }}</span>
                 <span class="badge" [ngClass]="row.kind === 'quiz' ? 'badge--brand' : 'badge--info'">{{ 'common.' + row.kind | translate }}</span>
-                @if (row.kind === 'homework') {
+                @if (row.kind === 'homework' || awaitingRevision(record)) {
                   <span class="badge" [ngClass]="reviewStatusBadgeClass(record)">{{ 'notifications.reviewStatus.' + reviewStatusKey(record) | translate }}</span>
                 }
                 @if ((record.pendingReviewCount ?? 0) > 0) {
@@ -50,9 +50,11 @@
                 <span>{{ record.endedAt | date:'medium' }}</span>
               </div>
             </div>
-            <button type="button" class="btn btn--ghost btn--sm participation-card__action" (click)="selected.set(record)">
-              {{ 'myParticipations.viewAnswers' | translate }}
-            </button>
+            @if (!awaitingRevision(record)) {
+              <button type="button" class="btn btn--ghost btn--sm participation-card__action" (click)="selected.set(record)">
+                {{ 'myParticipations.viewAnswers' | translate }}
+              </button>
+            }
             <div class="participation-card__score" [ngClass]="'participation-card__score--' + scoreTier(record)">
               {{ scorePercent(record) }}%
             </div>

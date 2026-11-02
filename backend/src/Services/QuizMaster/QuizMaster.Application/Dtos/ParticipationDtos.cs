@@ -45,6 +45,7 @@ public record ParticipationDto(
     DateTime EndedOn,
     ValidationDto? Validation,
     bool ResultsAvailable,                  // false: the correct answers below are withheld until the assignment is due
+    bool MarksAvailable,                    // false: each answer's verdict and marks are withheld too, while it waits on a revision
     IReadOnlyList<ParticipationAnswerDto> Answers);
 
 public record ValidationDto(ValidationStatus Status, string? Feedback, int ValidatedById, DateTime ValidatedOn);
